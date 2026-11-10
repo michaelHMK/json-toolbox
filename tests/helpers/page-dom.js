@@ -87,6 +87,7 @@ export function loadPage(name, {
   runTask = async () => ({ ok: true, result: {} }),
   expose,
   bodyDataset = {},
+  createFileImport = () => ({ reset() {} }),
 }) {
   const elements = new Map();
   const get = (id) => {
@@ -102,6 +103,7 @@ export function loadPage(name, {
     },
     initializePage: () => {},
     createTaskRunner: () => runTask,
+    createFileImport,
     createFeedback: () => ({
       setStatus(text) { get('status').textContent = text; },
       showError(text) { get('error').textContent = text; get('error').hidden = false; },
@@ -129,6 +131,9 @@ export function loadPage(name, {
   const virtualTextSource = readFileSync(new URL('../../src/shared/virtual-text.js', import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(virtualTextSource, context);
+  const textInputSource = readFileSync(new URL('../../src/shared/text-input.js', import.meta.url), 'utf8')
+    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+  vm.runInContext(textInputSource, context);
   const source = readFileSync(new URL(`../../src/pages/${name}.js`, import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '');
   vm.runInContext(source + `\nglobalThis.page = ${expose};`, context);

@@ -12,7 +12,8 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 - **保持交互流畅**：Web Worker 承担解析、搜索与对比，减少主线程计算对界面响应的影响。
 - **轻量浏览大结果**：树和长文本按可见区域渲染，避免一次创建全部结果节点；支持树搜索定位与完整复制。
-- **减少重复开销**：复用解析结果和计算缓存，按需传输树数据，合并尚未执行的重复任务。
+- **大输入虚拟化**：超过 2 MiB 的输入使用只读虚拟预览，避免原生 textarea 的全量布局开销。
+- **减少重复开销**：普通文档复用解析结果和计算缓存；大文件纯文本处理使用原生序列化并释放不需要的 Worker 文档缓存。
 
 性能验证方法与大结果的使用边界见下文[性能验证](#性能验证)。
 
@@ -32,6 +33,8 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 | **JSON 压缩** | 去除空白压缩为单行；提示无效 JSON，显示可用的行列位置 |
 | **JSON 转义 / 去转义** | 文本与 JSON 字符串互转，一键复制 |
 | **JSON 对比** | 双 JSON 结构化 diff（新增 / 删除 / 变更 / 类型变化）；数组按下标或主键配对；可忽略指定路径；树形高亮与「只看差异」；文本逐行 diff |
+
+格式化与压缩页面还支持通过文件选择器或拖拽导入一个本地 UTF-8 `.json` 文件（最大 50 MiB）。导入后输入区保留文件原文，并自动执行当前格式化或压缩操作。大输入默认使用只读虚拟预览。
 
 侧边栏可在各工具页之间切换。界面支持中文（简体）与英文（`_locales/`）。
 
@@ -108,12 +111,13 @@ python3 build_release.py --check
 export PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs
 # 可选：export CHROMIUM_EXECUTABLE=/path/to/chromium
 node bench/browser.mjs . --verify
+node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 ```
 
-大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。输入和结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
+大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。输入和结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
 
 日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
 

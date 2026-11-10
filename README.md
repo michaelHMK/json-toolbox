@@ -12,7 +12,8 @@ See the `version` field in [`manifest.json`](manifest.json) for the current vers
 
 - **Responsive interactions**: Web Workers handle parsing, search, and comparison, reducing computation on the main thread.
 - **Lightweight browsing**: trees and long text render only around the visible area, avoiding a DOM node for every result while supporting tree search navigation and full copying.
-- **Less repeated work**: parsed data and computed results are reused, tree data transfers only when needed, and redundant queued tasks are coalesced.
+- **Large-input virtualization**: inputs above 2 MiB use a read-only virtual preview, avoiding full native textarea layout.
+- **Less repeated work**: parsed data and computed results are reused for ordinary documents; large text-only operations use native serialization and release unused Worker document caches.
 
 See [Performance Checks](#performance-checks) below for verification commands and large-output limitations.
 
@@ -32,6 +33,8 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 | **JSON Minifier** | Remove whitespace to produce a single line; report invalid JSON with line/column positions when available |
 | **JSON Escape / Unescape** | Convert between plain text and escaped JSON string content, with one-click copying |
 | **JSON Compare** | Compare JSON structures for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
+
+Formatter and Minifier also accept one local UTF-8 `.json` file (up to 50 MiB) through a file picker or drag-and-drop. Importing loads the original text into the input pane and automatically runs the current operation. Large inputs open in a read-only virtual preview.
 
 Use the sidebar to switch between tools. The interface supports English and Simplified Chinese (`_locales/`).
 
@@ -108,14 +111,15 @@ Optional browser checks require an existing Playwright installation and Chromium
 export PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs
 # Optional browser override: export CHROMIUM_EXECUTABLE=/path/to/chromium
 node bench/browser.mjs . --verify
+node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 ```
 
-These checks cover large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
+These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
 
-Large outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
+Large inputs and outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
 
 For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
 

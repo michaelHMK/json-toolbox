@@ -29,6 +29,16 @@ test('fallback keeps native key ordering, duplicate-key semantics and normalized
   assert.equal(parsed.numberLiterals['/__proto__'], '4.00');
 });
 
+test('preferred native stringify matches direct formatting without retaining document data', () => {
+  const text = '{"a/b":{"~":[9007199254740993,1.2300,1e400,-0]},"exp":1E+02}';
+  for (const indent of ['2', '4', 'tab']) {
+    const preferred = run('format', text, { indent, includeData: false, retainSnapshot: false, retainSearch: false });
+    assert.equal(preferred.text, run('format', text, { indent }).text);
+    assert.equal(preferred.snapshotId, undefined);
+  }
+  assert.equal(run('minify', text, { retainSearch: false }).text, run('minify', text).text);
+});
+
 for (const [indent, unit] of [['2', '  '], ['4', '    '], ['tab', '\t']]) {
   test(`format supports ${indent} indentation`, () => {
     assert.equal(run('format', '{"nested":[true,null]}', { indent }).text,

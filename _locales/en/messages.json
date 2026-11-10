@@ -63,7 +63,7 @@
     "message": "See additions, removals and changes between two JSON documents."
   },
   "inputMinifyPlaceholder": {
-    "message": "Paste JSON to minify… (Cmd/Ctrl + Enter)"
+    "message": "Paste JSON to minify or drop a .json file here… (Cmd/Ctrl + Enter)"
   },
   "inputEscapePlaceholder": {
     "message": "Paste text to escape… (Cmd/Ctrl + Enter)"
@@ -177,7 +177,53 @@
     "message": "Result"
   },
   "inputPlaceholder": {
-    "message": "Paste JSON here… (Cmd/Ctrl + Enter to format)"
+    "message": "Paste JSON or drop a .json file here… (Cmd/Ctrl + Enter to format)"
+  },
+  "largeInputTitle": {
+    "message": "Read-only large-file preview"
+  },
+  "btnImportFile": {
+    "message": "Import file"
+  },
+  "btnImportFileTitle": {
+    "message": "Choose a local .json file, or drop one into the input pane"
+  },
+  "fileReading": {
+    "message": "Reading…"
+  },
+  "fileDropHint": {
+    "message": "Release to import a JSON file"
+  },
+  "errFileMultiple": {
+    "message": "Import only one JSON file at a time"
+  },
+  "errFileType": {
+    "message": "Only .json files are supported"
+  },
+  "errFileTooLarge": {
+    "message": "File size must not exceed $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "The file is empty or contains only whitespace"
+  },
+  "errFileEncoding": {
+    "message": "The file must be valid UTF-8 text"
+  },
+  "errFileRead": {
+    "message": "Failed to read \"$name$\": $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
   },
   "errNeedInput": {
     "message": "Please enter JSON content first"

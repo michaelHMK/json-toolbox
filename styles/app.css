@@ -275,7 +275,41 @@ button.primary:hover { background: var(--accent-hover); border-color: var(--acce
   tab-size: 2;
 }
 .pane > textarea::placeholder { color: var(--text-dim); opacity: .75; }
-#output-text {
+.input-pane { position: relative; }
+.input-pane .pane-label { flex: 1; }
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#btn-import { flex: 0 0 auto; }
+#btn-import:disabled { opacity: .55; cursor: wait; }
+#btn-import:disabled:hover { border-color: var(--border-strong); color: var(--text); }
+.file-drop-hint {
+  position: absolute;
+  z-index: 1;
+  top: 55px;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border: 2px dashed var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+}
+.input-pane.is-dragging { border-color: var(--accent); }
+#output-text, #input-view {
   flex: 1;
   min-height: 0;
   margin: 0;
@@ -411,8 +445,8 @@ button.primary:hover { background: var(--accent-hover); border-color: var(--acce
   .compare-result-title .status { max-width: none; }
 }
 
-/* Large text: the scroll surface represents the complete indexed output. */
-#output-text.virtual-text, #text-view.virtual-text {
+/* Large text: the scroll surface represents the complete indexed text. */
+#output-text.virtual-text, #input-view.virtual-text, #text-view.virtual-text {
   position: relative;
   padding: 0;
   overflow-anchor: none;

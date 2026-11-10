@@ -63,7 +63,7 @@
     "message": "清晰查看两个 JSON 之间的新增、删除和变更。"
   },
   "inputMinifyPlaceholder": {
-    "message": "在此粘贴需要压缩的 JSON…（Cmd/Ctrl + Enter 压缩）"
+    "message": "在此粘贴需要压缩的 JSON 或拖入 .json 文件…（Cmd/Ctrl + Enter 压缩）"
   },
   "inputEscapePlaceholder": {
     "message": "在此粘贴需要转义的文本…（Cmd/Ctrl + Enter 转义）"
@@ -177,7 +177,53 @@
     "message": "结果"
   },
   "inputPlaceholder": {
-    "message": "在此粘贴 JSON…（Cmd/Ctrl + Enter 格式化）"
+    "message": "在此粘贴 JSON 或拖入 .json 文件…（Cmd/Ctrl + Enter 格式化）"
+  },
+  "largeInputTitle": {
+    "message": "大文件只读预览"
+  },
+  "btnImportFile": {
+    "message": "导入文件"
+  },
+  "btnImportFileTitle": {
+    "message": "选择本地 .json 文件，也可以将文件拖到输入区"
+  },
+  "fileReading": {
+    "message": "读取中…"
+  },
+  "fileDropHint": {
+    "message": "释放以导入 JSON 文件"
+  },
+  "errFileMultiple": {
+    "message": "一次只能导入一个 JSON 文件"
+  },
+  "errFileType": {
+    "message": "仅支持 .json 文件"
+  },
+  "errFileTooLarge": {
+    "message": "文件大小不能超过 $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "文件为空或只包含空白字符"
+  },
+  "errFileEncoding": {
+    "message": "文件必须是有效的 UTF-8 文本"
+  },
+  "errFileRead": {
+    "message": "读取“$name$”失败：$error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
   },
   "errNeedInput": {
     "message": "请先输入 JSON 内容"

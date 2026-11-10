@@ -6,9 +6,9 @@ import { makeTextDiff, diffFormattedText } from '../core/text-diff.js';
 import { parseErrorLocation } from '../core/parse-error.js';
 
 /**
- * 一次 Worker 会话的任务入口。format/minify/parse 更新搜索数据；
+ * 一次 Worker 会话的任务入口。format/minify/parse 按需更新搜索数据；
  * retainSnapshot 显式保留当前文档/对比供视图切换复用；snapshotId 防止旧请求读到新数据。
- * includeData 只控制对象传输；clear 释放数据及快照。默认请求保持原有返回契约。
+ * retainSearch=false 释放搜索数据；includeData 只控制对象传输；clear 释放数据及快照。
  * 输入 { id, action, text, ... }，返回带耗时的成功结果或含可用行列位置的错误。
  */
 export function createTaskHandler() {
@@ -58,8 +58,9 @@ export function createTaskHandler() {
       case 'format': {
         const includeData = options.includeData !== false;
         const cached = document?.source === text ? document : null;
-        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData, parsed: cached });
-        lastData = formatted.data;
+        const preferStringify = !includeData && !options.retainSnapshot && options.retainSearch === false;
+        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData, parsed: cached, preferStringify });
+        lastData = options.retainSearch === false ? undefined : formatted.data;
         document = options.retainSnapshot ? {
           id: ++snapshotSequence, source: text, output: formatted.text,
           data: formatted.data, numberLiterals: formatted.numberLiterals,
@@ -69,7 +70,7 @@ export function createTaskHandler() {
         return result;
       }
       case 'minify': {
-        const formatted = formatJson(text, { indent: null });
+        const formatted = formatJson(text, { indent: null, preferStringify: options.retainSearch === false });
         lastData = options.retainSearch === false ? undefined : formatted.data;
         document = null;
         return { text: formatted.text };
