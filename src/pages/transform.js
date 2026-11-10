@@ -16,6 +16,7 @@ const statusEl = document.getElementById('status');
 const busyEl = document.getElementById('busy');
 const errorEl = document.getElementById('error');
 const action = document.body.dataset.action;
+const textInput = createTextInput(inputEl, action === 'minify' ? document.getElementById('input-view') : null);
 
 let outputText = '';
 let dataVersion = 0;
@@ -26,19 +27,11 @@ const runTask = createTaskRunner({
 });
 
 const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, inputEl,
+  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
 });
 
-let textInput = {
-  setText(text) { inputEl.value = text; },
-  getText() { return inputEl.value; },
-  clear() { inputEl.value = ''; },
-  isLarge: () => false,
-  focus() { inputEl.focus(); },
-};
 let fileImport = { reset() {} };
 if (action === 'minify') {
-  textInput = createTextInput(inputEl, document.getElementById('input-view'));
   fileImport = createFileImport({
     dropZone: document.getElementById('input-pane'),
     fileInput: document.getElementById('file-input'),
@@ -47,20 +40,11 @@ if (action === 'minify') {
     dropHint: document.getElementById('file-drop-hint'),
     onImport: ({ text }) => {
       resetDocument();
-      setInputText(text);
+      textInput.setText(text);
       void runTransform();
     },
     onError: showError,
   });
-}
-
-function setInputText(text, options) {
-  textInput.setText(text, options);
-}
-
-function showInputParseError(text, result) {
-  if (textInput.isLarge()) setInputText(text, { forceTextarea: true });
-  showParseError(text, result);
 }
 
 async function runTransform() {
@@ -75,7 +59,7 @@ async function runTransform() {
   if (res.cancelled) return;
   if (version !== dataVersion) return;
   if (!res.ok) {
-    if (action === 'minify') showInputParseError(text, res);
+    if (action === 'minify') showParseError(text, res);
     else if (action === 'unescape') showError(t('errUnescapeFailed') + res.error);
     else showError(res.error);
     return;
@@ -125,7 +109,7 @@ function fillSample() {
     tags: ['local', 'fast'],
     nested: { id: 1, value: null },
   }, null, 2);
-  setInputText(action === 'unescape' ? JSON.stringify(sample).slice(1, -1) : sample);
+  textInput.setText(action === 'unescape' ? JSON.stringify(sample).slice(1, -1) : sample);
   hideError();
   runTransform();
 }

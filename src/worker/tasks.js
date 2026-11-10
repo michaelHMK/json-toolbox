@@ -58,8 +58,7 @@ export function createTaskHandler() {
       case 'format': {
         const includeData = options.includeData !== false;
         const cached = document?.source === text ? document : null;
-        const preferStringify = !includeData && !options.retainSnapshot && options.retainSearch === false;
-        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData, parsed: cached, preferStringify });
+        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData, parsed: cached });
         lastData = options.retainSearch === false ? undefined : formatted.data;
         document = options.retainSnapshot ? {
           id: ++snapshotSequence, source: text, output: formatted.text,
@@ -70,7 +69,7 @@ export function createTaskHandler() {
         return result;
       }
       case 'minify': {
-        const formatted = formatJson(text, { indent: null, preferStringify: options.retainSearch === false });
+        const formatted = formatJson(text, { indent: null });
         lastData = options.retainSearch === false ? undefined : formatted.data;
         document = null;
         return { text: formatted.text };

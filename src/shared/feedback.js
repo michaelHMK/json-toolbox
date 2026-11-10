@@ -1,6 +1,6 @@
 import { t } from './i18n.js';
 
-export function createFeedback({ statusEl, errorEl, inputEl }) {
+export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
   function setStatus(text) {
     statusEl.textContent = text;
   }
@@ -21,12 +21,8 @@ export function createFeedback({ statusEl, errorEl, inputEl }) {
       message = t('errLineCol', [String(result.line), String(result.column)]) + result.error;
     }
     showError(message);
-    if (inputEl && typeof result.position === 'number') {
-      inputEl.focus();
-      const position = Math.min(result.position, text.length);
-      inputEl.setSelectionRange(position, Math.min(position + 1, text.length));
-      const lineHeight = parseFloat(getComputedStyle(inputEl).lineHeight) || 21;
-      inputEl.scrollTop = Math.max(0, ((result.line || 1) - 3) * lineHeight);
+    if (typeof result.position === 'number') {
+      selectInputPosition?.(Math.max(0, Math.min(result.position, text.length)), result.line || 1);
     }
   }
 

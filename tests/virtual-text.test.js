@@ -78,3 +78,33 @@ test('the real text component keeps a bounded viewport, reaches the end and copi
   assert.equal(element.textContent, 'small native output');
   page.outputView.destroy();
 });
+
+test('position reveal handles horizontal windows, surrogate pairs, CRLF and EOF in bounded DOM', async () => {
+  const { loadPage } = await import('./helpers/page-dom.js');
+  const page = loadPage('formatter', { expose: '{ outputView }' });
+  const element = page.get('output-text');
+  const prefix = 'ordinary\r\n'.repeat(10000) + 'x'.repeat(10000);
+  const source = prefix + '😀TARGET\r\n';
+  page.outputView.setText(source);
+  for (const [position, expected, collapsed] of [
+    [prefix.length + 1, '😀', false],
+    [source.length - 2, '', true],
+    [source.length - 1, '', true],
+    [source.length, '', true],
+  ]) {
+    page.outputView.revealPosition(position);
+    const [range] = page.selection.ranges;
+    assert.ok(range, `selection exists at ${position}`);
+    assert.equal(range.startContainer.textContent.slice(range.startOffset, range.endOffset), expected);
+    assert.equal(range.startOffset === range.endOffset, collapsed);
+    assert.ok(element.querySelectorAll('.virtual-text-row').length < 60);
+  }
+  assert.equal(element.focused, true);
+  page.outputView.revealPosition(prefix.length + 2);
+  assert.match(element.textContent, /TARGET/);
+  assert.ok(element.scrollTop > 0);
+  assert.ok(element.scrollLeft > 0);
+  const [range] = page.selection.ranges;
+  assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, prefix.length + 2);
+  page.outputView.destroy();
+});

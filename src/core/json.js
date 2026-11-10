@@ -1,5 +1,17 @@
 import { appendJsonPath, PATH_SEP } from './json-path.js';
 
+const NATIVE_STRINGIFY_THRESHOLD = 2 * 1024 * 1024;
+const NUMBER_LITERAL_PROBE_LIMIT = 256;
+
+function withinNumberLiteralBudget(literals) {
+  if (literals === null) return false;
+  let count = 0;
+  for (const path in literals) {
+    if (++count > NUMBER_LITERAL_PROBE_LIMIT) return false;
+  }
+  return true;
+}
+
 function skipJsonWhitespace(text, i) {
   while (i < text.length) {
     const c = text.charCodeAt(i);
@@ -10,7 +22,7 @@ function skipJsonWhitespace(text, i) {
 }
 
 // 输入必须先通过 JSON.parse；restore=true 时把原生序列化丢失的数字字面量回填
-function scanNumberLiterals(text, numberLiterals, restore) {
+function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infinity) {
   const parentDepths = [];
   const containerIsArray = [];
   const arrayIndexes = [];
@@ -23,6 +35,7 @@ function scanNumberLiterals(text, numberLiterals, restore) {
   let i = 0;
   let state = 0; // 0=值，1=对象 key，2=值结束
   let copyFrom = 0;
+  let literalCount = 0;
 
   function setSegment(index, value) {
     pathSegments[index] = value;
@@ -175,7 +188,11 @@ function scanNumberLiterals(text, numberLiterals, restore) {
         }
       } else {
         const value = Number(raw);
-        if (!Number.isFinite(value) || raw !== String(value)) numberLiterals[currentPath()] = raw;
+        if (!Number.isFinite(value) || raw !== String(value)) {
+          // null means the probe is incomplete, never a usable partial map.
+          if (++literalCount > literalLimit) return null;
+          numberLiterals[currentPath()] = raw;
+        }
       }
       state = 2;
       continue;
@@ -222,12 +239,59 @@ function restoreNumberLiterals(text, numberLiterals) {
   return text;
 }
 
-function stringifyJsonCompact(value, numberLiterals) {
-  return restoreNumberLiterals(JSON.stringify(value), numberLiterals);
+// Only parsed JSON reaches this fallback: no cycles, accessors or toJSON hooks.
+// Keep native key ordering/string escaping without recursing through containers.
+function stringifyJsonIterative(value, indentUnit) {
+  const frames = [];
+  const lineIndents = ['\n'];
+  const newline = (depth) => {
+    if (indentUnit === null) return '';
+    return lineIndents[depth] ?? (lineIndents[depth] = '\n' + indentUnit.repeat(depth));
+  };
+  let output = '';
+  while (true) {
+    if (value !== null && typeof value === 'object') {
+      const isArray = Array.isArray(value);
+      const keys = isArray ? null : Object.keys(value);
+      const length = isArray ? value.length : keys.length;
+      output += isArray ? '[' : '{';
+      if (length) {
+        frames.push({ value, keys, length, index: 0 });
+        output += newline(frames.length);
+        if (keys) output += JSON.stringify(keys[0]) + (indentUnit === null ? ':' : ': ');
+        value = value[keys ? keys[0] : 0];
+        continue;
+      }
+      output += isArray ? ']' : '}';
+    } else {
+      output += JSON.stringify(value);
+    }
+
+    while (frames.length) {
+      const frame = frames[frames.length - 1];
+      if (++frame.index < frame.length) {
+        output += ',' + newline(frames.length);
+        const key = frame.keys ? frame.keys[frame.index] : frame.index;
+        if (frame.keys) output += JSON.stringify(key) + (indentUnit === null ? ':' : ': ');
+        value = frame.value[key];
+        break;
+      }
+      frames.pop();
+      output += newline(frames.length) + (frame.keys ? '}' : ']');
+    }
+    if (!frames.length) return output;
+  }
 }
 
-function stringifyJsonPretty(value, numberLiterals, indentUnit) {
-  return restoreNumberLiterals(JSON.stringify(value, null, indentUnit), numberLiterals);
+function stringifyJson(value, numberLiterals, indentUnit) {
+  let output;
+  try {
+    output = indentUnit === null ? JSON.stringify(value) : JSON.stringify(value, null, indentUnit);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    output = stringifyJsonIterative(value, indentUnit);
+  }
+  return restoreNumberLiterals(output, numberLiterals);
 }
 
 function normalizeJsonIndent(indent) {
@@ -367,21 +431,27 @@ function formatJsonTextDirect(text, indentUnit) {
 /**
  * 解析并排版 JSON，保留原文数字字面量及 JSON.parse 的 key 排序/去重语义。
  * indent=null 表示压缩；仅树形显示需要额外返回数字字面量表。
- * preferStringify=true 时直接使用原生序列化；无效输入抛出 SyntaxError。
+ * 核心根据输入选择序列化方式，缓存/传输选项不影响算法；无效输入抛出 SyntaxError。
  */
-export function formatJson(text, { indent = '2', includeNumberLiterals = false, parsed = null, preferStringify = false } = {}) {
+export function formatJson(text, { indent = '2', includeNumberLiterals = false, parsed = null } = {}) {
   // parsed 只由持有同一原文解析结果的 Worker 会话传入，避免切换视图重复解析。
   const data = parsed ? parsed.data : JSON.parse(text);
   const indentUnit = indent === null ? null : normalizeJsonIndent(indent);
-  let output = preferStringify ? null : formatJsonTextDirect(text, indentUnit);
+  let output = null;
   let numberLiterals = parsed?.numberLiterals ?? null;
+
+  // Native serialization is fast for ordinary large documents. Bound the probe
+  // so numeric arrays can use their original tokens without a per-value map.
+  if (text.length > NATIVE_STRINGIFY_THRESHOLD) {
+    if (numberLiterals === null) {
+      numberLiterals = scanNumberLiterals(text, Object.create(null), false, NUMBER_LITERAL_PROBE_LIMIT);
+    }
+    if (withinNumberLiteralBudget(numberLiterals)) output = stringifyJson(data, numberLiterals, indentUnit);
+  }
+  if (output === null) output = formatJsonTextDirect(text, indentUnit);
   if ((output === null || includeNumberLiterals) && numberLiterals === null) {
     numberLiterals = collectNumberLiterals(text);
   }
-  if (output === null) {
-    output = indentUnit === null
-      ? stringifyJsonCompact(data, numberLiterals)
-      : stringifyJsonPretty(data, numberLiterals, indentUnit);
-  }
+  if (output === null) output = stringifyJson(data, numberLiterals, indentUnit);
   return { text: output, data, numberLiterals };
 }

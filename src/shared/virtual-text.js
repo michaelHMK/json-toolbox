@@ -124,6 +124,19 @@ export function createVirtualTextView(element) {
     return { offset: safe.start, x: measuredPrefix(info, chunk, safe.start) };
   }
 
+  function xAtOffset(info, offset) {
+    if (info.ascii) return offset * characterWidth;
+    if (offset >= info.text.length) return info.width;
+    let low = 0;
+    let high = info.offsets.length - 1;
+    while (low + 1 < high) {
+      const middle = (low + high) >>> 1;
+      if (info.offsets[middle] <= offset) low = middle;
+      else high = middle;
+    }
+    return measuredPrefix(info, low, offset);
+  }
+
   function extents() {
     physicalHeight = Math.min(MAX_SCROLL_SIZE, Math.max(element.clientHeight, logicalHeight));
     physicalWidth = Math.min(MAX_SCROLL_SIZE, Math.max(element.clientWidth, logicalWidth));
@@ -176,6 +189,7 @@ export function createVirtualTextView(element) {
     for (let i = 0; i < count; i++) {
       const { row, info } = visible[i];
       const node = rows[i];
+      node.index = first + i;
       const start = columnAt(info, Math.max(0, left - leftPadding - 100));
       const end = columnAt(info, Math.max(0, left - leftPadding + width + 100));
       const window = safeTextWindow(info.text, start.offset, Math.min(info.text.length, end.offset + 2));
@@ -276,6 +290,48 @@ export function createVirtualTextView(element) {
     render();
   }
 
+  // Locate within the existing row index; neither selecting an error nor
+  // revealing EOF should materialize the complete document in the DOM.
+  function revealPosition(position) {
+    if (destroyed || !model || model.sourceText === undefined || !Number.isFinite(position)) return;
+    position = Math.max(0, Math.min(Math.floor(position), model.sourceText.length));
+    selectAll = false;
+    element.classList.remove('virtual-text-selected');
+    element.focus();
+    let textNode;
+    let offset;
+    if (virtual) {
+      let low = 0;
+      let high = model.count - 1;
+      while (low < high) {
+        const middle = (low + high + 1) >>> 1;
+        if (model.getRow(middle).start <= position) low = middle;
+        else high = middle - 1;
+      }
+      const row = model.getRow(low);
+      // CR/LF positions belong to the end of the preceding displayed row.
+      const rowOffset = Math.min(position, row.end) - row.start;
+      const info = horizontalGeometry(low, row);
+      extents();
+      setLogicalScroll(Math.max(0, xAtOffset(info, rowOffset) - element.clientWidth / 2),
+        Math.max(0, (low - 2) * lineHeight + topPadding));
+      const target = rows.find((node) => node.index === low)?.text;
+      textNode = target?.firstChild || target;
+      offset = row.start + rowOffset - Number(target?.dataset.textOffset);
+    } else {
+      textNode = element.firstChild || element;
+      offset = position;
+    }
+    if (!textNode) return;
+    const selected = safeTextWindow(textNode.textContent, offset, offset + 1);
+    const range = document.createRange();
+    range.setStart(textNode, selected.start);
+    range.setEnd(textNode, selected.end);
+    const selection = document.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
   function onKeyDown(event) {
     if (!virtual || !model) return;
     const mod = event.ctrlKey || event.metaKey;
@@ -357,6 +413,7 @@ export function createVirtualTextView(element) {
       }));
     },
     refresh,
+    revealPosition,
     clear() { reset(); model = null; diffResult = null; },
     destroy() {
       reset();

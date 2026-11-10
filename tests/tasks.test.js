@@ -29,7 +29,7 @@ test('fallback keeps native key ordering, duplicate-key semantics and normalized
   assert.equal(parsed.numberLiterals['/__proto__'], '4.00');
 });
 
-test('preferred native stringify matches direct formatting without retaining document data', () => {
+test('cache retention does not change formatting semantics', () => {
   const text = '{"a/b":{"~":[9007199254740993,1.2300,1e400,-0]},"exp":1E+02}';
   for (const indent of ['2', '4', 'tab']) {
     const preferred = run('format', text, { indent, includeData: false, retainSnapshot: false, retainSearch: false });
@@ -37,6 +37,63 @@ test('preferred native stringify matches direct formatting without retaining doc
     assert.equal(preferred.snapshotId, undefined);
   }
   assert.equal(run('minify', text, { retainSearch: false }).text, run('minify', text).text);
+});
+
+test('large text-only formatting handles deep JSON without a recursive stack', () => {
+  const depth = 10000;
+  const source = '['.repeat(depth) + '0' + ']'.repeat(depth);
+  const handler = createTaskHandler();
+  const formatted = run('format', ' '.repeat(2 * 1024 * 1024) + source, {
+    indent: 'tab', includeData: false, retainSnapshot: false, retainSearch: false,
+  }, handler);
+  assert.deepEqual(Object.keys(formatted), ['text']);
+  assert.equal(formatted.text.length, depth * depth + 4 * depth + 1);
+  let value = JSON.parse(formatted.text);
+  for (let i = 0; i < depth; i++) {
+    assert.equal(value.length, 1);
+    value = value[0];
+  }
+  assert.equal(value, 0);
+  assert.equal(handler({ action: 'search', text: '0' }).ok, false);
+});
+
+test('deep serialization normalizes keys and strings while preserving number literals', () => {
+  const depth = 10000;
+  const source = '['.repeat(depth) +
+    '{"2":2.00,"1":1e400,"x":{"old":3.00},"x":-0,"a/b":{"~":9007199254740993},"s":"\\u4e2d\\/","__proto__":4.00}' +
+    ']'.repeat(depth);
+  const expected = '['.repeat(depth) +
+    '{"1":1e400,"2":2.00,"x":-0,"a/b":{"~":9007199254740993},"s":"中/","__proto__":4.00}' +
+    ']'.repeat(depth);
+  assert.equal(run('minify', source, { retainSearch: false }).text, expected);
+});
+
+test('large numeric documents preserve every literal and lazily populate retained snapshots', () => {
+  const tokens = Array.from({ length: 1200 }, (_, i) => ['1.20', '9007199254740993', '1e400', '-0'][i % 4]);
+  const compact = '[' + tokens.join(',') + ']';
+  const source = ' '.repeat(2 * 1024 * 1024) + compact;
+  assert.equal(run('minify', source, { retainSearch: false }).text, compact);
+  const handler = createTaskHandler();
+  const formatted = run('format', source, { includeData: false, retainSnapshot: true }, handler);
+  assert.equal(formatted.text, '[\n  ' + tokens.join(',\n  ') + '\n]');
+  const parsed = run('parseSnapshot', undefined, { snapshotId: formatted.snapshotId }, handler);
+  assert.equal(Object.keys(parsed.numberLiterals).length, tokens.length);
+  for (let i = 0; i < tokens.length; i++) assert.equal(parsed.numberLiterals['/' + i], tokens[i]);
+  const repeated = run('format', source, { retainSnapshot: true }, handler);
+  assert.equal(repeated.text, formatted.text);
+  assert.strictEqual(repeated.numberLiterals, parsed.numberLiterals);
+});
+
+test('large numeric documents still normalize strings and discard overwritten literals', () => {
+  const numbers = Array(1200).fill('1.20').join(',');
+  const source = ' '.repeat(2 * 1024 * 1024) +
+    '{"x":[' + numbers + '],"x":null,"2":2.00,"1":1e400,"a/b":{"~":[' + numbers + ']},"s":"\\u4e2d\\/"}';
+  const expected = '{"1":1e400,"2":2.00,"x":null,"a/b":{"~":[' + numbers + ']},"s":"中/"}';
+  assert.equal(run('minify', source, { retainSearch: false }).text, expected);
+  const parsed = run('format', source);
+  assert.equal(parsed.numberLiterals['/x/0'], undefined);
+  assert.equal(parsed.numberLiterals['/a~1b/~0/1199'], '1.20');
+  assert.equal(parsed.numberLiterals['/1'], '1e400');
 });
 
 for (const [indent, unit] of [['2', '  '], ['4', '    '], ['tab', '\t']]) {

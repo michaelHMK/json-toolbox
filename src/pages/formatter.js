@@ -57,17 +57,8 @@ const runTask = createTaskRunner({
 
 /* ================= 状态展示 ================= */
 const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, inputEl,
+  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
 });
-
-function setInputText(text, options) {
-  textInput.setText(text, options);
-}
-
-function showInputParseError(text, result) {
-  if (textInput.isLarge()) setInputText(text, { forceTextarea: true });
-  showParseError(text, result);
-}
 
 const fileImport = createFileImport({
   dropZone: $('input-pane'),
@@ -77,7 +68,7 @@ const fileImport = createFileImport({
   dropHint: $('file-drop-hint'),
   onImport: ({ text }) => {
     resetDocument();
-    setInputText(text);
+    textInput.setText(text);
     if (textInput.isLarge()) {
       state.view = 'text';
       updateViewButtons();
@@ -123,7 +114,7 @@ async function ensureTreeData() {
     : await runTask('parse', { text, retainSnapshot: true });
   if (res.cancelled || version !== dataVersion || text !== currentText()) return false;
   if (!res.ok) {
-    showInputParseError(text, res);
+    showParseError(text, res);
     return false;
   }
   state.data = res.result.data;
@@ -162,7 +153,7 @@ async function doFormat() {
   }, { key: 'format' });
   if (res.cancelled || version !== dataVersion) return;
   if (!res.ok) {
-    showInputParseError(text, res);
+    showParseError(text, res);
     return;
   }
   treeView?.destroy();
@@ -203,7 +194,7 @@ function resetDocument() {
   void runTask('clear', {}, { discardQueued: true });
   treeView?.destroy();
   treeView = null;
-  setInputText('');
+  textInput.clear();
   state.outputText = '';
   state.data = undefined;
   state.numberLiterals = null;
@@ -236,7 +227,7 @@ function doClear() {
 function fillSample() {
   fileImport.reset();
   const appName = t('appName');
-  setInputText(JSON.stringify({
+  textInput.setText(JSON.stringify({
     name: appName === 'appName' ? 'JSON 工具箱' : appName,
     free: true,
     features: ['格式化', '压缩', '转义互转', '树形视图', '搜索', 'JSON 对比'],

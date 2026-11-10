@@ -13,7 +13,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 - **保持交互流畅**：Web Worker 承担解析、搜索与对比，减少主线程计算对界面响应的影响。
 - **轻量浏览大结果**：树和长文本按可见区域渲染，避免一次创建全部结果节点；支持树搜索定位与完整复制。
 - **大输入虚拟化**：超过 2 MiB 的输入使用只读虚拟预览，避免原生 textarea 的全量布局开销。
-- **减少重复开销**：普通文档复用解析结果和计算缓存；大文件纯文本处理使用原生序列化并释放不需要的 Worker 文档缓存。
+- **减少重复开销**：普通文档复用解析结果和计算缓存；大文件纯文本处理按数据选择原生或直接序列化，深层嵌套自动回退到迭代处理，并释放不需要的 Worker 文档缓存。
 
 性能验证方法与大结果的使用边界见下文[性能验证](#性能验证)。
 
@@ -34,7 +34,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 | **JSON 转义 / 去转义** | 文本与 JSON 字符串互转，一键复制 |
 | **JSON 对比** | 双 JSON 结构化 diff（新增 / 删除 / 变更 / 类型变化）；数组按下标或主键配对；可忽略指定路径；树形高亮与「只看差异」；文本逐行 diff |
 
-格式化与压缩页面还支持通过文件选择器或拖拽导入一个本地 UTF-8 `.json` 文件（最大 50 MiB）。导入后输入区保留文件原文，并自动执行当前格式化或压缩操作。大输入默认使用只读虚拟预览。
+格式化与压缩页面还支持通过文件选择器或拖拽导入一个本地 UTF-8 `.json` 文件（最大 50 MiB）。导入后输入区保留文件原文，并自动执行当前格式化或压缩操作。大输入始终保留只读虚拟预览，语法出错时也在预览内定位浏览器提供的错误位置。
 
 侧边栏可在各工具页之间切换。界面支持中文（简体）与英文（`_locales/`）。
 
@@ -116,6 +116,21 @@ node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 ```
+
+文件导入基准默认在两个页面对每个场景各跑三次，输出逐次测量及中位数。默认场景包括 50 MiB 常规文档（`regular`）、4 MiB 保留 `1.20` 字面量的数组（`decimals`）、50 MiB 无效单行 JSON（`invalid`）。样本及 `File` 构造在计时前完成；总耗时包含成功或错误反馈后的两次动画帧，长任务仅统计导入测量区间。完整输入/输出复制及错误位置检查在测量后执行。堆内存读数包含基准样本；耗时较长的跨代理内存测量需用 `BENCH_MEMORY=1` 显式开启。
+
+```bash
+# 选择场景、操作、大小和重复次数。
+BENCH_SCENARIOS=regular,decimals,invalid BENCH_REPEATS=3 node bench/file-import.mjs .
+BENCH_SCENARIOS=decimals BENCH_ACTIONS=minify BENCH_DECIMAL_MIB=4 node bench/file-import.mjs .
+# 可选深层场景：10,000 层数组，前导空格使输入超过大文件阈值。
+# 格式化结果约 191 MiB，建议单独执行。
+BENCH_SCENARIOS=deep BENCH_DEEP_DEPTH=10000 BENCH_REPEATS=1 node bench/file-import.mjs .
+# 使用同一脚本测旧版本目录，记录旧行为及校验失败而不中止。
+BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
+```
+
+`BENCH_FILE_MIB` 调整常规和无效文件的大小，默认 `50`。`BENCH_VERIFY=0` 仍会记录正确性检查失败。可选的 `BENCH_MAX_MS` 和 `BENCH_MAX_LONG_TASK_MS` 分别约束总耗时中位数与最长任务中位数；考虑硬件与浏览器差异，默认不设耗时预算。比较基线和修改后版本时，请使用相同配置串行运行。
 
 大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。输入和结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
 

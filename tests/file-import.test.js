@@ -324,19 +324,63 @@ test('large formatter imports use virtual input and release document caches', as
   assert.equal(actions[1].payload.retainSearch, false);
 });
 
-test('large parse errors restore editable input for source location feedback', async () => {
-  const source = '{"payload":"' + 'x'.repeat(2 * 1024 * 1024 + 1) + '"';
-  const imported = formatterImportPage(async (action) => {
-    if (action === 'format') return { ok: false, error: 'Unexpected end of JSON input', position: source.length - 1 };
-    return { ok: true, result: {} };
+function errorImportPage(action, result) {
+  let importOptions;
+  const page = loadPage(action === 'format' ? 'formatter' : 'transform', {
+    bodyDataset: { action },
+    runTask: async (task) => task === action ? result : { ok: true, result: {} },
+    createFileImport(options) { importOptions = options; return { reset() {} }; },
+    expose: '{ textInput }',
   });
-  imported.importOptions.onImport({ text: source });
-  await flush();
-  assert.equal(imported.page.get('input').hidden, false);
-  assert.equal(imported.page.get('input').value, source);
-  assert.equal(imported.page.get('input-view').hidden, true);
-  assert.equal(imported.page.get('error').hidden, false);
-});
+  return { page, importText: (text) => importOptions.onImport({ text }) };
+}
+
+for (const action of ['format', 'minify']) {
+  test(`${action} locates large parse errors in the virtual input without restoring a textarea`, async () => {
+    const prefix = '[\r\n' + ('  "' + 'x'.repeat(40) + '",\r\n').repeat(60000);
+    const source = prefix + '  INVALID_TOKEN,\r\n  1\r\n]';
+    const position = prefix.length + 2;
+    const { page, importText } = errorImportPage(action, {
+      ok: false, error: 'Invalid JSON token', position, line: 60002, column: 3,
+    });
+    importText(source);
+    await flush();
+    const preview = page.get('input-view');
+    assert.equal(page.get('input').hidden, true);
+    assert.equal(page.get('input').value, '');
+    assert.equal(preview.hidden, false);
+    assert.equal(preview.focused, true);
+    assert.ok(preview.scrollTop > 0);
+    assert.match(preview.textContent, /INVALID_TOKEN/);
+    assert.ok(preview.querySelectorAll('.virtual-text-row').length < 60);
+    assert.equal(page.textInput.getText(), source);
+    assert.equal(page.textInput.isLarge(), true);
+    const [range] = page.selection.ranges;
+    assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, position);
+    assert.equal(range.startContainer.textContent.slice(range.startOffset, range.endOffset), 'I');
+    assert.equal(page.get('error').hidden, false);
+    assert.match(page.get('error').textContent, /Invalid JSON token/);
+  });
+
+  test(`${action} retains native selection and scrolling for small parse errors`, async () => {
+    const source = '{\n "a": 1,\n "b": 2,\n "c": invalid\n}';
+    const position = source.indexOf('invalid');
+    const { page, importText } = errorImportPage(action, {
+      ok: false, error: 'Invalid JSON token', position, line: 4, column: 7,
+    });
+    importText(source);
+    await flush();
+    const input = page.get('input');
+    assert.equal(input.hidden, false);
+    assert.equal(input.value, source);
+    assert.equal(input.focused, true);
+    assert.equal(input.selectionStart, position);
+    assert.equal(input.selectionEnd, position + 1);
+    assert.equal(input.scrollTop, 21);
+    assert.equal(page.get('input-view').hidden, true);
+    assert.equal(page.selection.ranges.length, 0);
+  });
+}
 
 test('large minify imports use virtual input without affecting the original source', async () => {
   const source = '{ "payload": "' + 'x'.repeat(2 * 1024 * 1024 + 1) + '" }';
