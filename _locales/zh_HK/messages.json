@@ -1,0 +1,479 @@
+{
+  "extName": {
+    "message": "JSON 工具箱"
+  },
+  "extDescription": {
+    "message": "高效 JSON 工具箱：格式化、壓縮、轉義及取消轉義、樹狀搜尋、結構與文字比較。數據只在本機處理，無廣告、無追蹤、不收集數據。"
+  },
+  "actionTitle": {
+    "message": "開啟 JSON 工具箱"
+  },
+  "titleFormatter": {
+    "message": "JSON 格式化 - JSON 工具箱"
+  },
+  "titleMinify": {
+    "message": "JSON 壓縮 - JSON 工具箱"
+  },
+  "titleEscape": {
+    "message": "JSON 轉義 - JSON 工具箱"
+  },
+  "titleUnescape": {
+    "message": "JSON 取消轉義 - JSON 工具箱"
+  },
+  "titleCompare": {
+    "message": "JSON 比較 - JSON 工具箱"
+  },
+  "appName": {
+    "message": "JSON 工具箱"
+  },
+  "navTools": {
+    "message": "工具"
+  },
+  "navFormat": {
+    "message": "JSON 格式化"
+  },
+  "navMinify": {
+    "message": "JSON 壓縮"
+  },
+  "navEscape": {
+    "message": "JSON 轉義"
+  },
+  "navUnescape": {
+    "message": "JSON 取消轉義"
+  },
+  "navCompare": {
+    "message": "JSON 比較"
+  },
+  "localOnly": {
+    "message": "所有數據只在本機處理"
+  },
+  "descFormat": {
+    "message": "美化 JSON，支援樹狀瀏覽、層級展開及搜尋。"
+  },
+  "descMinify": {
+    "message": "移除多餘空白，將 JSON 壓縮成一行。"
+  },
+  "descEscape": {
+    "message": "將 JSON 或任何文字轉換為可嵌入 JSON 字串的內容。"
+  },
+  "descUnescape": {
+    "message": "將轉義後的字串內容還原為原始文字。"
+  },
+  "descCompare": {
+    "message": "清楚查看兩份 JSON 之間的新增、刪除及變更。"
+  },
+  "inputMinifyPlaceholder": {
+    "message": "在此貼上需要壓縮的 JSON 或拖入 .json 檔案…（Cmd/Ctrl + Enter 壓縮）"
+  },
+  "inputEscapePlaceholder": {
+    "message": "在此貼上需要轉義的文字…（Cmd/Ctrl + Enter 轉義）"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "在此貼上需要還原的轉義字串…（Cmd/Ctrl + Enter 取消轉義）"
+  },
+  "busyText": {
+    "message": "處理中…"
+  },
+  "btnFormat": {
+    "message": "格式化"
+  },
+  "btnFormatTitle": {
+    "message": "快捷鍵：Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "壓縮"
+  },
+  "btnMinifyTitle": {
+    "message": "移除空白，壓縮成一行"
+  },
+  "btnEscape": {
+    "message": "轉義"
+  },
+  "btnEscapeTitle": {
+    "message": "將 JSON 文字轉換為轉義後的字串"
+  },
+  "btnUnescape": {
+    "message": "取消轉義"
+  },
+  "btnUnescapeTitle": {
+    "message": "將轉義字串還原為 JSON 文字"
+  },
+  "labelIndent": {
+    "message": "縮排"
+  },
+  "optSpaces2": {
+    "message": "2 個空格"
+  },
+  "optSpaces4": {
+    "message": "4 個空格"
+  },
+  "labelAutoFormat": {
+    "message": "貼上時格式化"
+  },
+  "labelAutoFormatTitle": {
+    "message": "貼上內容後立即自動格式化"
+  },
+  "viewRaw": {
+    "message": "原文"
+  },
+  "viewTree": {
+    "message": "樹狀"
+  },
+  "levelTitle": {
+    "message": "將樹狀結構展開至指定層級"
+  },
+  "levelPlaceholder": {
+    "message": "展開層級…"
+  },
+  "level1": {
+    "message": "1 層"
+  },
+  "level2": {
+    "message": "2 層"
+  },
+  "level3": {
+    "message": "3 層"
+  },
+  "level4": {
+    "message": "4 層"
+  },
+  "level5": {
+    "message": "5 層"
+  },
+  "level8": {
+    "message": "8 層"
+  },
+  "levelAll": {
+    "message": "全部"
+  },
+  "searchPlaceholder": {
+    "message": "搜尋鍵或值…"
+  },
+  "matchPrevTitle": {
+    "message": "上一個（Shift+Enter）"
+  },
+  "matchNextTitle": {
+    "message": "下一個（Enter）"
+  },
+  "btnSample": {
+    "message": "範例"
+  },
+  "btnCopy": {
+    "message": "複製結果"
+  },
+  "btnClear": {
+    "message": "清除"
+  },
+  "linkCompare": {
+    "message": "JSON 比較 →"
+  },
+  "linkCompareTitle": {
+    "message": "開啟 JSON 比較頁面"
+  },
+  "paneInput": {
+    "message": "輸入"
+  },
+  "paneResult": {
+    "message": "結果"
+  },
+  "inputPlaceholder": {
+    "message": "在此貼上 JSON 或拖入 .json 檔案…（Cmd/Ctrl + Enter 格式化）"
+  },
+  "largeInputTitle": {
+    "message": "大型檔案唯讀預覽"
+  },
+  "btnImportFile": {
+    "message": "匯入檔案"
+  },
+  "btnImportFileTitle": {
+    "message": "選擇本機 .json 檔案，或將檔案拖至輸入區域"
+  },
+  "fileReading": {
+    "message": "讀取中…"
+  },
+  "fileDropHint": {
+    "message": "放開以匯入 JSON 檔案"
+  },
+  "errFileMultiple": {
+    "message": "每次只能匯入一個 JSON 檔案"
+  },
+  "errFileType": {
+    "message": "只支援 .json 檔案"
+  },
+  "errFileTooLarge": {
+    "message": "檔案大小不可超過 $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "檔案為空或只包含空白字元"
+  },
+  "errFileEncoding": {
+    "message": "檔案必須是有效的 UTF-8 文字"
+  },
+  "errFileRead": {
+    "message": "無法讀取「$name$」：$error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "請先輸入 JSON 內容"
+  },
+  "errNeedContent": {
+    "message": "請先輸入內容"
+  },
+  "errNothingToParse": {
+    "message": "沒有可解析的內容，請先輸入 JSON"
+  },
+  "errNothingToCopy": {
+    "message": "沒有可複製的內容"
+  },
+  "errParseFailed": {
+    "message": "解析失敗："
+  },
+  "errLineCol": {
+    "message": "第 $line$ 行第 $col$ 欄：",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "取消轉義失敗："
+  },
+  "errSearchFailed": {
+    "message": "搜尋失敗："
+  },
+  "statusFormatted": {
+    "message": "已格式化 · $count$ 個字元 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "已壓縮 · $count$ 個字元 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "已轉義 · $count$ 個字元",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "已取消轉義 · $count$ 個字元",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "已複製 $count$ 個字元到剪貼簿",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ 個項目 ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ 個鍵 ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " …（共 $count$ 個字元，已省略部分內容）",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "已展開所有層級"
+  },
+  "expandedLevel": {
+    "message": "已展開至第 $level$ 層",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "沒有相符項目"
+  },
+  "btnCompare": {
+    "message": "比較"
+  },
+  "btnCompareTitle": {
+    "message": "快捷鍵：Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ 交換"
+  },
+  "btnSwapTitle": {
+    "message": "交換左右兩邊的內容"
+  },
+  "labelArrayMode": {
+    "message": "陣列"
+  },
+  "optArrayIndex": {
+    "message": "按索引比較"
+  },
+  "optArrayKey": {
+    "message": "按鍵配對"
+  },
+  "labelKeyField": {
+    "message": "鍵"
+  },
+  "keyFieldPlaceholder": {
+    "message": "例如 id"
+  },
+  "labelIgnorePaths": {
+    "message": "忽略路徑"
+  },
+  "ignorePathsTitle": {
+    "message": "輸入完整路徑，以逗號分隔；* 可匹配任意單一路徑區段"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "例如 list[*].updatedAt，以逗號分隔"
+  },
+  "viewStruct": {
+    "message": "結構比較"
+  },
+  "viewTextDiff": {
+    "message": "文字比較"
+  },
+  "viewTextDiffTitle": {
+    "message": "格式化後逐行比較；忽略路徑及陣列比較方式不適用於此檢視"
+  },
+  "onlyDiffLabel": {
+    "message": "只顯示差異"
+  },
+  "onlyDiffTitle": {
+    "message": "隱藏沒有差異的分支"
+  },
+  "diffPrevTitle": {
+    "message": "上一處差異"
+  },
+  "diffNextTitle": {
+    "message": "下一處差異"
+  },
+  "linkFormatter": {
+    "message": "← 返回格式化"
+  },
+  "paneOld": {
+    "message": "舊版本（左）"
+  },
+  "paneNew": {
+    "message": "新版本（右）"
+  },
+  "inputLeftPlaceholder": {
+    "message": "貼上舊版本 JSON…"
+  },
+  "inputRightPlaceholder": {
+    "message": "貼上新版本 JSON…（Cmd/Ctrl + Enter 開始比較）"
+  },
+  "paneCompareResult": {
+    "message": "比較結果"
+  },
+  "colOld": {
+    "message": "舊"
+  },
+  "colNew": {
+    "message": "新"
+  },
+  "errNeedBothSides": {
+    "message": "請在左右兩側都輸入 JSON"
+  },
+  "errCompareFailed": {
+    "message": "比較失敗："
+  },
+  "errTextDiffFailed": {
+    "message": "文字比較失敗："
+  },
+  "diffStats": {
+    "message": "共 $total$ 處差異：+$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": "（只顯示首 $count$ 項的詳細內容）",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "；部分陣列元素缺少鍵欄位，已按索引比較"
+  },
+  "diffIdenticalNote": {
+    "message": "，兩邊內容相同"
+  },
+  "textDiffBlockyNote": {
+    "message": "差異範圍過大，已按整個區塊顯示（結構比較檢視不受影響）"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ 行相同 ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+Nom
+JSON Toolbox
+
+Description courte
+Outils JSON rapides : formater, minifier, échapper et comparer en local. Sans publicité, suivi ni collecte de données.
+
+Description détaillée
+JSON Toolbox permet de formater, parcourir et comparer du JSON dans un onglet dédié du navigateur. Tout fonctionne hors ligne, sans compte ni autorisation supplémentaire.
+
+Formater et parcourir
+- Formatez le JSON avec une indentation de 2 espaces, 4 espaces ou tabulations.
+- Consultez les erreurs de syntaxe, avec la ligne, la colonne et un accès à la position lorsque le navigateur fournit ces informations.
+- Parcourez une arborescence repliable avec défilement virtuel, déploiement par niveau, recherche de clés ou de valeurs et navigation entre les résultats.
+- Copiez le résultat complet en un clic.
+
+Importer des fichiers locaux
+- Dans les outils de formatage et de minification, choisissez un fichier ou déposez-le dans la zone de saisie.
+- Importez un seul fichier .json encodé en UTF-8 à la fois, jusqu’à 50 MiB. Le formatage ou la minification démarre automatiquement après l’importation.
+- Au-delà d’environ deux millions de caractères, la saisie est affichée dans un aperçu virtuel en lecture seule. Le traitement et la copie du résultat utilisent toujours le contenu complet.
+
+Minifier, échapper et déséchapper
+- Passez d’un outil à l’autre avec la barre latérale.
+- Supprimez les espaces inutiles pour obtenir un JSON sur une seule ligne. Les erreurs JSON sont signalées, avec leur position lorsqu’elle est disponible.
+- Échappez du texte pour l’insérer dans une chaîne JSON ou restaurez le texte d’origine d’une chaîne échappée, puis copiez le résultat.
+
+Comparer du JSON
+- Consultez les différences structurelles par chemin : ajouts, suppressions, changements de valeur et de type.
+- Comparez les tableaux par indice ou associez les éléments par un champ clé, tel que id.
+- Ignorez certains chemins, par exemple les champs d’horodatage.
+- Affichez l’arborescence complète avec les différences en surbrillance ou uniquement les différences, et passez de l’une à l’autre.
+- Passez à la comparaison ligne par ligne du JSON formaté.
+
+Confidentialité
+Tout est traité localement dans le navigateur. Aucune collecte ni transmission de données, aucune requête réseau, aucun code distant, aucune publicité ni aucun suivi. L’historique des saisies n’est pas enregistré. Le résultat est placé dans le presse-papiers uniquement lorsque vous le copiez.
+
+Les données et résultats complets restent en mémoire ; les performances dépendent de l’appareil et de la structure des données. Les vues virtuelles n’affichent qu’une partie du contenu à la fois : la recherche native du navigateur ne couvre que cette partie. Utilisez la recherche dans l’arborescence ou copiez le résultat complet si nécessaire. Les grandes différences textuelles peuvent être affichées par blocs entiers.

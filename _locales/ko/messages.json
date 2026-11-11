@@ -1,0 +1,479 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "빠른 JSON 도구: 포맷, 압축, 이스케이프, 비교를 기기에서 처리합니다. 광고, 추적, 데이터 수집이 없습니다."
+  },
+  "actionTitle": {
+    "message": "JSON Toolbox 열기"
+  },
+  "titleFormatter": {
+    "message": "JSON 포맷 - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "JSON 압축 - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "JSON 이스케이프 - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "JSON 이스케이프 해제 - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "JSON 비교 - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "도구"
+  },
+  "navFormat": {
+    "message": "JSON 포맷"
+  },
+  "navMinify": {
+    "message": "JSON 압축"
+  },
+  "navEscape": {
+    "message": "JSON 이스케이프"
+  },
+  "navUnescape": {
+    "message": "JSON 이스케이프 해제"
+  },
+  "navCompare": {
+    "message": "JSON 비교"
+  },
+  "localOnly": {
+    "message": "모든 데이터는 기기 내에만 보관됩니다"
+  },
+  "descFormat": {
+    "message": "JSON을 보기 좋게 정리하고 트리 탐색, 단계별 펼치기, 검색을 사용할 수 있습니다."
+  },
+  "descMinify": {
+    "message": "불필요한 공백을 제거하고 JSON을 한 줄로 압축합니다."
+  },
+  "descEscape": {
+    "message": "JSON이나 일반 텍스트를 JSON 문자열에 넣을 수 있는 형태로 변환합니다."
+  },
+  "descUnescape": {
+    "message": "이스케이프된 문자열을 원래 텍스트로 복원합니다."
+  },
+  "descCompare": {
+    "message": "두 JSON 문서의 추가, 삭제, 변경 사항을 확인합니다."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "압축할 JSON을 붙여넣거나 .json 파일을 여기에 놓으세요… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "이스케이프할 텍스트를 붙여넣으세요… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "이스케이프된 문자열을 붙여넣으세요… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "처리 중…"
+  },
+  "btnFormat": {
+    "message": "포맷"
+  },
+  "btnFormatTitle": {
+    "message": "단축키: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "압축"
+  },
+  "btnMinifyTitle": {
+    "message": "공백을 제거하고 한 줄로 압축"
+  },
+  "btnEscape": {
+    "message": "이스케이프"
+  },
+  "btnEscapeTitle": {
+    "message": "JSON 텍스트를 이스케이프된 문자열로 변환"
+  },
+  "btnUnescape": {
+    "message": "이스케이프 해제"
+  },
+  "btnUnescapeTitle": {
+    "message": "이스케이프된 문자열을 JSON 텍스트로 복원"
+  },
+  "labelIndent": {
+    "message": "들여쓰기"
+  },
+  "optSpaces2": {
+    "message": "공백 2칸"
+  },
+  "optSpaces4": {
+    "message": "공백 4칸"
+  },
+  "labelAutoFormat": {
+    "message": "붙여넣을 때 포맷"
+  },
+  "labelAutoFormatTitle": {
+    "message": "붙여넣은 직후 자동으로 포맷"
+  },
+  "viewRaw": {
+    "message": "원문"
+  },
+  "viewTree": {
+    "message": "트리"
+  },
+  "levelTitle": {
+    "message": "선택한 단계까지 트리 펼치기"
+  },
+  "levelPlaceholder": {
+    "message": "펼칠 단계…"
+  },
+  "level1": {
+    "message": "1단계"
+  },
+  "level2": {
+    "message": "2단계"
+  },
+  "level3": {
+    "message": "3단계"
+  },
+  "level4": {
+    "message": "4단계"
+  },
+  "level5": {
+    "message": "5단계"
+  },
+  "level8": {
+    "message": "8단계"
+  },
+  "levelAll": {
+    "message": "전체"
+  },
+  "searchPlaceholder": {
+    "message": "키 또는 값 검색…"
+  },
+  "matchPrevTitle": {
+    "message": "이전 (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "다음 (Enter)"
+  },
+  "btnSample": {
+    "message": "예제"
+  },
+  "btnCopy": {
+    "message": "결과 복사"
+  },
+  "btnClear": {
+    "message": "지우기"
+  },
+  "linkCompare": {
+    "message": "JSON 비교 →"
+  },
+  "linkCompareTitle": {
+    "message": "JSON 비교 페이지 열기"
+  },
+  "paneInput": {
+    "message": "입력"
+  },
+  "paneResult": {
+    "message": "결과"
+  },
+  "inputPlaceholder": {
+    "message": "JSON을 붙여넣거나 .json 파일을 여기에 놓으세요… (Cmd/Ctrl + Enter로 포맷)"
+  },
+  "largeInputTitle": {
+    "message": "대용량 파일 읽기 전용 미리보기"
+  },
+  "btnImportFile": {
+    "message": "파일 가져오기"
+  },
+  "btnImportFileTitle": {
+    "message": "기기의 .json 파일을 선택하거나 입력 영역에 놓으세요"
+  },
+  "fileReading": {
+    "message": "읽는 중…"
+  },
+  "fileDropHint": {
+    "message": "여기에 놓아 JSON 파일 가져오기"
+  },
+  "errFileMultiple": {
+    "message": "JSON 파일은 한 번에 하나만 가져올 수 있습니다"
+  },
+  "errFileType": {
+    "message": ".json 파일만 지원합니다"
+  },
+  "errFileTooLarge": {
+    "message": "파일 크기는 $limit$ 이하여야 합니다",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "파일이 비어 있거나 공백 문자만 포함되어 있습니다"
+  },
+  "errFileEncoding": {
+    "message": "파일은 유효한 UTF-8 텍스트여야 합니다"
+  },
+  "errFileRead": {
+    "message": "\"$name$\" 파일을 읽지 못했습니다: $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "먼저 JSON 내용을 입력하세요"
+  },
+  "errNeedContent": {
+    "message": "먼저 내용을 입력하세요"
+  },
+  "errNothingToParse": {
+    "message": "분석할 내용이 없습니다. 먼저 JSON을 입력하세요"
+  },
+  "errNothingToCopy": {
+    "message": "복사할 내용이 없습니다"
+  },
+  "errParseFailed": {
+    "message": "분석 실패: "
+  },
+  "errLineCol": {
+    "message": "$line$행 $col$열: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "이스케이프 해제 실패: "
+  },
+  "errSearchFailed": {
+    "message": "검색 실패: "
+  },
+  "statusFormatted": {
+    "message": "포맷 완료 · $count$자 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "압축 완료 · $count$자 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "이스케이프 완료 · $count$자",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "이스케이프 해제 완료 · $count$자",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "$count$자를 클립보드에 복사했습니다",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " 항목 $count$개 ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " 키 $count$개 ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (총 $count$자, 일부 생략)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "모든 단계를 펼쳤습니다"
+  },
+  "expandedLevel": {
+    "message": "$level$단계까지 펼쳤습니다",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "일치하는 항목이 없습니다"
+  },
+  "btnCompare": {
+    "message": "비교"
+  },
+  "btnCompareTitle": {
+    "message": "단축키: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ 바꾸기"
+  },
+  "btnSwapTitle": {
+    "message": "왼쪽과 오른쪽 내용 바꾸기"
+  },
+  "labelArrayMode": {
+    "message": "배열"
+  },
+  "optArrayIndex": {
+    "message": "인덱스로 비교"
+  },
+  "optArrayKey": {
+    "message": "키로 짝짓기"
+  },
+  "labelKeyField": {
+    "message": "키"
+  },
+  "keyFieldPlaceholder": {
+    "message": "예: id"
+  },
+  "labelIgnorePaths": {
+    "message": "무시할 경로"
+  },
+  "ignorePathsTitle": {
+    "message": "정확한 경로를 쉼표로 구분하여 입력하세요. *는 경로의 한 구간과 일치합니다"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "예: list[*].updatedAt, 쉼표로 구분"
+  },
+  "viewStruct": {
+    "message": "구조 비교"
+  },
+  "viewTextDiff": {
+    "message": "텍스트 비교"
+  },
+  "viewTextDiffTitle": {
+    "message": "포맷 후 줄 단위로 비교합니다. 무시할 경로 및 배열 비교 방식은 적용되지 않습니다"
+  },
+  "onlyDiffLabel": {
+    "message": "차이만 표시"
+  },
+  "onlyDiffTitle": {
+    "message": "차이가 없는 가지 숨기기"
+  },
+  "diffPrevTitle": {
+    "message": "이전 차이"
+  },
+  "diffNextTitle": {
+    "message": "다음 차이"
+  },
+  "linkFormatter": {
+    "message": "← 포맷으로 돌아가기"
+  },
+  "paneOld": {
+    "message": "이전 (왼쪽)"
+  },
+  "paneNew": {
+    "message": "새 버전 (오른쪽)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "이전 JSON을 붙여넣으세요…"
+  },
+  "inputRightPlaceholder": {
+    "message": "새 JSON을 붙여넣으세요… (Cmd/Ctrl + Enter로 비교)"
+  },
+  "paneCompareResult": {
+    "message": "결과"
+  },
+  "colOld": {
+    "message": "이전"
+  },
+  "colNew": {
+    "message": "새 버전"
+  },
+  "errNeedBothSides": {
+    "message": "양쪽 모두 JSON을 입력하세요"
+  },
+  "errCompareFailed": {
+    "message": "비교 실패: "
+  },
+  "errTextDiffFailed": {
+    "message": "텍스트 비교 실패: "
+  },
+  "diffStats": {
+    "message": "차이 $total$개: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (상세 내용은 처음 $count$개만 표시)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; 일부 배열 항목에 키 필드가 없어 인덱스로 비교했습니다"
+  },
+  "diffIdenticalNote": {
+    "message": " — 내용이 동일합니다"
+  },
+  "textDiffBlockyNote": {
+    "message": "차이 영역이 너무 커서 블록 단위로 표시합니다 (구조 비교에는 영향 없음)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ 동일한 $count$줄 ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  }
+}

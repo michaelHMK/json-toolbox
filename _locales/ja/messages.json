@@ -1,0 +1,479 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "高速な JSON ツール：整形、圧縮、エスケープ、比較をローカルで処理。広告・追跡・データ収集はありません。"
+  },
+  "actionTitle": {
+    "message": "JSON Toolbox を開く"
+  },
+  "titleFormatter": {
+    "message": "JSON 整形 - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "JSON 圧縮 - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "JSON エスケープ - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "JSON エスケープ解除 - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "JSON 比較 - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "ツール"
+  },
+  "navFormat": {
+    "message": "JSON 整形"
+  },
+  "navMinify": {
+    "message": "JSON 圧縮"
+  },
+  "navEscape": {
+    "message": "JSON エスケープ"
+  },
+  "navUnescape": {
+    "message": "JSON エスケープ解除"
+  },
+  "navCompare": {
+    "message": "JSON 比較"
+  },
+  "localOnly": {
+    "message": "すべてのデータはデバイス内に保持されます"
+  },
+  "descFormat": {
+    "message": "JSON を整形し、ツリー表示、階層の展開、検索ができます。"
+  },
+  "descMinify": {
+    "message": "不要な空白を削除し、JSON を 1 行に圧縮します。"
+  },
+  "descEscape": {
+    "message": "JSON や任意のテキストを、JSON 文字列に埋め込める形式に変換します。"
+  },
+  "descUnescape": {
+    "message": "エスケープされた文字列を元のテキストに戻します。"
+  },
+  "descCompare": {
+    "message": "2 つの JSON の追加・削除・変更を確認できます。"
+  },
+  "inputMinifyPlaceholder": {
+    "message": "圧縮する JSON を貼り付けるか、.json ファイルをここにドロップ…（Cmd/Ctrl + Enter）"
+  },
+  "inputEscapePlaceholder": {
+    "message": "エスケープするテキストを貼り付け…（Cmd/Ctrl + Enter）"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "エスケープされた文字列を貼り付け…（Cmd/Ctrl + Enter）"
+  },
+  "busyText": {
+    "message": "処理中…"
+  },
+  "btnFormat": {
+    "message": "整形"
+  },
+  "btnFormatTitle": {
+    "message": "ショートカット：Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "圧縮"
+  },
+  "btnMinifyTitle": {
+    "message": "空白を削除して 1 行に圧縮"
+  },
+  "btnEscape": {
+    "message": "エスケープ"
+  },
+  "btnEscapeTitle": {
+    "message": "JSON テキストをエスケープされた文字列に変換"
+  },
+  "btnUnescape": {
+    "message": "エスケープ解除"
+  },
+  "btnUnescapeTitle": {
+    "message": "エスケープされた文字列を JSON テキストに戻す"
+  },
+  "labelIndent": {
+    "message": "インデント"
+  },
+  "optSpaces2": {
+    "message": "スペース 2 個"
+  },
+  "optSpaces4": {
+    "message": "スペース 4 個"
+  },
+  "labelAutoFormat": {
+    "message": "貼り付け時に整形"
+  },
+  "labelAutoFormatTitle": {
+    "message": "貼り付け後にすぐ整形"
+  },
+  "viewRaw": {
+    "message": "テキスト"
+  },
+  "viewTree": {
+    "message": "ツリー"
+  },
+  "levelTitle": {
+    "message": "指定した階層までツリーを展開"
+  },
+  "levelPlaceholder": {
+    "message": "展開する階層…"
+  },
+  "level1": {
+    "message": "1 階層"
+  },
+  "level2": {
+    "message": "2 階層"
+  },
+  "level3": {
+    "message": "3 階層"
+  },
+  "level4": {
+    "message": "4 階層"
+  },
+  "level5": {
+    "message": "5 階層"
+  },
+  "level8": {
+    "message": "8 階層"
+  },
+  "levelAll": {
+    "message": "すべて"
+  },
+  "searchPlaceholder": {
+    "message": "キーまたは値を検索…"
+  },
+  "matchPrevTitle": {
+    "message": "前へ（Shift+Enter）"
+  },
+  "matchNextTitle": {
+    "message": "次へ（Enter）"
+  },
+  "btnSample": {
+    "message": "サンプル"
+  },
+  "btnCopy": {
+    "message": "結果をコピー"
+  },
+  "btnClear": {
+    "message": "クリア"
+  },
+  "linkCompare": {
+    "message": "JSON 比較 →"
+  },
+  "linkCompareTitle": {
+    "message": "JSON 比較ページを開く"
+  },
+  "paneInput": {
+    "message": "入力"
+  },
+  "paneResult": {
+    "message": "結果"
+  },
+  "inputPlaceholder": {
+    "message": "JSON を貼り付けるか、.json ファイルをここにドロップ…（Cmd/Ctrl + Enter で整形）"
+  },
+  "largeInputTitle": {
+    "message": "大容量ファイルの読み取り専用プレビュー"
+  },
+  "btnImportFile": {
+    "message": "ファイルをインポート"
+  },
+  "btnImportFileTitle": {
+    "message": "ローカルの .json ファイルを選択するか、入力欄にドロップ"
+  },
+  "fileReading": {
+    "message": "読み込み中…"
+  },
+  "fileDropHint": {
+    "message": "ドロップして JSON ファイルをインポート"
+  },
+  "errFileMultiple": {
+    "message": "JSON ファイルは一度に 1 つだけインポートできます"
+  },
+  "errFileType": {
+    "message": ".json ファイルのみ対応しています"
+  },
+  "errFileTooLarge": {
+    "message": "ファイルサイズは $limit$ 以下にしてください",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "ファイルが空か、空白文字のみが含まれています"
+  },
+  "errFileEncoding": {
+    "message": "ファイルは有効な UTF-8 テキストである必要があります"
+  },
+  "errFileRead": {
+    "message": "「$name$」の読み込みに失敗しました：$error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "先に JSON を入力してください"
+  },
+  "errNeedContent": {
+    "message": "先に内容を入力してください"
+  },
+  "errNothingToParse": {
+    "message": "解析する内容がありません。先に JSON を入力してください"
+  },
+  "errNothingToCopy": {
+    "message": "コピーする内容がありません"
+  },
+  "errParseFailed": {
+    "message": "解析に失敗しました："
+  },
+  "errLineCol": {
+    "message": "$line$ 行 $col$ 列：",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "エスケープ解除に失敗しました："
+  },
+  "errSearchFailed": {
+    "message": "検索に失敗しました："
+  },
+  "statusFormatted": {
+    "message": "整形済み · $count$ 文字 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "圧縮済み · $count$ 文字 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "エスケープ済み · $count$ 文字",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "エスケープ解除済み · $count$ 文字",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "$count$ 文字をクリップボードにコピーしました",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ 項目 ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ キー ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " …（全 $count$ 文字、一部省略）",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "すべての階層を展開しました"
+  },
+  "expandedLevel": {
+    "message": "$level$ 階層まで展開しました",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "一致する項目はありません"
+  },
+  "btnCompare": {
+    "message": "比較"
+  },
+  "btnCompareTitle": {
+    "message": "ショートカット：Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ 入れ替え"
+  },
+  "btnSwapTitle": {
+    "message": "左右の内容を入れ替える"
+  },
+  "labelArrayMode": {
+    "message": "配列"
+  },
+  "optArrayIndex": {
+    "message": "インデックスで比較"
+  },
+  "optArrayKey": {
+    "message": "キーで対応付け"
+  },
+  "labelKeyField": {
+    "message": "キー"
+  },
+  "keyFieldPlaceholder": {
+    "message": "例：id"
+  },
+  "labelIgnorePaths": {
+    "message": "無視するパス"
+  },
+  "ignorePathsTitle": {
+    "message": "完全一致のパスをカンマで区切って指定。* は 1 つの区間に一致"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "例：list[*].updatedAt（カンマ区切り）"
+  },
+  "viewStruct": {
+    "message": "構造比較"
+  },
+  "viewTextDiff": {
+    "message": "テキスト比較"
+  },
+  "viewTextDiffTitle": {
+    "message": "整形後に行単位で比較。無視するパスや配列の比較方法は適用されません"
+  },
+  "onlyDiffLabel": {
+    "message": "差分のみ"
+  },
+  "onlyDiffTitle": {
+    "message": "差分のない枝を非表示にする"
+  },
+  "diffPrevTitle": {
+    "message": "前の差分"
+  },
+  "diffNextTitle": {
+    "message": "次の差分"
+  },
+  "linkFormatter": {
+    "message": "← 整形に戻る"
+  },
+  "paneOld": {
+    "message": "旧（左）"
+  },
+  "paneNew": {
+    "message": "新（右）"
+  },
+  "inputLeftPlaceholder": {
+    "message": "旧バージョンの JSON を貼り付け…"
+  },
+  "inputRightPlaceholder": {
+    "message": "新バージョンの JSON を貼り付け…（Cmd/Ctrl + Enter で比較）"
+  },
+  "paneCompareResult": {
+    "message": "結果"
+  },
+  "colOld": {
+    "message": "旧"
+  },
+  "colNew": {
+    "message": "新"
+  },
+  "errNeedBothSides": {
+    "message": "左右両方に JSON を入力してください"
+  },
+  "errCompareFailed": {
+    "message": "比較に失敗しました："
+  },
+  "errTextDiffFailed": {
+    "message": "テキスト比較に失敗しました："
+  },
+  "diffStats": {
+    "message": "差分 $total$ 件：+$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": "（詳細は最初の $count$ 件のみ表示）",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "；キー項目のない配列要素はインデックスで比較しました"
+  },
+  "diffIdenticalNote": {
+    "message": " — 内容は同一です"
+  },
+  "textDiffBlockyNote": {
+    "message": "差分範囲が大きいため、ブロック単位で表示しています（構造比較には影響しません）"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ 行が同一 ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  }
+}

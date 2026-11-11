@@ -19,6 +19,11 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 - 树形折叠视图：虚拟滚动、按层级展开、key/值搜索高亮并逐条跳转
 - 一键复制结果
 
+本地文件导入：
+- 格式化和压缩页面支持文件选择器，也可将文件拖放到输入区
+- 每次导入一个 UTF-8 编码的 `.json` 文件，最大 50 MiB；导入后自动执行格式化或压缩
+- 超过约 200 万字符的输入使用只读虚拟预览，处理和复制结果仍使用完整内容
+
 压缩、转义与去转义页面：
 - 每个功能使用独立页面，通过统一侧边导航切换
 - 压缩（minify）并提示无效 JSON，显示可用的行列信息
@@ -33,7 +38,7 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 
 隐私：所有处理在浏览器本地完成，不收集或上传数据，不发起网络请求，不加载远程代码，无广告或追踪。不保存输入历史，仅在你执行复制时将结果写入系统剪贴板。
 
-大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。输入与结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
+大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖已渲染的部分，可使用树搜索或复制完整结果。输入与结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
 
 ## English
 
@@ -52,6 +57,11 @@ Formatter page:
 - Collapsible tree view: virtual scrolling, expand-to-level, key/value search with match navigation
 - One-click copy
 
+Local file import:
+- On the Formatter and Minify pages, choose a file or drag it into the input pane
+- Import one UTF-8 `.json` file at a time, up to 50 MiB; formatting or minification starts automatically after import
+- Inputs longer than about two million characters use a read-only virtual preview; processing and copying results still use the complete content
+
 Minify, escape and unescape pages:
 - A separate page for each tool, connected by consistent sidebar navigation
 - Minify JSON and report invalid input, including error locations when available
@@ -66,11 +76,13 @@ Compare page:
 
 Privacy: all processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved, and results are written to the system clipboard only when you copy.
 
-Large results use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
+Large inputs and results use virtual rendering, so native browser Find covers only the rendered portion. Tree search and copying complete results remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
 
 ## 上架表单
 
 名称和简短描述来自发布包的 `_locales/*/messages.json`；上方文案与发布包一致。默认语言为 English，名称为 **JSON Toolbox**；简体中文名称为 **JSON 工具箱**。
+
+每种语言的可复制文案位于下方索引中的 `listing.txt`，依次包含名称、简短描述和详细描述。名称与简短描述应与该语言的 `_locales/<locale>/messages.json` 保持完全一致；详细描述填入控制台对应语言的详情字段。README 继续仅维护中英双语。
 
 | 字段 | 填写内容 |
 | --- | --- |
@@ -88,11 +100,41 @@ Large results use virtual rendering, so native browser Find covers only the visi
 
 ## 图片材料
 
-- 商店图标：`icons/icon128.png`，128×128 PNG，图案 96×96，四周 16px 透明留白。
-- 实际界面截图：`store-assets/en/` 与 `store-assets/zh_CN/`，分别用于英文和简体中文详情页，1280×800。
-- 英文宣传图：`store-assets/promo-440x280.png`（440×280）与 `store-assets/promo-1400x560.png`（1400×560）。
-- 中文宣传图：`store-assets/zh_CN/promo-440x280.png`（440×280）与 `store-assets/zh_CN/promo-1400x560.png`（1400×560）。
-- 截图应展示真实功能，不添加无法验证的速度或排名承诺。尺寸依据[官方图片规范](https://developer.chrome.com/docs/webstore/images)。
+- 商店图标：[icons/icon128.png](icons/icon128.png)，128×128 PNG，图案 96×96，四周 16px 透明留白。
+- 每种语言的目录包含 4 张 1280×800 实际界面截图、2 张本地化宣传图及一份 `listing.txt`。
+- 截图展示真实功能，不添加无法验证的速度或排名承诺。尺寸依据[官方图片规范](https://developer.chrome.com/docs/webstore/images)。
+
+| 语言 | 目录 | 上架文案及用途 |
+| --- | --- | --- |
+| English | [store-assets/en/](store-assets/en/) | [listing.txt](store-assets/en/listing.txt)：默认英文详情页 |
+| 简体中文 | [store-assets/zh_CN/](store-assets/zh_CN/) | [listing.txt](store-assets/zh_CN/listing.txt)：简体中文详情页 |
+| Français | [store-assets/fr/](store-assets/fr/) | [listing.txt](store-assets/fr/listing.txt)：法语详情页 |
+| Deutsch | [store-assets/de/](store-assets/de/) | [listing.txt](store-assets/de/listing.txt)：德语详情页 |
+| 日本語 | [store-assets/ja/](store-assets/ja/) | [listing.txt](store-assets/ja/listing.txt)：日语详情页 |
+| 한국어 | [store-assets/ko/](store-assets/ko/) | [listing.txt](store-assets/ko/listing.txt)：韩语详情页 |
+| Español | [store-assets/es/](store-assets/es/) | [listing.txt](store-assets/es/listing.txt)：西班牙语详情页 |
+| Português (Brasil) | [store-assets/pt_BR/](store-assets/pt_BR/) | [listing.txt](store-assets/pt_BR/listing.txt)：巴西葡萄牙语详情页 |
+| Português (Portugal) | [store-assets/pt_PT/](store-assets/pt_PT/) | [listing.txt](store-assets/pt_PT/listing.txt)：葡萄牙葡萄牙语详情页 |
+| Русский | [store-assets/ru/](store-assets/ru/) | [listing.txt](store-assets/ru/listing.txt)：俄语详情页 |
+| العربية | [store-assets/ar/](store-assets/ar/) | [listing.txt](store-assets/ar/listing.txt)：阿拉伯语详情页 |
+| 繁體中文（台灣） | [store-assets/zh_TW/](store-assets/zh_TW/) | [listing.txt](store-assets/zh_TW/listing.txt)：繁体中文详情页 |
+| 繁體中文（香港） | [store-assets/zh_HK/](store-assets/zh_HK/) | [listing.txt](store-assets/zh_HK/listing.txt)：香港用语文案与素材备存 |
+
+目前[官方支持语言表](https://developer.chrome.com/docs/extensions/reference/api/i18n#locales)列出 `zh_TW`，未列出 `zh_HK`。香港用语文案和图片保留供适用渠道使用；若商店控制台没有香港选项，使用繁体中文选项及对应的 `zh_TW` 材料。
+
+每个语言目录使用相同的文件名：
+
+| 文件 | 用途 | 尺寸 |
+| --- | --- | --- |
+| `01-formatter-tree.png` | JSON 格式化与树形浏览 | 1280×800 |
+| `02-compare-structure.png` | JSON 结构对比 | 1280×800 |
+| `03-compare-text.png` | JSON 逐行文本对比 | 1280×800 |
+| `04-minify-import.png` | 文件导入与压缩结果 | 1280×800 |
+| `promo-440x280.png` | 小型宣传图 | 440×280 |
+| `promo-1400x560.png` | 大型宣传图 | 1400×560 |
+| `listing.txt` | 名称、简短描述及详细描述 | UTF-8 纯文本 |
+
+保留根路径英文宣传图 [store-assets/promo-440x280.png](store-assets/promo-440x280.png) 和 [store-assets/promo-1400x560.png](store-assets/promo-1400x560.png)，兼容现有引用；英文详情页也可直接使用 `store-assets/en/` 内的对应文件。
 
 修改名称或界面后，可重新生成全部图片。需要本地已有 Playwright 和支持扩展的完整 Chromium（不能使用 `chrome-headless-shell`）：
 
@@ -102,7 +144,15 @@ CHROMIUM_EXECUTABLE=/path/to/full/chromium \
 node store-assets/generate.mjs
 ```
 
-若 Playwright 可直接导入且已安装其完整 Chromium，可省略对应环境变量。脚本加载真实扩展，分别使用中英文界面生成截图，并将 SVG 宣传图源文件渲染为 PNG。
+若 Playwright 可直接导入且已安装其完整 Chromium，可省略对应环境变量。脚本默认生成全部 13 种语言的截图与宣传图。仅更新部分语言时，可用逗号分隔的 `STORE_LOCALES` 筛选：
+
+```bash
+STORE_LOCALES=en,zh_CN node store-assets/generate.mjs
+```
+
+`listing.txt` 是供上架时复制的独立文案，不会随图片生成自动翻译；修改功能或 `_locales` 中的名称、简介后，应同步检查对应文案。
+
+维护说明：文件导入上限为 `50 * 1024 * 1024` 字节。只读虚拟预览阈值按 `text.length > 2 * 1024 * 1024` 判断，即 UTF-16 代码单元数，不是文件字节数；上架文案因此使用“超过约 200 万字符”，避免误写成“超过 2 MiB 的文件”。
 
 ## 审核测试说明
 
@@ -111,5 +161,6 @@ No account, credentials or network connection are needed.
 1. Install the extension, then click its toolbar icon to open the JSON Toolbox tab.
 2. On JSON Formatter, click Sample and then Format. Switch to Tree to expand nodes and search keys or values.
 3. Open JSON Minify, JSON Escape and JSON Unescape from the sidebar. Each page has a Sample button and an action button to produce a local result. Copy writes the result to the clipboard only when clicked.
-4. Open JSON Compare and click Sample, then Compare. Inspect the structural differences and switch to the text comparison view. Array key matching and ignored paths are optional controls.
-5. All operations run locally. No host permissions, remote code, analytics or user-data uploads are used.
+4. On Formatter or Minify, use Import file or drop one UTF-8 `.json` file of up to 50 MiB into the input pane. Formatting or minification runs automatically. Long input uses a read-only virtual preview while processing retains the full content.
+5. Open JSON Compare and click Sample, then Compare. Inspect the structural differences and switch to the text comparison view. Array key matching and ignored paths are optional controls.
+6. All operations run locally. No host permissions, remote code, analytics or user-data uploads are used.

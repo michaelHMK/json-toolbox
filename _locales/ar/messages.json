@@ -1,0 +1,479 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "أدوات JSON سريعة للتنسيق والتصغير والتهريب والمقارنة محليًا. بلا إعلانات أو تتبع أو جمع للبيانات."
+  },
+  "actionTitle": {
+    "message": "فتح JSON Toolbox"
+  },
+  "titleFormatter": {
+    "message": "تنسيق JSON - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "تصغير JSON - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "تهريب JSON - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "فك تهريب JSON - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "مقارنة JSON - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "الأدوات"
+  },
+  "navFormat": {
+    "message": "تنسيق JSON"
+  },
+  "navMinify": {
+    "message": "تصغير JSON"
+  },
+  "navEscape": {
+    "message": "تهريب JSON"
+  },
+  "navUnescape": {
+    "message": "فك تهريب JSON"
+  },
+  "navCompare": {
+    "message": "مقارنة JSON"
+  },
+  "localOnly": {
+    "message": "تبقى جميع البيانات على جهازك"
+  },
+  "descFormat": {
+    "message": "تنسيق JSON مع استعراض شجري وتوسيع المستويات والبحث."
+  },
+  "descMinify": {
+    "message": "إزالة المسافات البيضاء غير الضرورية وتحويل JSON إلى سطر واحد."
+  },
+  "descEscape": {
+    "message": "تحويل JSON أو أي نص إلى محتوى جاهز للإدراج في سلسلة نصية بصيغة JSON."
+  },
+  "descUnescape": {
+    "message": "استعادة النص الأصلي من سلسلة نصية تحتوي على محارف الهروب."
+  },
+  "descCompare": {
+    "message": "عرض الإضافات والحذف والتغييرات بين مستندَي JSON."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "ألصق JSON لتصغيره أو أسقط ملف .json هنا… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "ألصق النص المراد تهريبه… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "ألصق محتوى السلسلة النصية المراد فك تهريبها… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "تجري المعالجة…"
+  },
+  "btnFormat": {
+    "message": "تنسيق"
+  },
+  "btnFormatTitle": {
+    "message": "الاختصار: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "تصغير"
+  },
+  "btnMinifyTitle": {
+    "message": "إزالة المسافات البيضاء وتحويل المحتوى إلى سطر واحد"
+  },
+  "btnEscape": {
+    "message": "تهريب"
+  },
+  "btnEscapeTitle": {
+    "message": "تحويل نص JSON إلى سلسلة نصية بمحارف هروب"
+  },
+  "btnUnescape": {
+    "message": "فك التهريب"
+  },
+  "btnUnescapeTitle": {
+    "message": "استعادة نص JSON من سلسلة نصية بمحارف هروب"
+  },
+  "labelIndent": {
+    "message": "المسافة البادئة"
+  },
+  "optSpaces2": {
+    "message": "مسافتان"
+  },
+  "optSpaces4": {
+    "message": "4 مسافات"
+  },
+  "labelAutoFormat": {
+    "message": "تنسيق عند اللصق"
+  },
+  "labelAutoFormatTitle": {
+    "message": "تنسيق المحتوى فور لصقه"
+  },
+  "viewRaw": {
+    "message": "النص الأصلي"
+  },
+  "viewTree": {
+    "message": "شجرة"
+  },
+  "levelTitle": {
+    "message": "توسيع الشجرة إلى المستوى المحدد"
+  },
+  "levelPlaceholder": {
+    "message": "توسيع المستويات…"
+  },
+  "level1": {
+    "message": "المستوى 1"
+  },
+  "level2": {
+    "message": "المستوى 2"
+  },
+  "level3": {
+    "message": "المستوى 3"
+  },
+  "level4": {
+    "message": "المستوى 4"
+  },
+  "level5": {
+    "message": "المستوى 5"
+  },
+  "level8": {
+    "message": "المستوى 8"
+  },
+  "levelAll": {
+    "message": "الكل"
+  },
+  "searchPlaceholder": {
+    "message": "البحث عن مفتاح أو قيمة…"
+  },
+  "matchPrevTitle": {
+    "message": "السابق (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "التالي (Enter)"
+  },
+  "btnSample": {
+    "message": "مثال"
+  },
+  "btnCopy": {
+    "message": "نسخ النتيجة"
+  },
+  "btnClear": {
+    "message": "مسح"
+  },
+  "linkCompare": {
+    "message": "مقارنة JSON →"
+  },
+  "linkCompareTitle": {
+    "message": "فتح صفحة مقارنة JSON"
+  },
+  "paneInput": {
+    "message": "الإدخال"
+  },
+  "paneResult": {
+    "message": "النتيجة"
+  },
+  "inputPlaceholder": {
+    "message": "ألصق JSON أو أسقط ملف .json هنا… (Cmd/Ctrl + Enter للتنسيق)"
+  },
+  "largeInputTitle": {
+    "message": "معاينة الملفات الكبيرة للقراءة فقط"
+  },
+  "btnImportFile": {
+    "message": "استيراد ملف"
+  },
+  "btnImportFileTitle": {
+    "message": "اختر ملف .json محليًا أو أسقطه في لوحة الإدخال"
+  },
+  "fileReading": {
+    "message": "تجري القراءة…"
+  },
+  "fileDropHint": {
+    "message": "أفلت الملف لاستيراد JSON"
+  },
+  "errFileMultiple": {
+    "message": "يمكن استيراد ملف JSON واحد فقط في كل مرة"
+  },
+  "errFileType": {
+    "message": "تُدعم ملفات .json فقط"
+  },
+  "errFileTooLarge": {
+    "message": "يجب ألا يتجاوز حجم الملف $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "الملف فارغ أو يحتوي على مسافات بيضاء فقط"
+  },
+  "errFileEncoding": {
+    "message": "يجب أن يكون الملف نصًا صالحًا بترميز UTF-8"
+  },
+  "errFileRead": {
+    "message": "تعذرت قراءة «$name$»: $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "يرجى إدخال محتوى JSON أولًا"
+  },
+  "errNeedContent": {
+    "message": "يرجى إدخال المحتوى أولًا"
+  },
+  "errNothingToParse": {
+    "message": "لا يوجد محتوى لتحليله — أدخل JSON أولًا"
+  },
+  "errNothingToCopy": {
+    "message": "لا يوجد محتوى لنسخه"
+  },
+  "errParseFailed": {
+    "message": "فشل التحليل: "
+  },
+  "errLineCol": {
+    "message": "السطر $line$، العمود $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "فشل فك التهريب: "
+  },
+  "errSearchFailed": {
+    "message": "فشل البحث: "
+  },
+  "statusFormatted": {
+    "message": "تم التنسيق · $count$ محرف · $time$ مللي ثانية",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "تم التصغير · $count$ محرف · $time$ مللي ثانية",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "تم التهريب · $count$ محرف",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "تم فك التهريب · $count$ محرف",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "تم نسخ $count$ محرف إلى الحافظة",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ عنصر ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ مفتاح ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (إجمالي المحارف: $count$، النص مقتطع)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "تم توسيع جميع المستويات"
+  },
+  "expandedLevel": {
+    "message": "تم التوسيع إلى المستوى $level$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "لا توجد نتائج مطابقة"
+  },
+  "btnCompare": {
+    "message": "مقارنة"
+  },
+  "btnCompareTitle": {
+    "message": "الاختصار: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ تبديل"
+  },
+  "btnSwapTitle": {
+    "message": "تبديل المحتوى بين اليسار واليمين"
+  },
+  "labelArrayMode": {
+    "message": "المصفوفات"
+  },
+  "optArrayIndex": {
+    "message": "حسب الفهرس"
+  },
+  "optArrayKey": {
+    "message": "مطابقة حسب المفتاح"
+  },
+  "labelKeyField": {
+    "message": "المفتاح"
+  },
+  "keyFieldPlaceholder": {
+    "message": "مثل id"
+  },
+  "labelIgnorePaths": {
+    "message": "تجاهل المسارات"
+  },
+  "ignorePathsTitle": {
+    "message": "مسارات دقيقة مفصولة بفواصل، وتطابق * مقطعًا واحدًا"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "مثل list[*].updatedAt، مفصولة بفواصل"
+  },
+  "viewStruct": {
+    "message": "البنية"
+  },
+  "viewTextDiff": {
+    "message": "فروق النص"
+  },
+  "viewTextDiffTitle": {
+    "message": "مقارنة سطرًا بسطر بعد التنسيق؛ لا تنطبق المسارات المتجاهلة أو طريقة مقارنة المصفوفات"
+  },
+  "onlyDiffLabel": {
+    "message": "الفروق فقط"
+  },
+  "onlyDiffTitle": {
+    "message": "إخفاء الفروع التي لا تحتوي على فروق"
+  },
+  "diffPrevTitle": {
+    "message": "الفرق السابق"
+  },
+  "diffNextTitle": {
+    "message": "الفرق التالي"
+  },
+  "linkFormatter": {
+    "message": "← العودة إلى التنسيق"
+  },
+  "paneOld": {
+    "message": "القديم (يسار)"
+  },
+  "paneNew": {
+    "message": "الجديد (يمين)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "ألصق JSON القديم…"
+  },
+  "inputRightPlaceholder": {
+    "message": "ألصق JSON الجديد… (Cmd/Ctrl + Enter للمقارنة)"
+  },
+  "paneCompareResult": {
+    "message": "النتيجة"
+  },
+  "colOld": {
+    "message": "القديم"
+  },
+  "colNew": {
+    "message": "الجديد"
+  },
+  "errNeedBothSides": {
+    "message": "يرجى إدخال JSON في كلا الجانبين"
+  },
+  "errCompareFailed": {
+    "message": "فشلت المقارنة: "
+  },
+  "errTextDiffFailed": {
+    "message": "فشلت مقارنة النص: "
+  },
+  "diffStats": {
+    "message": "الفروق: $total$: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (تُعرض تفاصيل أول $count$ فرق فقط)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "؛ بعض عناصر المصفوفة تفتقر إلى حقل المفتاح — تمت مقارنتها حسب الفهرس"
+  },
+  "diffIdenticalNote": {
+    "message": " — المحتوى متطابق"
+  },
+  "textDiffBlockyNote": {
+    "message": "منطقة الفروق كبيرة جدًا — تُعرض ككتل كاملة (لا يتأثر عرض البنية)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ سطر متطابق ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  }
+}
