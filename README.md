@@ -12,7 +12,8 @@ See the `version` field in [`manifest.json`](manifest.json) for the current vers
 
 - **Responsive interactions**: Web Workers handle parsing, search, and comparison, reducing computation on the main thread.
 - **Lightweight browsing**: trees and long text render only around the visible area, avoiding a DOM node for every result while supporting tree search navigation and full copying.
-- **Less repeated work**: parsed data and computed results are reused, tree data transfers only when needed, and redundant queued tasks are coalesced.
+- **Large-input virtualization**: inputs above 2 MiB use a read-only virtual preview, avoiding full native textarea layout.
+- **Less repeated work**: ordinary documents reuse parsed data and results; large text-only operations choose native or direct serialization for the data, fall back to iteration for deep nesting, and release unused Worker document caches.
 
 See [Performance Checks](#performance-checks) below for verification commands and large-output limitations.
 
@@ -32,6 +33,8 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 | **JSON Minifier** | Remove whitespace to produce a single line; report invalid JSON with line/column positions when available |
 | **JSON Escape / Unescape** | Convert between plain text and escaped JSON string content, with one-click copying |
 | **JSON Compare** | Compare JSON structures for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
+
+Formatter and Minifier also accept one local UTF-8 `.json` file (up to 50 MiB) through a file picker or drag-and-drop. Importing loads the original text into the input pane and automatically runs the current operation. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
 
 Use the sidebar to switch between tools. The interface supports English and Simplified Chinese (`_locales/`).
 
@@ -108,14 +111,30 @@ Optional browser checks require an existing Playwright installation and Chromium
 export PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs
 # Optional browser override: export CHROMIUM_EXECUTABLE=/path/to/chromium
 node bench/browser.mjs . --verify
+node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 ```
 
-These checks cover large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
+These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
 
-Large outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
+The file-import benchmark runs both pages three times per scenario and reports each sample plus medians. Its default scenarios are a 50 MiB ordinary document (`regular`), a 4 MiB array with preserved `1.20` literals (`decimals`), and a 50 MiB invalid single line (`invalid`). Fixture and `File` construction happen before measurement; elapsed time includes two animation frames after success/error feedback, and Long Tasks cover only the measured import. Complete input/output copying and error-location checks run afterward. Heap readings include the benchmark fixture; slower cross-agent memory measurement is opt-in with `BENCH_MEMORY=1`.
+
+```bash
+# Choose scenarios/actions, sizes and repetition count.
+BENCH_SCENARIOS=regular,decimals,invalid BENCH_REPEATS=3 node bench/file-import.mjs .
+BENCH_SCENARIOS=decimals BENCH_ACTIONS=minify BENCH_DECIMAL_MIB=4 node bench/file-import.mjs .
+# Optional deep case: 10,000 nested arrays, padded past the large-input threshold.
+# Formatting produces about 191 MiB of output; run it separately.
+BENCH_SCENARIOS=deep BENCH_DEEP_DEPTH=10000 BENCH_REPEATS=1 node bench/file-import.mjs .
+# Use the same script against an older checkout; report old behavior without failing checks.
+BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
+```
+
+`BENCH_FILE_MIB` changes the ordinary/invalid file size (default `50`). `BENCH_VERIFY=0` still records correctness failures. Optional `BENCH_MAX_MS` and `BENCH_MAX_LONG_TASK_MS` enforce budgets against the median total time and median longest task respectively; both are disabled by default because hardware and browser versions vary. Run baseline and updated checkouts sequentially with identical settings.
+
+Large inputs and outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
 
 For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
 

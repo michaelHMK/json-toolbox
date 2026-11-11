@@ -96,6 +96,50 @@ try {
     assert.equal(await page.locator('.entry').count(), 0);
     assert.equal(await page.locator('.tline').count(), 0);
   }
+  if (verify) {
+    await page.goto(base + '/formatter.html');
+    await page.locator('#file-input').setInputFiles({
+      name: 'picked.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('\uFEFF{"picked":true}'),
+    });
+    await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('"picked": true'));
+    assert.equal(await page.locator('#input').inputValue(), '{"picked":true}');
+    assert.match(await page.locator('#file-name').textContent(), /^picked\.json/);
+    await page.locator('#input').fill('{"edited":true}');
+    assert.equal(await page.locator('#file-name').isHidden(), true);
+
+    await page.evaluate(() => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(['{ "dropped": [1, true] }'], 'drop.json', { type: 'application/json' }));
+      const pane = document.querySelector('#input-pane');
+      for (const type of ['dragenter', 'dragover', 'drop']) {
+        pane.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      }
+    });
+    await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('"dropped": ['));
+    assert.equal(await page.locator('#input').inputValue(), '{ "dropped": [1, true] }');
+    assert.match(await page.locator('#file-name').textContent(), /^drop\.json/);
+    assert.equal(await page.locator('#file-drop-hint').isHidden(), true);
+
+    const beforeInvalid = await page.locator('#input').inputValue();
+    await page.locator('#file-input').setInputFiles({
+      name: 'invalid.txt', mimeType: 'text/plain', buffer: Buffer.from('{}'),
+    });
+    await page.waitForFunction(() => document.querySelector('#error').textContent === 'errFileType');
+    assert.equal(await page.locator('#input').inputValue(), beforeInvalid);
+    assert.match(await page.locator('#file-name').textContent(), /^drop\.json/);
+
+    await page.goto(base + '/minify.html');
+    await page.locator('#file-input').setInputFiles({
+      name: 'minify.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{ "a": 1, "b": [true, null] }'),
+    });
+    await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('{"a":1,"b":[true,null]}'));
+    assert.equal(await page.locator('#input').inputValue(), '{ "a": 1, "b": [true, null] }');
+    assert.match(await page.locator('#file-name').textContent(), /^minify\.json/);
+  }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.version(), root: pathToFileURL(root).href, verify, results: rows }, null, 2));
 } finally {

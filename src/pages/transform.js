@@ -2,6 +2,8 @@ import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createFeedback } from '../shared/feedback.js';
+import { createFileImport } from '../shared/file-import.js';
+import { createTextInput } from '../shared/text-input.js';
 import { copyText } from '../shared/clipboard.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
@@ -14,6 +16,7 @@ const statusEl = document.getElementById('status');
 const busyEl = document.getElementById('busy');
 const errorEl = document.getElementById('error');
 const action = document.body.dataset.action;
+const textInput = createTextInput(inputEl, action === 'minify' ? document.getElementById('input-view') : null);
 
 let outputText = '';
 let dataVersion = 0;
@@ -24,11 +27,28 @@ const runTask = createTaskRunner({
 });
 
 const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, inputEl,
+  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
 });
 
+let fileImport = { reset() {} };
+if (action === 'minify') {
+  fileImport = createFileImport({
+    dropZone: document.getElementById('input-pane'),
+    fileInput: document.getElementById('file-input'),
+    triggerEl: document.getElementById('btn-import'),
+    fileNameEl: document.getElementById('file-name'),
+    dropHint: document.getElementById('file-drop-hint'),
+    onImport: ({ text }) => {
+      resetDocument();
+      textInput.setText(text);
+      void runTransform();
+    },
+    onError: showError,
+  });
+}
+
 async function runTransform() {
-  const text = inputEl.value;
+  const text = textInput.getText();
   if (action === 'minify' ? !text.trim() : !text) {
     showError(t(action === 'minify' ? 'errNeedInput' : 'errNeedContent'));
     return;
@@ -54,7 +74,7 @@ async function runTransform() {
 }
 
 async function doCopy() {
-  const text = outputText || inputEl.value;
+  const text = outputText || textInput.getText();
   if (!text) {
     showError(t('errNothingToCopy'));
     return;
@@ -64,18 +84,24 @@ async function doCopy() {
   setStatus(t('statusCopied', [text.length.toLocaleString()]));
 }
 
-function doClear() {
+function resetDocument() {
   dataVersion++;
   runTask('clear', {}, { discardQueued: true });
-  inputEl.value = '';
+  textInput.clear();
   outputText = '';
   outputView.clear();
   hideError();
   setStatus('');
-  inputEl.focus();
+  textInput.focus();
+}
+
+function doClear() {
+  fileImport.reset();
+  resetDocument();
 }
 
 function fillSample() {
+  fileImport.reset();
   const appName = t('appName');
   const sample = JSON.stringify({
     name: appName === 'appName' ? 'JSON 工具箱' : appName,
@@ -83,7 +109,7 @@ function fillSample() {
     tags: ['local', 'fast'],
     nested: { id: 1, value: null },
   }, null, 2);
-  inputEl.value = action === 'unescape' ? JSON.stringify(sample).slice(1, -1) : sample;
+  textInput.setText(action === 'unescape' ? JSON.stringify(sample).slice(1, -1) : sample);
   hideError();
   runTransform();
 }
@@ -99,3 +125,12 @@ inputEl.addEventListener('keydown', (e) => {
     runTransform();
   }
 });
+if (action === 'minify') {
+  inputEl.addEventListener('input', () => fileImport.reset());
+  document.getElementById('input-view').addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runTransform();
+    }
+  });
+}

@@ -25,11 +25,22 @@
       <div id="error" class="notice" hidden></div>
 
       <main class="workspace">
-        <section class="pane">
-          <div class="pane-title"><span data-i18n="paneInput">输入</span></div>
+        <section id="input-pane" class="pane input-pane">
+          <div class="pane-title">
+            <div class="pane-label">
+              <span data-i18n="paneInput">输入</span>
+              <span id="file-name" class="file-name" aria-live="polite" hidden></span>
+            </div>
+            <button id="btn-import" type="button" class="button-compact"
+              data-i18n="btnImportFile" data-i18n-title="btnImportFileTitle"
+              title="选择本地 .json 文件，也可以将文件拖到输入区">导入文件</button>
+            <input id="file-input" type="file" accept=".json" hidden>
+          </div>
           <textarea id="input" spellcheck="false" wrap="off"
             data-i18n-placeholder="inputMinifyPlaceholder"
-            placeholder="在此粘贴需要压缩的 JSON…"></textarea>
+            placeholder="在此粘贴需要压缩的 JSON 或拖入 .json 文件…（Cmd/Ctrl + Enter 压缩）"></textarea>
+          <pre id="input-view" data-i18n-title="largeInputTitle" title="大文件只读预览" hidden></pre>
+          <div id="file-drop-hint" class="file-drop-hint" data-i18n="fileDropHint" hidden>释放以导入 JSON 文件</div>
         </section>
         <section class="pane">
           <div class="pane-title">

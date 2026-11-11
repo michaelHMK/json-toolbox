@@ -39,6 +39,9 @@ export class Element {
   }
   set textContent(value) { this.children = []; this._textContent = String(value); }
   get textContent() { return this._textContent + this.children.map((child) => child.textContent).join(''); }
+  get firstChild() {
+    return this.children[0] || (this._textContent ? { nodeType: 3, parentElement: this, textContent: this._textContent } : null);
+  }
   append(...children) { for (const child of children) this.appendChild(child); }
   contains(element) { return element === this || this.children.some((child) => child.contains(element)); }
   getContext() { return { font: '13px monospace', measureText: (text) => ({ width: text.length * 8 }) }; }
@@ -64,7 +67,8 @@ export class Element {
   getAttribute(name) { return this.attributes[name] ?? null; }
   removeAttribute(name) { delete this.attributes[name]; }
   click() { return this.events.click?.({ target: this }); }
-  focus() {}
+  focus() { this.focused = true; }
+  setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
   scrollIntoView() {}
   remove() {
     const parent = this.parentElement;
@@ -87,11 +91,17 @@ export function loadPage(name, {
   runTask = async () => ({ ok: true, result: {} }),
   expose,
   bodyDataset = {},
+  createFileImport = () => ({ reset() {} }),
 }) {
   const elements = new Map();
   const get = (id) => {
     if (!elements.has(id)) elements.set(id, new Element());
     return elements.get(id);
+  };
+  const selection = {
+    ranges: [],
+    removeAllRanges() { this.ranges = []; },
+    addRange(range) { this.ranges.push(range); },
   };
   const context = vm.createContext({
     document: {
@@ -99,15 +109,15 @@ export function loadPage(name, {
       getElementById: get,
       createElement: (tag) => new Element(tag),
       createDocumentFragment: () => new Element('#fragment'),
+      getSelection: () => selection,
+      createRange: () => ({
+        setStart(node, offset) { this.startContainer = node; this.startOffset = offset; },
+        setEnd(node, offset) { this.endContainer = node; this.endOffset = offset; },
+      }),
     },
     initializePage: () => {},
     createTaskRunner: () => runTask,
-    createFeedback: () => ({
-      setStatus(text) { get('status').textContent = text; },
-      showError(text) { get('error').textContent = text; get('error').hidden = false; },
-      hideError() { get('error').textContent = ''; get('error').hidden = true; },
-      showParseError(text, response) { get('error').textContent = response.error; get('error').hidden = false; },
-    }),
+    createFileImport,
     t: (key) => key,
     appendJsonPath,
     PATH_SEP,
@@ -129,8 +139,14 @@ export function loadPage(name, {
   const virtualTextSource = readFileSync(new URL('../../src/shared/virtual-text.js', import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(virtualTextSource, context);
+  const textInputSource = readFileSync(new URL('../../src/shared/text-input.js', import.meta.url), 'utf8')
+    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+  vm.runInContext(textInputSource, context);
+  const feedbackSource = readFileSync(new URL('../../src/shared/feedback.js', import.meta.url), 'utf8')
+    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+  vm.runInContext(feedbackSource, context);
   const source = readFileSync(new URL(`../../src/pages/${name}.js`, import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '');
   vm.runInContext(source + `\nglobalThis.page = ${expose};`, context);
-  return { ...context.page, get };
+  return { ...context.page, get, selection };
 }

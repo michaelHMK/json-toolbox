@@ -2,6 +2,8 @@ import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createFeedback } from '../shared/feedback.js';
+import { createFileImport } from '../shared/file-import.js';
+import { createTextInput } from '../shared/text-input.js';
 import { copyText } from '../shared/clipboard.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
@@ -12,6 +14,7 @@ initializePage();
 const $ = (id) => document.getElementById(id);
 
 const inputEl = $('input');
+const textInput = createTextInput(inputEl, $('input-view'));
 const outputTextEl = $('output-text');
 const outputView = createVirtualTextView(outputTextEl);
 const treeEl = $('tree');
@@ -54,7 +57,25 @@ const runTask = createTaskRunner({
 
 /* ================= 状态展示 ================= */
 const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, inputEl,
+  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
+});
+
+const fileImport = createFileImport({
+  dropZone: $('input-pane'),
+  fileInput: $('file-input'),
+  triggerEl: $('btn-import'),
+  fileNameEl: $('file-name'),
+  dropHint: $('file-drop-hint'),
+  onImport: ({ text }) => {
+    resetDocument();
+    textInput.setText(text);
+    if (textInput.isLarge()) {
+      state.view = 'text';
+      updateViewButtons();
+    }
+    void doFormat();
+  },
+  onError: showError,
 });
 
 /* ================= 视图切换 ================= */
@@ -75,7 +96,7 @@ function showText(text) {
 }
 
 function currentText() {
-  return state.outputText || inputEl.value;
+  return state.outputText || textInput.getText();
 }
 
 // 树视图需要解析后的数据；若源文本没变则复用
@@ -118,15 +139,17 @@ async function setView(view) {
 
 /* ================= 操作 ================= */
 async function doFormat() {
-  const text = inputEl.value;
+  const text = textInput.getText();
   if (!text.trim()) {
     showError(t('errNeedInput'));
     return;
   }
   hideError();
   const version = ++dataVersion;
+  const retainDocument = state.view === 'tree' || !textInput.isLarge();
   const res = await runTask('format', {
-    text, indent: indentSel.value, includeData: state.view === 'tree', retainSnapshot: true,
+    text, indent: indentSel.value, includeData: state.view === 'tree',
+    retainSnapshot: retainDocument, retainSearch: retainDocument,
   }, { key: 'format' });
   if (res.cancelled || version !== dataVersion) return;
   if (!res.ok) {
@@ -154,7 +177,7 @@ async function doFormat() {
 }
 
 async function doCopy() {
-  const text = state.outputText || inputEl.value;
+  const text = state.outputText || textInput.getText();
   if (!text) {
     showError(t('errNothingToCopy'));
     return;
@@ -164,14 +187,14 @@ async function doCopy() {
   setStatus(t('statusCopied', [text.length.toLocaleString()]));
 }
 
-function doClear() {
+function resetDocument() {
   dataVersion++;
   clearTimeout(searchTimer);
   searchTimer = 0;
   void runTask('clear', {}, { discardQueued: true });
   treeView?.destroy();
   treeView = null;
-  inputEl.value = '';
+  textInput.clear();
   state.outputText = '';
   state.data = undefined;
   state.numberLiterals = null;
@@ -193,18 +216,24 @@ function doClear() {
   hideError();
   setStatus('');
   updateMatchInfo();
-  inputEl.focus();
+  textInput.focus();
+}
+
+function doClear() {
+  fileImport.reset();
+  resetDocument();
 }
 
 function fillSample() {
+  fileImport.reset();
   const appName = t('appName');
-  inputEl.value = JSON.stringify({
+  textInput.setText(JSON.stringify({
     name: appName === 'appName' ? 'JSON 工具箱' : appName,
     free: true,
     features: ['格式化', '压缩', '转义互转', '树形视图', '搜索', 'JSON 对比'],
     limits: { ads: 0, tracking: null },
     nested: Array.from({ length: 3 }, (_, i) => ({ id: i + 1, done: i % 2 === 0 })),
-  }, null, 2);
+  }, null, 2));
   hideError();
   doFormat();
 }
@@ -335,6 +364,14 @@ inputEl.addEventListener('keydown', (e) => {
   }
 });
 
+$('input-view').addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    doFormat();
+  }
+});
+
+inputEl.addEventListener('input', () => fileImport.reset());
 inputEl.addEventListener('paste', () => {
   if (autoFormatChk.checked) setTimeout(doFormat, 0);
 });
