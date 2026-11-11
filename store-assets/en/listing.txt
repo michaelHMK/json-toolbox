@@ -1,0 +1,36 @@
+Name
+JSON Toolbox
+
+Short description
+High-performance JSON Toolbox: format, minify, escape and compare locally. No ads, tracking or data collection.
+
+Detailed description
+JSON Toolbox lets you format, browse and compare JSON in a dedicated browser tab. It works fully offline, with no account or extra permissions required.
+
+Format and browse
+- Beautify JSON with 2-space, 4-space or Tab indentation.
+- See syntax errors, with line/column details and navigation when the browser provides them.
+- Explore a collapsible tree with virtual scrolling, expansion by level, key/value search and match navigation.
+- Copy the complete result with one click.
+
+Import local files
+- On the Formatter and Minify pages, choose a file or drag it into the input pane.
+- Import one UTF-8 .json file at a time, up to 50 MiB. Formatting or minification starts automatically after import.
+- Inputs longer than about two million characters use a read-only virtual preview. The complete content is still used for processing and copying results.
+
+Minify, escape and unescape
+- Switch between dedicated tools using the sidebar.
+- Remove unnecessary whitespace to produce single-line JSON. Invalid JSON is reported, with error locations when available.
+- Escape text for a JSON string or restore escaped string content to its original text, then copy the result.
+
+Compare JSON
+- See structural differences by path: additions, removals, value changes and type changes.
+- Compare arrays by index or match items by a key field such as id.
+- Ignore selected paths, such as timestamp fields.
+- Browse the full tree with highlighted differences or show only differences, with navigation between them.
+- Switch to a line-by-line text comparison of formatted JSON.
+
+Privacy
+All processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. Results are written to the system clipboard only when you copy.
+
+Large inputs and results remain in memory; performance depends on your device and data structure. Virtual views render only part of the content at a time, so native browser Find covers only the rendered portion. Use tree search or copy the complete result when needed. Large text differences may be shown as whole blocks.

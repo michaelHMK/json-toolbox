@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280" lang="zh-CN">
   <defs>
     <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#253bba"/><stop offset="1" stop-color="#48259b"/></linearGradient>
-    <linearGradient id="card" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#e9edff"/></linearGradient>
+    <linearGradient id="card" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e9edff"/></linearGradient>
   </defs>
   <rect width="440" height="280" fill="url(#bg)"/>
   <circle cx="408" cy="8" r="126" fill="#7f85f7" opacity=".15"/>
   <circle cx="10" cy="279" r="120" fill="#818cf8" opacity=".12"/>
-  <rect x="29" y="34" width="112" height="112" rx="25" fill="#ffffff" opacity=".12"/>
+  <rect x="29" y="34" width="112" height="112" rx="25" fill="#fff" opacity=".12"/>
   <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M65 60h-6q-7 0-7 8v11q0 11-9 11 9 0 9 11v11q0 8 7 8h6"/>
     <path d="M105 60h6q7 0 7 8v11q0 11 9 11-9 0-9 11v11q0 8-7 8h-6"/>
@@ -23,7 +23,7 @@
     <rect x="126" y="62" width="92" height="22" rx="5" fill="#d5f5e6"/>
     <path d="M136 73h10m-5-5v10m15-5h46" stroke="#23966b" stroke-width="4" stroke-linecap="round"/>
   </g>
-  <text x="29" y="208" fill="#fff" font-family="Noto Sans CJK SC, sans-serif" font-size="32" font-weight="700">JSON 工具箱</text>
-  <text x="29" y="239" fill="#dddfff" font-family="Noto Sans CJK SC, sans-serif" font-size="18">格式化 · 搜索 · 对比</text>
-  <text x="29" y="264" fill="#d1d8fb" font-family="Noto Sans CJK SC, sans-serif" font-size="14">高性能 · 重隐私 · 纯本地</text>
+  <text x="30" y="208" fill="#fff" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="32" font-weight="700" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">JSON 工具箱</text>
+  <text x="30" y="239" fill="#dddfff" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="18" font-weight="400" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">导入 · 格式化 · 对比</text>
+  <text x="30" y="264" fill="#d1d8fb" font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">重视隐私 · 本地处理</text>
 </svg>

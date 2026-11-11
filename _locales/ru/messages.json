@@ -1,0 +1,479 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "Быстрые инструменты JSON: форматирование, сжатие, экранирование и сравнение локально. Без рекламы, слежки и сбора данных."
+  },
+  "actionTitle": {
+    "message": "Открыть JSON Toolbox"
+  },
+  "titleFormatter": {
+    "message": "Форматирование JSON - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "Сжатие JSON - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "Экранирование JSON - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "Снятие экранирования JSON - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "Сравнение JSON - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "ИНСТРУМЕНТЫ"
+  },
+  "navFormat": {
+    "message": "Форматирование JSON"
+  },
+  "navMinify": {
+    "message": "Сжатие JSON"
+  },
+  "navEscape": {
+    "message": "Экранирование JSON"
+  },
+  "navUnescape": {
+    "message": "Снятие экранирования JSON"
+  },
+  "navCompare": {
+    "message": "Сравнение JSON"
+  },
+  "localOnly": {
+    "message": "Все данные остаются на вашем устройстве"
+  },
+  "descFormat": {
+    "message": "Форматирование JSON с просмотром дерева, раскрытием уровней и поиском."
+  },
+  "descMinify": {
+    "message": "Удаление лишних пробельных символов и сжатие JSON в одну строку."
+  },
+  "descEscape": {
+    "message": "Преобразование JSON или любого текста для вставки в строку JSON."
+  },
+  "descUnescape": {
+    "message": "Восстановление исходного текста из экранированной строки."
+  },
+  "descCompare": {
+    "message": "Просмотр добавлений, удалений и изменений между двумя документами JSON."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "Вставьте JSON для сжатия или перетащите сюда файл .json… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "Вставьте текст для экранирования… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "Вставьте экранированную строку… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "Обработка…"
+  },
+  "btnFormat": {
+    "message": "Форматировать"
+  },
+  "btnFormatTitle": {
+    "message": "Сочетание клавиш: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "Сжать"
+  },
+  "btnMinifyTitle": {
+    "message": "Удалить пробельные символы и сжать в одну строку"
+  },
+  "btnEscape": {
+    "message": "Экранировать"
+  },
+  "btnEscapeTitle": {
+    "message": "Преобразовать текст JSON в экранированную строку"
+  },
+  "btnUnescape": {
+    "message": "Снять экранирование"
+  },
+  "btnUnescapeTitle": {
+    "message": "Восстановить текст JSON из экранированной строки"
+  },
+  "labelIndent": {
+    "message": "Отступ"
+  },
+  "optSpaces2": {
+    "message": "2 пробела"
+  },
+  "optSpaces4": {
+    "message": "4 пробела"
+  },
+  "labelAutoFormat": {
+    "message": "Форматировать при вставке"
+  },
+  "labelAutoFormatTitle": {
+    "message": "Форматировать сразу после вставки"
+  },
+  "viewRaw": {
+    "message": "Текст"
+  },
+  "viewTree": {
+    "message": "Дерево"
+  },
+  "levelTitle": {
+    "message": "Раскрыть дерево до выбранного уровня"
+  },
+  "levelPlaceholder": {
+    "message": "Раскрыть…"
+  },
+  "level1": {
+    "message": "Уровень 1"
+  },
+  "level2": {
+    "message": "Уровень 2"
+  },
+  "level3": {
+    "message": "Уровень 3"
+  },
+  "level4": {
+    "message": "Уровень 4"
+  },
+  "level5": {
+    "message": "Уровень 5"
+  },
+  "level8": {
+    "message": "Уровень 8"
+  },
+  "levelAll": {
+    "message": "Все"
+  },
+  "searchPlaceholder": {
+    "message": "Поиск ключа или значения…"
+  },
+  "matchPrevTitle": {
+    "message": "Назад (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "Вперёд (Enter)"
+  },
+  "btnSample": {
+    "message": "Пример"
+  },
+  "btnCopy": {
+    "message": "Копировать результат"
+  },
+  "btnClear": {
+    "message": "Очистить"
+  },
+  "linkCompare": {
+    "message": "Сравнение JSON →"
+  },
+  "linkCompareTitle": {
+    "message": "Открыть страницу сравнения JSON"
+  },
+  "paneInput": {
+    "message": "Ввод"
+  },
+  "paneResult": {
+    "message": "Результат"
+  },
+  "inputPlaceholder": {
+    "message": "Вставьте JSON или перетащите сюда файл .json… (Cmd/Ctrl + Enter для форматирования)"
+  },
+  "largeInputTitle": {
+    "message": "Предпросмотр большого файла без редактирования"
+  },
+  "btnImportFile": {
+    "message": "Импорт файла"
+  },
+  "btnImportFileTitle": {
+    "message": "Выберите локальный файл .json или перетащите его в область ввода"
+  },
+  "fileReading": {
+    "message": "Чтение…"
+  },
+  "fileDropHint": {
+    "message": "Отпустите, чтобы импортировать файл JSON"
+  },
+  "errFileMultiple": {
+    "message": "Можно импортировать только один файл JSON за раз"
+  },
+  "errFileType": {
+    "message": "Поддерживаются только файлы .json"
+  },
+  "errFileTooLarge": {
+    "message": "Размер файла не должен превышать $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "Файл пуст или содержит только пробельные символы"
+  },
+  "errFileEncoding": {
+    "message": "Файл должен содержать корректный текст в кодировке UTF-8"
+  },
+  "errFileRead": {
+    "message": "Не удалось прочитать «$name$»: $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "Сначала введите JSON"
+  },
+  "errNeedContent": {
+    "message": "Сначала введите содержимое"
+  },
+  "errNothingToParse": {
+    "message": "Нет данных для разбора — сначала введите JSON"
+  },
+  "errNothingToCopy": {
+    "message": "Нет данных для копирования"
+  },
+  "errParseFailed": {
+    "message": "Ошибка разбора: "
+  },
+  "errLineCol": {
+    "message": "Строка $line$, столбец $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "Ошибка снятия экранирования: "
+  },
+  "errSearchFailed": {
+    "message": "Ошибка поиска: "
+  },
+  "statusFormatted": {
+    "message": "Отформатировано · символов: $count$ · $time$ мс",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "Сжато · символов: $count$ · $time$ мс",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "Экранировано · символов: $count$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "Экранирование снято · символов: $count$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "Скопировано символов в буфер обмена: $count$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " элементов: $count$ ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " ключей: $count$ ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (всего символов: $count$, показана часть)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "Все уровни раскрыты"
+  },
+  "expandedLevel": {
+    "message": "Раскрыто до уровня $level$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "Нет совпадений"
+  },
+  "btnCompare": {
+    "message": "Сравнить"
+  },
+  "btnCompareTitle": {
+    "message": "Сочетание клавиш: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ Поменять местами"
+  },
+  "btnSwapTitle": {
+    "message": "Поменять местами левую и правую стороны"
+  },
+  "labelArrayMode": {
+    "message": "Массивы"
+  },
+  "optArrayIndex": {
+    "message": "По индексу"
+  },
+  "optArrayKey": {
+    "message": "По ключу"
+  },
+  "labelKeyField": {
+    "message": "Ключ"
+  },
+  "keyFieldPlaceholder": {
+    "message": "например, id"
+  },
+  "labelIgnorePaths": {
+    "message": "Игнорировать пути"
+  },
+  "ignorePathsTitle": {
+    "message": "Точные пути через запятую; * соответствует одному сегменту"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "например, list[*].updatedAt, через запятую"
+  },
+  "viewStruct": {
+    "message": "Структура"
+  },
+  "viewTextDiff": {
+    "message": "Текст"
+  },
+  "viewTextDiffTitle": {
+    "message": "Построчное сравнение после форматирования; игнорируемые пути и способ сравнения массивов не учитываются"
+  },
+  "onlyDiffLabel": {
+    "message": "Только различия"
+  },
+  "onlyDiffTitle": {
+    "message": "Скрыть ветви без различий"
+  },
+  "diffPrevTitle": {
+    "message": "Предыдущее различие"
+  },
+  "diffNextTitle": {
+    "message": "Следующее различие"
+  },
+  "linkFormatter": {
+    "message": "← К форматированию"
+  },
+  "paneOld": {
+    "message": "Старая версия (слева)"
+  },
+  "paneNew": {
+    "message": "Новая версия (справа)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "Вставьте старую версию JSON…"
+  },
+  "inputRightPlaceholder": {
+    "message": "Вставьте новую версию JSON… (Cmd/Ctrl + Enter для сравнения)"
+  },
+  "paneCompareResult": {
+    "message": "Результат"
+  },
+  "colOld": {
+    "message": "Старая версия"
+  },
+  "colNew": {
+    "message": "Новая версия"
+  },
+  "errNeedBothSides": {
+    "message": "Введите JSON с обеих сторон"
+  },
+  "errCompareFailed": {
+    "message": "Ошибка сравнения: "
+  },
+  "errTextDiffFailed": {
+    "message": "Ошибка текстового сравнения: "
+  },
+  "diffStats": {
+    "message": "Различий: $total$: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (подробности только для первых $count$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; у некоторых элементов массива нет ключевого поля — они сравнены по индексу"
+  },
+  "diffIdenticalNote": {
+    "message": " — содержимое совпадает"
+  },
+  "textDiffBlockyNote": {
+    "message": "Область различий слишком велика — показана целыми блоками (сравнение структуры не затронуто)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ одинаковых строк: $count$ ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  }
+}

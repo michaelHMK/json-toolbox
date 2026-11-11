@@ -1,0 +1,36 @@
+Name
+JSON Toolbox
+
+Kurzbeschreibung
+JSON lokal formatieren, minifizieren, maskieren und vergleichen. Schnell, ohne Werbung, Tracking oder Datenerfassung.
+
+Ausführliche Beschreibung
+Mit JSON Toolbox können Sie JSON in einem eigenen Browser-Tab formatieren, durchsuchen und vergleichen. Die Erweiterung funktioniert vollständig offline, ohne Konto oder zusätzliche Berechtigungen.
+
+Formatieren und durchsuchen
+- Formatieren Sie JSON mit 2 Leerzeichen, 4 Leerzeichen oder Tabulatoren als Einzug.
+- Sehen Sie Syntaxfehler mit Zeilen- und Spaltenangabe sowie Navigation zur Fehlerstelle, sofern der Browser diese Angaben liefert.
+- Nutzen Sie eine einklappbare Baumansicht mit virtuellem Scrollen, Aufklappen nach Ebene, Suche nach Schlüsseln oder Werten und Navigation zwischen Treffern.
+- Kopieren Sie das vollständige Ergebnis mit einem Klick.
+
+Lokale Dateien importieren
+- Wählen Sie auf der Formatierungs- oder Minifizierungsseite eine Datei aus oder ziehen Sie sie in den Eingabebereich.
+- Importieren Sie jeweils eine UTF-8-kodierte .json-Datei bis 50 MiB. Die Formatierung oder Minifizierung startet nach dem Import automatisch.
+- Eingaben mit mehr als etwa zwei Millionen Zeichen erscheinen in einer schreibgeschützten virtuellen Vorschau. Verarbeitung und Kopieren der Ergebnisse nutzen weiterhin den vollständigen Inhalt.
+
+Minifizieren, maskieren und demaskieren
+- Wechseln Sie über die Seitenleiste zwischen den Werkzeugen.
+- Entfernen Sie überflüssige Leerzeichen, um JSON auf eine Zeile zu reduzieren. Ungültiges JSON wird gemeldet, bei verfügbaren Angaben auch mit Fehlerposition.
+- Maskieren Sie Text für eine JSON-Zeichenfolge oder stellen Sie den ursprünglichen Text einer maskierten Zeichenfolge wieder her und kopieren Sie das Ergebnis.
+
+JSON vergleichen
+- Sehen Sie Strukturunterschiede nach Pfad: Ergänzungen, Entfernungen, Wert- und Typänderungen.
+- Vergleichen Sie Arrays nach Index oder ordnen Sie Einträge über ein Schlüsselfeld wie id zu.
+- Ignorieren Sie ausgewählte Pfade, beispielsweise Zeitstempelfelder.
+- Zeigen Sie den vollständigen Baum mit markierten Unterschieden oder nur Unterschiede an und navigieren Sie zwischen ihnen.
+- Wechseln Sie zum zeilenweisen Textvergleich des formatierten JSON.
+
+Datenschutz
+Die gesamte Verarbeitung erfolgt lokal im Browser. Keine Datenerfassung oder Uploads, Netzwerkanfragen, extern nachgeladener Code, Werbung oder Tracking. Eingaben werden nicht als Verlauf gespeichert. Ergebnisse gelangen nur beim Kopieren in die Zwischenablage.
+
+Vollständige Eingaben und Ergebnisse bleiben im Arbeitsspeicher; die Leistung hängt vom Gerät und der Datenstruktur ab. Virtuelle Ansichten rendern jeweils nur einen Teil des Inhalts. Die Browsersuche erfasst deshalb nur diesen Teil. Nutzen Sie bei Bedarf die Baumsuche oder kopieren Sie das vollständige Ergebnis. Große Textunterschiede können als ganze Blöcke dargestellt werden.

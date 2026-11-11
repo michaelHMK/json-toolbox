@@ -1,0 +1,36 @@
+Nome
+JSON Toolbox
+
+Descrição curta
+JSON Toolbox de alto desempenho: formate, minifique, escape e compare localmente. Sem anúncios, rastreio ou recolha de dados.
+
+Descrição detalhada
+O JSON Toolbox permite formatar, explorar e comparar JSON num separador dedicado do navegador. Funciona totalmente offline, sem conta nem permissões adicionais.
+
+Formatar e explorar
+- Formate JSON com recuo de 2 espaços, 4 espaços ou tabulações.
+- Veja erros de sintaxe, com linha, coluna e navegação até à posição quando o navegador fornece essas informações.
+- Explore uma árvore recolhível com deslocamento virtual, expansão por nível, pesquisa por chave ou valor e navegação entre correspondências.
+- Copie o resultado completo com um clique.
+
+Importar ficheiros locais
+- Nas páginas de formatação e minificação, escolha um ficheiro ou arraste-o para a área de entrada.
+- Importe um ficheiro .json em UTF-8 de cada vez, até 50 MiB. A formatação ou a minificação começa automaticamente após a importação.
+- Entradas com mais de cerca de dois milhões de carateres usam uma pré-visualização virtual só de leitura. O processamento e a cópia do resultado continuam a usar o conteúdo completo.
+
+Minificar, escapar e remover escapes
+- Alterne entre as ferramentas pela barra lateral.
+- Remova espaços em branco desnecessários para colocar o JSON numa única linha. O JSON inválido gera uma mensagem de erro, com a localização quando disponível.
+- Escape texto para o inserir numa string JSON ou restaure o texto original de uma string com escapes e copie o resultado.
+
+Comparar JSON
+- Veja diferenças estruturais por caminho: adições, remoções, alterações de valor e de tipo.
+- Compare arrays por índice ou associe itens por um campo-chave, como id.
+- Ignore caminhos específicos, como campos de data e hora.
+- Explore a árvore completa com diferenças destacadas ou mostre só as diferenças e navegue entre elas.
+- Alterne para a comparação de texto linha a linha do JSON formatado.
+
+Privacidade
+Todo o processamento ocorre no navegador. Sem recolha ou envio de dados, pedidos de rede, código remoto, anúncios ou rastreio. O histórico de entradas não é guardado. O resultado só é escrito na área de transferência do sistema quando o copia.
+
+As entradas e os resultados completos permanecem na memória; o desempenho depende do dispositivo e da estrutura dos dados. As vistas virtuais apresentam apenas parte do conteúdo de cada vez, pelo que a pesquisa nativa do navegador abrange apenas a parte apresentada. Use a pesquisa na árvore ou copie o resultado completo quando necessário. Diferenças de texto grandes podem ser apresentadas em blocos inteiros.

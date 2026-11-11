@@ -1,0 +1,36 @@
+Nombre
+JSON Toolbox
+
+Descripción breve
+Herramientas JSON rápidas: formatea, minifica, escapa y compara en tu dispositivo. Sin anuncios, rastreo ni recopilación de datos.
+
+Descripción detallada
+JSON Toolbox permite formatear, explorar y comparar JSON en una pestaña del navegador. Funciona completamente sin conexión, sin cuenta ni permisos adicionales.
+
+Formatear y explorar
+- Formatea JSON con sangría de 2 espacios, 4 espacios o tabulaciones.
+- Consulta errores de sintaxis, con línea, columna y navegación a la posición cuando el navegador proporciona esos datos.
+- Explora un árbol plegable con desplazamiento virtual, expansión por nivel, búsqueda de claves o valores y navegación entre coincidencias.
+- Copia el resultado completo con un clic.
+
+Importar archivos locales
+- En las páginas de formato y minificación, selecciona un archivo o arrástralo al panel de entrada.
+- Importa un archivo .json en UTF-8 cada vez, de hasta 50 MiB. El formato o la minificación se ejecuta automáticamente tras la importación.
+- Las entradas de más de unos dos millones de caracteres se muestran en una vista previa virtual de solo lectura. El procesamiento y la copia del resultado siguen utilizando el contenido completo.
+
+Minificar, escapar y quitar escapes
+- Cambia entre las herramientas desde la barra lateral.
+- Elimina los espacios en blanco innecesarios para obtener JSON en una sola línea. Se notifican los errores de JSON, con su ubicación cuando está disponible.
+- Escapa texto para incluirlo en una cadena JSON o restaura el texto original de una cadena con escapes y copia el resultado.
+
+Comparar JSON
+- Consulta diferencias estructurales por ruta: adiciones, eliminaciones, cambios de valor y cambios de tipo.
+- Compara matrices por índice o empareja elementos mediante un campo clave, como id.
+- Ignora rutas concretas, como campos de fecha y hora.
+- Explora el árbol completo con diferencias resaltadas o muestra solo las diferencias y navega entre ellas.
+- Cambia a la comparación de texto línea por línea del JSON formateado.
+
+Privacidad
+Todo el procesamiento se realiza en el navegador. Sin recopilación ni subida de datos, solicitudes de red, código remoto, anuncios o rastreo. No se guarda un historial de entradas. El resultado se escribe en el portapapeles del sistema únicamente cuando lo copias.
+
+Las entradas y los resultados completos permanecen en memoria; el rendimiento depende del dispositivo y de la estructura de los datos. Las vistas virtuales solo muestran parte del contenido a la vez, por lo que la búsqueda nativa del navegador solo abarca la parte representada. Usa la búsqueda del árbol o copia el resultado completo cuando lo necesites. Las diferencias de texto grandes pueden mostrarse como bloques completos.
