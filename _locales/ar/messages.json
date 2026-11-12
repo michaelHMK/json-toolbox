@@ -50,6 +50,9 @@
   "themeLabel": {
     "message": "المظهر"
   },
+  "themeSaved": {
+    "message": "محفوظ محليًا"
+  },
   "themeNormal": {
     "message": "عادي"
   },
@@ -58,6 +61,9 @@
   },
   "themeDark": {
     "message": "داكن"
+  },
+  "themeSync": {
+    "message": "يتم تطبيق التفضيل على جميع الأدوات"
   },
   "descFormat": {
     "message": "تنسيق JSON مع استعراض شجري وتوسيع المستويات والبحث."

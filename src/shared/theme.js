@@ -14,8 +14,15 @@
   function applyTheme(value) {
     const theme = themes.has(value) ? value : 'normal';
     document.documentElement.dataset.theme = theme;
+    const selected = document.querySelector(`#theme-switch [data-theme-option="${theme}"]`);
     for (const button of document.querySelectorAll('#theme-switch [data-theme-option]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.themeOption === theme));
+      button.setAttribute('aria-pressed', String(button === selected));
+    }
+    const current = document.querySelector('#theme-current');
+    const label = selected?.querySelector('.theme-option-name');
+    if (current && label) {
+      current.dataset.i18n = selected.dataset.themeLabel;
+      current.textContent = label.textContent;
     }
     return theme;
   }
@@ -25,7 +32,18 @@
   // Page modules render the shared navigation before DOMContentLoaded.
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme(document.documentElement.dataset.theme);
-    for (const button of document.querySelectorAll('#theme-switch [data-theme-option]')) {
+    const trigger = document.querySelector('#theme-trigger');
+    const menu = document.querySelector('#theme-switch');
+    if (!trigger || !menu) return;
+    const options = [...document.querySelectorAll('#theme-switch [data-theme-option]')];
+    const setOpen = (open, restoreFocus = false) => {
+      menu.hidden = !open;
+      trigger.setAttribute('aria-expanded', String(open));
+      if (open) (options.find(button => button.getAttribute('aria-pressed') === 'true') || options[0])?.focus();
+      else if (restoreFocus) trigger.focus();
+    };
+    trigger.addEventListener('click', () => setOpen(menu.hidden));
+    for (const button of options) {
       button.addEventListener('click', () => {
         const theme = applyTheme(button.dataset.themeOption);
         try {
@@ -33,8 +51,21 @@
         } catch {
           // Keep the current page usable even if saving the preference is blocked.
         }
+        setOpen(false, true);
       });
     }
+    document.addEventListener('click', event => {
+      if (!menu.hidden && !event.target.closest('.theme-picker')) setOpen(false);
+    });
+    document.addEventListener('focusin', event => {
+      if (!menu.hidden && !event.target.closest('.theme-picker')) setOpen(false);
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !menu.hidden) {
+        event.preventDefault();
+        setOpen(false, true);
+      }
+    });
   }, { once: true });
 
   window.addEventListener('storage', (event) => {

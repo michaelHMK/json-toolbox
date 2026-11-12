@@ -37,14 +37,28 @@ const navItems = [
 ];
 
 const themeOptions = [
-  { id: 'normal', label: 'themeNormal', fallback: 'Normal' },
-  { id: 'comfort', label: 'themeComfort', fallback: 'Eye comfort' },
-  { id: 'dark', label: 'themeDark', fallback: 'Dark' },
+  {
+    id: 'normal', label: 'themeNormal', fallback: 'Normal',
+    icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/>',
+  },
+  {
+    id: 'comfort', label: 'themeComfort', fallback: 'Eye comfort',
+    icon: '<path d="M20 4C12 4 5 7 5 14c0 3 2 5 5 5 7 0 10-7 10-15Z"/><path d="M4 21c3-6 7-9 12-12"/>',
+  },
+  {
+    id: 'dark', label: 'themeDark', fallback: 'Dark',
+    icon: '<path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"/>',
+  },
 ];
+
+function renderThemePreview(id) {
+  return `<span class="theme-preview theme-preview-${id}" aria-hidden="true"><span class="preview-sidebar"><i></i><i></i><i></i></span><span class="preview-content"><i></i><b></b><b></b></span></span>`;
+}
 
 export function renderNavigation() {
   const currentPage = document.body.dataset.page;
   const theme = document.documentElement.dataset.theme || 'normal';
+  const currentTheme = themeOptions.find((option) => option.id === theme) || themeOptions[0];
   const links = navItems.map((item) => {
     const active = item.id === currentPage;
     return `<a class="nav-link${active ? ' active' : ''}" href="${item.href}"${active ? ' aria-current="page"' : ''}>
@@ -62,9 +76,20 @@ export function renderNavigation() {
     <nav class="main-nav" aria-label="JSON">${links}</nav>
     <div class="sidebar-bottom">
       <div class="theme-picker">
-        <div id="theme-label" class="theme-label" data-i18n="themeLabel">Appearance</div>
-        <div id="theme-switch" class="theme-switch" role="group" aria-labelledby="theme-label">
-          ${themeOptions.map((option) => `<button type="button" data-theme-option="${option.id}" aria-pressed="${option.id === theme}" data-i18n="${option.label}">${option.fallback}</button>`).join('')}
+        <button id="theme-trigger" class="theme-trigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="theme-switch">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h3M11 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+          <span class="theme-trigger-copy"><span class="theme-trigger-title" data-i18n="themeLabel">Appearance</span><span id="theme-current" data-i18n="${currentTheme.label}">${currentTheme.fallback}</span></span>
+          <svg class="theme-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+        </button>
+        <div id="theme-switch" class="theme-switch" role="dialog" aria-labelledby="theme-menu-title" hidden>
+          <div class="theme-menu-heading"><strong id="theme-menu-title" data-i18n="themeLabel">Appearance</strong><span data-i18n="themeSaved">Saved locally</span></div>
+          <div class="theme-options">
+            ${themeOptions.map((option) => `<button type="button" class="theme-option" data-theme-option="${option.id}" data-theme-label="${option.label}" aria-pressed="${option.id === theme}">
+              ${renderThemePreview(option.id)}
+              <span class="theme-option-caption"><svg class="theme-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${option.icon}</svg><span class="theme-option-name" data-i18n="${option.label}">${option.fallback}</span><svg class="theme-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span>
+            </button>`).join('')}
+          </div>
+          <div class="theme-menu-footer"><span class="local-dot" aria-hidden="true"></span><span data-i18n="themeSync">Preference shared across all tools</span></div>
         </div>
       </div>
       <div class="sidebar-footer">

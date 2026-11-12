@@ -50,6 +50,9 @@
   "themeLabel": {
     "message": "Оформление"
   },
+  "themeSaved": {
+    "message": "Сохранено локально"
+  },
   "themeNormal": {
     "message": "Обычный"
   },
@@ -58,6 +61,9 @@
   },
   "themeDark": {
     "message": "Тёмный"
+  },
+  "themeSync": {
+    "message": "Настройка действует во всех инструментах"
   },
   "descFormat": {
     "message": "Форматирование JSON с просмотром дерева, раскрытием уровней и поиском."

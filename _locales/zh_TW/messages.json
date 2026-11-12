@@ -50,6 +50,9 @@
   "themeLabel": {
     "message": "外觀"
   },
+  "themeSaved": {
+    "message": "本機儲存"
+  },
   "themeNormal": {
     "message": "正常"
   },
@@ -58,6 +61,9 @@
   },
   "themeDark": {
     "message": "暗色"
+  },
+  "themeSync": {
+    "message": "偏好設定會同步到其他工具頁面"
   },
   "descFormat": {
     "message": "美化 JSON，支援樹狀瀏覽、階層展開與搜尋。"

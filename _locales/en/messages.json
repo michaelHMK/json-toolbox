@@ -50,6 +50,9 @@
   "themeLabel": {
     "message": "Appearance"
   },
+  "themeSaved": {
+    "message": "Saved locally"
+  },
   "themeNormal": {
     "message": "Normal"
   },
@@ -58,6 +61,9 @@
   },
   "themeDark": {
     "message": "Dark"
+  },
+  "themeSync": {
+    "message": "Preference shared across all tools"
   },
   "descFormat": {
     "message": "Beautify JSON with tree browsing, level expansion and search."

@@ -11,9 +11,9 @@ const storageKey = 'json-toolbox.theme';
 const pages = ['formatter', 'minify', 'escape', 'unescape', 'compare'];
 const modes = ['normal', 'comfort', 'dark'];
 const colors = {
-  normal: ['rgb(245, 247, 251)', 'rgb(255, 255, 255)', 'light'],
-  comfort: ['rgb(233, 235, 237)', 'rgb(242, 243, 242)', 'light'],
-  dark: ['rgb(18, 21, 27)', 'rgb(26, 30, 38)', 'dark'],
+  normal: ['rgb(247, 248, 252)', 'rgb(255, 255, 255)', 'light'],
+  comfort: ['rgb(233, 228, 218)', 'rgb(248, 244, 235)', 'light'],
+  dark: ['rgb(14, 19, 26)', 'rgb(21, 27, 36)', 'dark'],
 };
 const server = createServer(async (request, response) => {
   try {
@@ -70,8 +70,19 @@ const theme = async (page, expected) => {
   assert.deepEqual(actual, colors[expected]);
 };
 const select = async (page, mode) => {
-  await page.locator(`[data-theme-option="${mode}"]`).click();
+  const menu = page.locator('#theme-switch');
+  if (await menu.isHidden()) await page.locator('#theme-trigger').click();
+  const option = page.locator(`[data-theme-option="${mode}"]`);
+  await page.waitForFunction(() => document.activeElement?.matches('[data-theme-option][aria-pressed="true"]'));
+  assert.equal(await page.locator('[data-theme-option][aria-pressed="true"]').evaluate(button => document.activeElement === button), true);
+  const label = await option.locator('.theme-option-name').textContent();
+  await option.click();
   await theme(page, mode);
+  assert.equal(await menu.isHidden(), true);
+  assert.equal(await page.locator('#theme-trigger').getAttribute('aria-expanded'), 'false');
+  assert.equal(await page.locator('#theme-current').textContent(), label);
+  await page.waitForFunction(() => document.activeElement?.id === 'theme-trigger');
+  assert.equal(await page.locator('#theme-trigger').evaluate(button => document.activeElement === button), true);
 };
 const format = async page => {
   const source = '{"themeTest":true,"values":[1,"two",null]}';
@@ -168,10 +179,11 @@ try {
     const localized = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     const catalog = await useLocale(localized, locale);
     const localizedPage = await open(localized);
-    assert.deepEqual(await localizedPage.locator('#theme-switch button').allTextContents(), ['themeNormal', 'themeComfort', 'themeDark'].map(key => catalog[key].message));
-    for (const width of [1280, 1024, 736, 320]) {
-      await localizedPage.setViewportSize({ width, height: 800 });
+    assert.deepEqual(await localizedPage.locator('#theme-switch .theme-option-name').allTextContents(), ['themeNormal', 'themeComfort', 'themeDark'].map(key => catalog[key].message));
+    for (const [width, height] of [[1280, 800], [1280, 500], [1024, 800], [736, 800], [320, 800]]) {
+      await localizedPage.setViewportSize({ width, height });
       await localizedPage.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+      await localizedPage.locator('#theme-trigger').click();
       const layout = await localizedPage.locator('#theme-switch').evaluate(switcher => {
         const box = switcher.getBoundingClientRect();
         return {
@@ -183,12 +195,12 @@ try {
           })),
         };
       });
-      assert.ok(layout.visible && layout.withinViewport && layout.buttons.every(button => button.fits && button.visible), `${locale}/${width}: ${JSON.stringify(layout)}`);
+      assert.ok(layout.visible && layout.withinViewport && layout.buttons.every(button => button.fits && button.visible), `${locale}/${width}x${height}: ${JSON.stringify(layout)}`);
       await select(localizedPage, 'comfort');
     }
     await localized.close();
   }
-  results.push(`${locales.length} locales at 1280/1024/736/320px: theme labels translated, visible and contained`);
+  results.push(`${locales.length} locales at desktop, 1280x500, tablet and 320px: theme labels translated, visible and contained`);
 
   if (process.env.THEME_SCREENSHOT_DIR) {
     const directory = resolve(process.env.THEME_SCREENSHOT_DIR);
@@ -206,6 +218,9 @@ try {
       await screenshotPage.mouse.move(0, 0);
       await screenshotPage.screenshot({ path: resolve(directory, `implemented-theme-${mode}.png`), fullPage: true, animations: 'disabled' });
     }
+    await select(screenshotPage, 'normal');
+    await screenshotPage.locator('#theme-trigger').click();
+    await screenshotPage.screenshot({ path: resolve(directory, 'implemented-theme-menu.png'), fullPage: true, animations: 'disabled' });
     await screenshots.close();
     results.push(`Screenshots saved to ${directory}`);
   }
