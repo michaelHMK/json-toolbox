@@ -108,3 +108,24 @@ test('position reveal handles horizontal windows, surrogate pairs, CRLF and EOF 
   assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, prefix.length + 2);
   page.outputView.destroy();
 });
+
+test('switching between virtual and native output preserves its named focusable region', async () => {
+  const { loadPage, Element } = await import('./helpers/page-dom.js');
+  const page = loadPage('formatter', { expose: '{ createVirtualTextView }' });
+  const element = new Element('pre');
+  element.setAttribute('role', 'region');
+  element.setAttribute('tabindex', '0');
+  element.setAttribute('aria-label', 'Result');
+  const view = page.createVirtualTextView(element);
+  view.setText('line\n'.repeat(3000));
+  assert.equal(element.getAttribute('role'), 'textbox');
+  assert.equal(element.getAttribute('aria-multiline'), 'true');
+  assert.equal(element.getAttribute('aria-readonly'), 'true');
+  view.setText('small result');
+  assert.equal(element.getAttribute('role'), 'region');
+  assert.equal(element.getAttribute('tabindex'), '0');
+  assert.equal(element.getAttribute('aria-label'), 'Result');
+  assert.equal(element.getAttribute('aria-readonly'), null);
+  assert.equal(element.getAttribute('aria-multiline'), null);
+  view.destroy();
+});

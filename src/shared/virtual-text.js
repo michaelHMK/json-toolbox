@@ -33,6 +33,7 @@ export function createVirtualTextView(element) {
   let physicalWidth = 0;
   let selectAll = false;
   const originalTabIndex = element.getAttribute('tabindex');
+  const originalRole = element.getAttribute('role');
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
 
@@ -223,8 +224,10 @@ export function createVirtualTextView(element) {
     element.replaceChildren();
     element.scrollTop = 0;
     element.scrollLeft = 0;
-    element.removeAttribute('role');
+    if (originalRole === null) element.removeAttribute('role');
+    else element.setAttribute('role', originalRole);
     element.removeAttribute('aria-readonly');
+    element.removeAttribute('aria-multiline');
     if (originalTabIndex === null) element.removeAttribute('tabindex');
     else element.setAttribute('tabindex', originalTabIndex);
     layer = null;
@@ -265,6 +268,7 @@ export function createVirtualTextView(element) {
     element.setAttribute('tabindex', '0');
     element.setAttribute('role', 'textbox');
     element.setAttribute('aria-readonly', 'true');
+    element.setAttribute('aria-multiline', 'true');
     spacer = document.createElement('div');
     spacer.className = 'virtual-text-spacer';
     spacer.setAttribute('aria-hidden', 'true');

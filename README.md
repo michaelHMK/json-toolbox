@@ -36,7 +36,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 
 Formatter and Minifier also accept one local UTF-8 `.json` file (up to 50 MiB) through a file picker or drag-and-drop. Importing loads the original text into the input pane and automatically runs the current operation. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
 
-Use the sidebar to switch between tools. The interface supports English and Simplified Chinese (`_locales/`).
+Use the sidebar to switch between tools. The interface includes 13 locale catalogs in `_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), and Arabic (`ar`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
 ## Load Locally (Developer Mode)
 
@@ -47,6 +47,8 @@ Use the sidebar to switch between tools. The interface supports English and Simp
 5. Click the extension icon in the toolbar to open JSON Toolbox.
 
 Keyboard shortcut: most pages support **Cmd/Ctrl + Enter** to run the current operation.
+
+Use **Tab** to enter a JSON tree. **Up/Down** move between visible nodes, **Right/Left** expand or collapse a branch and move to its child or parent, and **Home/End** move to the first or last visible node. **Enter/Space** toggle a branch. **Tab** leaves the tree.
 
 ## Project Structure
 
@@ -111,6 +113,7 @@ Optional browser checks require an existing Playwright installation and Chromium
 export PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs
 # Optional browser override: export CHROMIUM_EXECUTABLE=/path/to/chromium
 node bench/browser.mjs . --verify
+node bench/accessibility.mjs .
 node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
@@ -118,6 +121,8 @@ node bench/worker-transfer.mjs
 ```
 
 These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
+
+The accessibility check uses the English and Arabic catalogs through a simulated extension i18n API to verify layout, keyboard navigation, and Chromium's accessibility tree. It does not replace manual screen-reader testing.
 
 The file-import benchmark runs both pages three times per scenario and reports each sample plus medians. Its default scenarios are a 50 MiB ordinary document (`regular`), a 4 MiB array with preserved `1.20` literals (`decimals`), and a 50 MiB invalid single line (`invalid`). Fixture and `File` construction happen before measurement; elapsed time includes two animation frames after success/error feedback, and Long Tasks cover only the measured import. Complete input/output copying and error-location checks run afterward. Heap readings include the benchmark fixture; slower cross-agent memory measurement is opt-in with `BENCH_MEMORY=1`.
 
@@ -157,7 +162,7 @@ python3 build_release.py --check
 python3 build_release.py
 ```
 
-The script validates the version, name and description lengths in both languages, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports and the Worker entry point. It then packages runtime files from an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
+The script validates the version, name and description lengths in all locale catalogs, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports and the Worker entry point. It then packages runtime files from an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
 
 Before uploading, extract the ZIP to a new directory, load that directory through `chrome://extensions/`, and complete the checks below. For subsequent releases, increase the version in `manifest.json` before rebuilding.
 
@@ -175,5 +180,5 @@ Before uploading, extract the ZIP to a new directory, load that directory throug
 - Check all three indentation options, invalid JSON location reporting, tree expansion, search, copying, and clearing.
 - Check minify, escape, and unescape with newlines, quotes, backslashes, and Unicode text.
 - Check additions, removals, value changes, and type changes in JSON Compare, along with array key matching, ignored paths, differences-only mode, and text comparison.
-- Check interface text with both English and Chinese browser languages, then repeat the main operations while offline.
+- Check English, Chinese, and Arabic interface text, including right-to-left layout, left-to-right code, and translated accessible names. Check keyboard tree navigation and screen-reader announcements for status and errors, then repeat the main operations while offline.
 - Keep release materials consistent with the actual version, and avoid claims about file-processing speed that have not been verified.

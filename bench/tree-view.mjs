@@ -98,33 +98,34 @@ try {
 
   await page.locator('#diff-prev').click();
   await settle();
-  const leftToggle = page.locator('#tree-left .entry:not(.virtual-close)[data-path="/0/nested"] .toggle');
+  const leftEntry = page.locator('#tree-left .entry[role="treeitem"][data-path="/0/nested"]');
+  const leftToggle = leftEntry.locator('.toggle');
   await leftToggle.click();
   await settle();
-  assert.equal(await leftToggle.getAttribute('aria-expanded'), 'false');
-  const rightToggle = page.locator('#tree-right .entry:not(.virtual-close)[data-path="/3999/nested"] .toggle');
-  assert.equal(await rightToggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(await leftEntry.getAttribute('aria-expanded'), 'false');
+  const rightEntry = page.locator('#tree-right .entry[role="treeitem"][data-path="/3999/nested"]');
+  assert.equal(await rightEntry.getAttribute('aria-expanded'), 'false');
   await leftToggle.click();
   await settle();
-  assert.equal(await rightToggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(await rightEntry.getAttribute('aria-expanded'), 'true');
 
   await leftToggle.click();
   await settle();
-  assert.equal(await leftToggle.getAttribute('aria-expanded'), 'false');
-  await leftToggle.focus();
+  assert.equal(await leftEntry.getAttribute('aria-expanded'), 'false');
+  await page.locator('#tree-left').focus();
   await page.keyboard.press('Enter');
   await settle();
-  const keyboardFocus = await page.evaluate(() => ({
-    path: document.activeElement.closest('.entry')?.dataset.path,
-    toggle: document.activeElement.classList.contains('toggle'),
-    expanded: document.activeElement.getAttribute('aria-expanded'),
-  }));
+  const keyboardFocus = await page.evaluate(() => {
+    const tree = document.activeElement;
+    const entry = document.getElementById(tree.getAttribute('aria-activedescendant'));
+    return { path: entry?.dataset.path, host: tree.id, role: entry?.getAttribute('role'), expanded: entry?.getAttribute('aria-expanded') };
+  });
   console.log(JSON.stringify({ case: 'toggle-keeps-keyboard-focus', ...keyboardFocus }));
-  assert.deepEqual(keyboardFocus, { path: '/0/nested', toggle: true, expanded: 'true' });
+  assert.deepEqual(keyboardFocus, { path: '/0/nested', host: 'tree-left', role: 'treeitem', expanded: 'true' });
   await page.keyboard.press('Space');
   await settle();
-  assert.equal(await leftToggle.getAttribute('aria-expanded'), 'false');
-  assert.equal(await rightToggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(await leftEntry.getAttribute('aria-expanded'), 'false');
+  assert.equal(await rightEntry.getAttribute('aria-expanded'), 'false');
 
   await page.goto(base + '/formatter.html');
   await page.locator('#input').fill(JSON.stringify(Array.from({ length: 25001 }, (_, i) => i)));

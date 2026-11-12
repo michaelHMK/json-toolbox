@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="titleEscape">JSON 转义 - JSON 工具箱</title>
+  <title data-i18n="titleEscape">JSON Escape - JSON Toolbox</title>
   <link rel="stylesheet" href="styles/app.css">
 </head>
 <body data-page="escape" data-action="escape">
@@ -12,35 +12,38 @@
     <div class="page-shell">
       <header class="page-header">
         <div class="page-heading">
-          <h1 data-i18n="navEscape">JSON 转义</h1>
-          <p data-i18n="descEscape">将 JSON 或任意文本转换为可嵌入 JSON 的字符串内容。</p>
+          <h1 data-i18n="navEscape">JSON Escape</h1>
+          <p data-i18n="descEscape">Turn JSON or any text into content ready for a JSON string.</p>
         </div>
         <div class="page-actions">
-          <button id="btn-cancel" hidden data-i18n="btnCancel">取消</button>
-          <button id="btn-sample" data-i18n="btnSample">示例</button>
-          <button id="btn-clear" data-i18n="btnClear">清空</button>
-          <button id="btn-run" class="primary" data-i18n="btnEscape" data-i18n-title="btnEscapeTitle">转义</button>
+          <button id="btn-cancel" hidden data-i18n="btnCancel">Cancel</button>
+          <button id="btn-sample" data-i18n="btnSample">Sample</button>
+          <button id="btn-clear" data-i18n="btnClear">Clear</button>
+          <button id="btn-run" class="primary" data-i18n="btnEscape" data-i18n-title="btnEscapeTitle" title="Turn JSON text into an escaped string">Escape</button>
         </div>
       </header>
 
-      <div id="error" class="notice" hidden></div>
+      <div class="error-announcement" role="alert" aria-atomic="true">
+        <div id="error" class="notice" hidden></div>
+      </div>
 
       <main class="workspace">
         <section class="pane">
-          <div class="pane-title"><span data-i18n="paneInput">输入</span></div>
-          <textarea id="input" spellcheck="false" wrap="off"
+          <div class="pane-title"><span data-i18n="paneInput">Input</span></div>
+          <textarea id="input" dir="ltr" data-i18n-aria-label="paneInput" aria-label="Input" spellcheck="false" wrap="off"
             data-i18n-placeholder="inputEscapePlaceholder"
-            placeholder="在此粘贴需要转义的文本…"></textarea>
+            placeholder="Paste text to escape… (Cmd/Ctrl + Enter)"></textarea>
         </section>
         <section class="pane">
           <div class="pane-title">
             <div class="pane-label">
-              <span data-i18n="paneResult">结果</span>
-              <span id="status" class="status"></span><span id="busy" hidden data-i18n="busyText">处理中…</span>
+              <span data-i18n="paneResult">Result</span>
+              <span id="status" class="status" role="status" aria-atomic="true"></span>
+              <span role="status" aria-atomic="true"><span id="busy" hidden data-i18n="busyText">Working…</span></span>
             </div>
-            <button id="btn-copy" class="button-compact" data-i18n="btnCopy">复制结果</button>
+            <button id="btn-copy" class="button-compact" data-i18n="btnCopy">Copy result</button>
           </div>
-          <pre id="output-text"></pre>
+          <pre role="region" tabindex="0" id="output-text" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result"></pre>
         </section>
       </main>
     </div>

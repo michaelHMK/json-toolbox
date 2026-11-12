@@ -325,6 +325,8 @@ async function setCompareView(view) {
   state.view = view;
   $('view-struct').classList.toggle('active', view === 'struct');
   $('view-text').classList.toggle('active', view === 'text');
+  $('view-struct').setAttribute('aria-pressed', String(view === 'struct'));
+  $('view-text').setAttribute('aria-pressed', String(view === 'text'));
   structView.hidden = view !== 'struct';
   textView.hidden = view !== 'text';
   diffNavEl.style.visibility = view === 'struct' ? '' : 'hidden';

@@ -83,7 +83,7 @@ def check_release():
             source = path.read_text(encoding='utf-8')
             for ref in re.findall(r'(?:src|href)=[\"\']([^\"\']+)', source):
                 check_reference(name, ref, files)
-            for key in re.findall(r'data-i18n(?:-title|-placeholder)?=[\"\']([^\"\']+)', source):
+            for key in re.findall(r'data-i18n(?:-title|-placeholder|-aria-label)?=[\"\']([^\"\']+)', source):
                 if key not in default:
                     raise ValueError(f'{name} 引用了缺失的翻译: {key}')
         elif path.suffix == '.js':

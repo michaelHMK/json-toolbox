@@ -6,6 +6,7 @@ const isContainer = (value) => value !== null && typeof value === 'object';
 const decodeKey = (key) => key.replace(/~1/g, '/').replace(/~0/g, '~');
 const PREVIEW_LIMIT = 2000;
 const MAX_SCROLL_HEIGHT = 8_000_000;
+let nextTreeId = 0;
 const MODEL_OPTIONS = ['data', 'expandLevel', 'expanded', 'collapsed', 'forceExpand', 'onlyRequired', 'requiredChildren'];
 const modelOptions = (options) => Object.fromEntries(MODEL_OPTIONS.filter((key) => Object.hasOwn(options, key)).map((key) => [key, options[key]]));
 
@@ -70,9 +71,9 @@ export function createTreeModel(initial = {}) {
     if (options.data === undefined) return;
     const expansionChildren = createChildPathIndex([...options.expanded, ...options.forceExpand]);
 
-    function enter(value, key, path, depth, isIndex) {
+    function enter(value, key, path, depth, isIndex, posInSet = 1, setSize = 1) {
       const open = isContainer(value) && openAt(path, depth);
-      const descriptor = { kind: 'entry', value, key, path, depth, isIndex, open };
+      const descriptor = { kind: 'entry', value, key, path, depth, isIndex, open, posInSet, setSize };
       const entry = emit({ kind: 'entry', descriptor });
       if (!open) return null;
       const record = { value, path, depth, keys: keysOf(value), indices: null, ranges: [], entryRow: entry.row };
@@ -123,7 +124,7 @@ export function createTreeModel(initial = {}) {
       if (child) {
         record.next = child.position + 1;
         record.openIndex++;
-        const nested = enter(child.value, child.key, child.path, record.depth + 1, record.keys === null);
+        const nested = enter(child.value, child.key, child.path, record.depth + 1, record.keys === null, child.position + 1, record.length);
         if (nested) stack.push(nested);
       } else {
         emit({ kind: 'close', descriptor: { kind: 'close', value: record.value, path: record.path, depth: record.depth } });
@@ -150,6 +151,7 @@ export function createTreeModel(initial = {}) {
     return {
       kind: 'entry', key, value: record.value[key], path: appendJsonPath(record.path, key),
       depth: record.depth + 1, isIndex: record.keys === null, open: false,
+      posInSet: segment.start + index - segment.row + 1, setSize: record.length,
     };
   }
 
@@ -258,6 +260,11 @@ export function createVirtualTree(container, initial = {}) {
   let options = { rowHeight: 24, overscan: 12, highlights: new Set(), decorations: new Map(), numberLiterals: null, ...initial };
   const model = createTreeModel(options);
   let currentPath = null;
+  let activePath = model.rowCount ? '' : null;
+  let activeIndex = model.rowCount ? 0 : -1;
+  const treeId = `json-tree-${++nextTreeId}`;
+  const itemId = (index) => `${treeId}-item-${index}`;
+  const originalAttributes = new Map(['role', 'tabindex', 'aria-activedescendant'].map((name) => [name, container.getAttribute(name)]));
   let frame = null;
   let destroyed = false;
   let maxWidth = 0;
@@ -270,6 +277,8 @@ export function createVirtualTree(container, initial = {}) {
   spacer.appendChild(layer);
   container.replaceChildren(spacer);
   container.classList.add('virtual-tree');
+  container.setAttribute('role', 'tree');
+  container.setAttribute('tabindex', '0');
 
   function geometry() {
     const viewport = container.clientHeight || 480;
@@ -281,7 +290,7 @@ export function createVirtualTree(container, initial = {}) {
     return { viewport, physicalHeight, physicalRange, logicalRange, scale };
   }
 
-  function renderRow(descriptor) {
+  function renderRow(descriptor, index) {
     const { value, key, path, depth, kind, open } = descriptor;
     const entry = document.createElement('div');
     entry.className = 'entry';
@@ -292,19 +301,34 @@ export function createVirtualTree(container, initial = {}) {
     entry.appendChild(row);
     if (kind === 'close') {
       entry.classList.add('virtual-close');
+      entry.setAttribute('aria-hidden', 'true');
       row.classList.add('close-row');
       row.appendChild(span('toggle-spacer', ''));
       row.appendChild(span('punct', Array.isArray(value) ? ']' : '}'));
-      row.addEventListener('click', () => setOpen(path, false, { notify: true }));
+      row.addEventListener('click', () => {
+        activePath = path;
+        setOpen(path, false, { notify: true });
+        container.focus({ preventScroll: true });
+      });
       return entry;
     }
+    entry.id = itemId(index);
+    entry.setAttribute('role', 'treeitem');
+    entry.setAttribute('aria-level', String(depth + 1));
+    entry.setAttribute('aria-posinset', String(descriptor.posInSet));
+    entry.setAttribute('aria-setsize', String(descriptor.setSize));
+    if (path === activePath) entry.classList.add('keyboard-active');
     if (options.highlights.has(path)) entry.classList.add('highlight');
     const decoration = options.decorations.get(path);
     if (decoration) entry.classList.add('diff-' + (typeof decoration === 'string' ? decoration : decoration.type));
     if (path === currentPath) entry.classList.add('current');
     const containerValue = isContainer(value);
     const toggle = span(containerValue ? 'toggle' : 'toggle-spacer', containerValue ? open ? '▾' : '▸' : '');
+    toggle.setAttribute('aria-hidden', 'true');
     row.appendChild(toggle);
+    const activate = () => setActive(path, index);
+    // Set the active row before the browser focuses the tree on pointer-down.
+    row.addEventListener('pointerdown', activate);
     if (key !== null) {
       row.appendChild(span('key', descriptor.isIndex ? String(key) : preview(String(key))));
       row.appendChild(span('punct', ': '));
@@ -312,36 +336,42 @@ export function createVirtualTree(container, initial = {}) {
     if (containerValue) {
       const isArray = Array.isArray(value);
       row.appendChild(span('punct', isArray ? '[' : '{'));
-      const summary = span('summary', t(isArray ? 'treeSummaryItems' : 'treeSummaryKeys', [model.sizeOf(value).toLocaleString()]));
+      const size = model.sizeOf(value);
+      const summaryText = t(isArray ? 'treeSummaryItems' : 'treeSummaryKeys', [size.toLocaleString()]);
+      const summary = span('summary', summaryText);
+      entry.setAttribute('aria-label', key === null ? summaryText : `${literalPreview(String(key))}: ${summaryText}`);
+      if (size) entry.setAttribute('aria-expanded', String(open));
       if (!open) {
         row.appendChild(summary);
         row.appendChild(span('punct', isArray ? ']' : '}'));
       }
-      const flip = () => setOpen(path, !open, { notify: true });
+      const flip = () => {
+        activate();
+        setOpen(path, !open, { notify: true });
+        container.focus({ preventScroll: true });
+      };
       toggle.addEventListener('click', flip);
-      toggle.tabIndex = 0;
-      toggle.setAttribute('role', 'button');
-      toggle.setAttribute('aria-expanded', String(open));
-      toggle.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); flip(); }
-      });
       summary.addEventListener('click', flip);
       row.addEventListener('click', (event) => {
+        if (event.target === toggle || event.target === summary || hasTextSelection()) return;
         if (event.target === row || event.target.classList.contains('punct')) flip();
+        else { activate(); container.focus({ preventScroll: true }); }
       });
     } else {
       const type = value === null ? 'null' : typeof value === 'boolean' ? 'bool' : typeof value;
       const literal = typeof value === 'number' ? options.numberLiterals?.[path] : undefined;
       row.appendChild(span('v ' + type, literal === undefined ? preview(value) : literalPreview(String(literal))));
+      row.addEventListener('click', () => {
+        if (hasTextSelection()) return;
+        activate();
+        container.focus({ preventScroll: true });
+      });
     }
     return entry;
   }
 
   function refresh() {
     if (destroyed) return;
-    const focused = document.activeElement;
-    const focusedPath = focused?.classList?.contains('toggle') && layer.contains(focused)
-      ? focused.parentElement.parentElement.dataset.path : null;
     const g = geometry();
     container.style.setProperty?.('--tree-row-height', `${options.rowHeight}px`);
     spacer.style.height = `${g.physicalHeight}px`;
@@ -352,12 +382,19 @@ export function createVirtualTree(container, initial = {}) {
     const end = Math.min(model.rowCount, Math.ceil((logicalTop + g.viewport) / options.rowHeight) + options.overscan);
     layer.style.top = `${scrollTop - logicalTop + start * options.rowHeight}px`;
     const fragment = document.createDocumentFragment();
-    for (let index = start; index < end; index++) fragment.appendChild(renderRow(model.rowAt(index)));
-    layer.replaceChildren(fragment);
-    if (focusedPath !== null) {
-      const entry = [...layer.children].find((row) => row.dataset.path === focusedPath && !row.classList.contains('virtual-close'));
-      entry?.querySelector('.toggle')?.focus({ preventScroll: true });
+    // Keep the active descendant mounted when wheel scrolling recycles its row.
+    // This costs one extra row, independent of the size or depth of the JSON.
+    let pinned = null;
+    if (activeIndex >= 0 && (activeIndex < start || activeIndex >= end)) {
+      pinned = renderRow(model.rowAt(activeIndex), activeIndex);
+      pinned.classList.add('virtual-active-outside');
     }
+    if (pinned && activeIndex < start) fragment.appendChild(pinned);
+    for (let index = start; index < end; index++) fragment.appendChild(renderRow(model.rowAt(index), index));
+    if (pinned && activeIndex >= end) fragment.appendChild(pinned);
+    layer.replaceChildren(fragment);
+    if (activeIndex >= 0) container.setAttribute('aria-activedescendant', itemId(activeIndex));
+    else container.removeAttribute('aria-activedescendant');
     maxWidth = Math.max(maxWidth, layer.scrollWidth || 0);
     if (maxWidth) spacer.style.minWidth = `${maxWidth}px`;
   }
@@ -373,19 +410,24 @@ export function createVirtualTree(container, initial = {}) {
       maxWidth = 0;
       spacer.style.minWidth = '';
       currentPath = null;
+      activePath = null;
     }
     options = { ...options, ...next };
     model.update(next);
+    restoreActive();
     refresh();
   }
   function setOpen(path, open, { notify = false } = {}) {
     model.setOpen(path, open);
+    restoreActive();
     refresh();
     if (notify) options.onToggle?.(path, open);
   }
   function reveal(path) {
     const index = model.reveal(path);
     if (index < 0) return false;
+    activePath = path;
+    activeIndex = index;
     const g = geometry();
     const logicalTop = Math.max(0, Math.min(g.logicalRange, index * options.rowHeight - (g.viewport - options.rowHeight) / 2));
     container.scrollTop = logicalTop / g.scale;
@@ -413,6 +455,80 @@ export function createVirtualTree(container, initial = {}) {
     }
     return true;
   }
+  function hasTextSelection() {
+    const selection = document.getSelection?.();
+    return selection && !selection.isCollapsed
+      && (container.contains(selection.anchorNode) || container.contains(selection.focusNode));
+  }
+  function setActive(path, index) {
+    activePath = path;
+    activeIndex = index;
+    // Pointer activation must not replace text nodes: doing so clears the
+    // browser's text selection, including double-click selection of a value.
+    for (const entry of [...layer.children]) {
+      if (entry.classList.contains('virtual-active-outside')) entry.remove();
+      else entry.classList.toggle('keyboard-active', entry.id === itemId(index));
+    }
+    container.setAttribute('aria-activedescendant', itemId(index));
+  }
+  function restoreActive() {
+    // Collapse/filter operations may hide the active item: fall back to its
+    // closest visible ancestor without moving focus out of the tree.
+    let path = activePath ?? '';
+    let index = model.indexOf(path);
+    while (index < 0 && path !== '') {
+      path = path.slice(0, path.lastIndexOf('/'));
+      index = model.indexOf(path);
+    }
+    activePath = index < 0 ? null : path;
+    activeIndex = index;
+  }
+  function moveActive(index, step) {
+    let row = model.rowAt(index);
+    while (row?.kind === 'close') { index += step; row = model.rowAt(index); }
+    if (!row) return;
+    reveal(row.path);
+  }
+  function keydown(event) {
+    if (event.altKey || event.ctrlKey || event.metaKey || activeIndex < 0) return;
+    const row = model.rowAt(activeIndex);
+    const expandable = isContainer(row.value) && model.sizeOf(row.value) > 0;
+    switch (event.key) {
+      case 'ArrowDown': moveActive(activeIndex + 1, 1); break;
+      case 'ArrowUp': moveActive(activeIndex - 1, -1); break;
+      case 'Home': moveActive(0, 1); break;
+      case 'End': moveActive(model.rowCount - 1, -1); break;
+      case 'ArrowRight':
+        if (expandable && !row.open) setOpen(row.path, true, { notify: true });
+        else if (expandable) {
+          const child = model.rowAt(activeIndex + 1);
+          if (child?.kind === 'entry' && child.depth > row.depth) moveActive(activeIndex + 1, 1);
+        }
+        break;
+      case 'ArrowLeft':
+        if (expandable && row.open) setOpen(row.path, false, { notify: true });
+        else if (row.path !== '') reveal(row.path.slice(0, row.path.lastIndexOf('/')));
+        break;
+      case 'Enter':
+      case ' ':
+        if (expandable) setOpen(row.path, !row.open, { notify: true });
+        break;
+      default: return;
+    }
+    event.preventDefault();
+    ensureActiveVisible();
+  }
+  function ensureActiveVisible() {
+    if (activeIndex < 0) return;
+    const g = geometry();
+    const top = (container.scrollTop || 0) * g.scale;
+    if (activeIndex * options.rowHeight < top || (activeIndex + 1) * options.rowHeight > top + g.viewport) {
+      reveal(activePath);
+    }
+  }
+  function focus() {
+    ensureActiveVisible();
+  }
   function setCurrent(path) {
     if (currentPath === path) return;
     currentPath = path;
@@ -425,6 +541,12 @@ export function createVirtualTree(container, initial = {}) {
     if (frame !== null) cancelFrame(frame);
     resizeObserver?.disconnect();
     container.removeEventListener('scroll', schedule);
+    container.removeEventListener('keydown', keydown);
+    container.removeEventListener('focus', focus);
+    for (const [name, value] of originalAttributes) {
+      if (value === null) container.removeAttribute(name);
+      else container.setAttribute(name, value);
+    }
     layer.replaceChildren();
     spacer.replaceChildren();
     container.replaceChildren();
@@ -432,7 +554,11 @@ export function createVirtualTree(container, initial = {}) {
     model.update({ data: undefined, expanded: new Set(), collapsed: new Set(), forceExpand: new Set(), requiredChildren: new Map() });
     options = {};
     currentPath = null;
+    activePath = null;
+    activeIndex = -1;
   }
+  container.addEventListener('keydown', keydown);
+  container.addEventListener('focus', focus);
   container.addEventListener('scroll', schedule, { passive: true });
   const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
   resizeObserver?.observe(container);
