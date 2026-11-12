@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "All data stays on your device"
   },
+  "themeLabel": {
+    "message": "Appearance"
+  },
+  "themeNormal": {
+    "message": "Normal"
+  },
+  "themeComfort": {
+    "message": "Eye comfort"
+  },
+  "themeDark": {
+    "message": "Dark"
+  },
   "descFormat": {
     "message": "Beautify JSON with tree browsing, level expansion and search."
   },

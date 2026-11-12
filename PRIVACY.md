@@ -1,12 +1,14 @@
 # JSON 工具箱隐私政策 / JSON Toolbox Privacy Policy
 
-更新日期：2026年11月11日。适用版本：1.2.0。
+更新日期：2026年11月12日。适用版本：1.2.0。
 
 JSON 工具箱用于在浏览器本地格式化、压缩、转义、查看和比较 JSON。扩展不收集、上传、出售或与第三方共享用户数据。
 
 ## 数据处理和存储
 
 你主动输入或粘贴的 JSON、文本、搜索词和对比选项，以及你通过文件选择器或拖拽明确提供的本地 JSON 文件内容，只在扩展页面及本地 Worker 的运行内存中处理。扩展仅在执行文件导入时读取所选文件，不会把这些内容发送到服务器，也不会主动写入浏览器存储、文件或云端。关闭或重新加载工具页后，扩展不提供输入记录的恢复功能。
+
+外观默认使用正常模式，你可以手动选择正常、护眼或暗色模式。扩展仅将主题选择保存到本机的 `localStorage`，以便在切换工具页或重新打开扩展时恢复；其中不保存输入、文件内容或处理结果，不上传该偏好或通过云端同步，也不需要新增扩展权限。
 
 只有点击“复制结果”时，扩展才会将结果写入系统剪贴板；不会主动读取剪贴板。复制后的内容由操作系统和剪贴板管理工具管理，可能在扩展页面关闭后仍然保留。
 
@@ -22,13 +24,15 @@ JSON 工具箱用于在浏览器本地格式化、压缩、转义、查看和比
 
 ## English
 
-Last updated: November 11, 2026. Applies to version 1.2.0.
+Last updated: November 12, 2026. Applies to version 1.2.0.
 
 JSON Toolbox processes JSON locally in your browser for formatting, minification, escaping, viewing and comparison. The extension does not collect, upload, sell or share user data with third parties.
 
 ### Processing and storage
 
 JSON, text, search queries and comparison settings that you enter or paste, plus the contents of local JSON files that you explicitly provide through a file picker or drag-and-drop, are processed only in the memory of the extension page and its local Worker. The extension reads a selected file only when you import it. It does not transmit this content to servers or write it to browser storage, files or cloud services, and it does not provide input-history recovery after the tool page is closed or reloaded.
+
+Appearance defaults to Normal, and you can manually choose Normal, Eye comfort or Dark. The extension saves only your theme choice in `localStorage` on your device to restore it across tool pages and after reopening. This storage contains no input, file content or processing results. The preference is not uploaded or synced through cloud services, and saving it requires no additional extension permissions.
 
 Only when you click Copy does the extension write the result to the system clipboard. It does not programmatically read the clipboard. Copied content is managed by your operating system and clipboard tools and may remain after the extension page closes.
 

@@ -36,8 +36,15 @@ const navItems = [
   },
 ];
 
+const themeOptions = [
+  { id: 'normal', label: 'themeNormal', fallback: 'Normal' },
+  { id: 'comfort', label: 'themeComfort', fallback: 'Eye comfort' },
+  { id: 'dark', label: 'themeDark', fallback: 'Dark' },
+];
+
 export function renderNavigation() {
   const currentPage = document.body.dataset.page;
+  const theme = document.documentElement.dataset.theme || 'normal';
   const links = navItems.map((item) => {
     const active = item.id === currentPage;
     return `<a class="nav-link${active ? ' active' : ''}" href="${item.href}"${active ? ' aria-current="page"' : ''}>
@@ -53,9 +60,17 @@ export function renderNavigation() {
     </a>
     <div class="nav-heading" data-i18n="navTools">TOOLS</div>
     <nav class="main-nav" aria-label="JSON">${links}</nav>
-    <div class="sidebar-footer">
-      <span class="local-dot" aria-hidden="true"></span>
-      <span data-i18n="localOnly">All data stays on your device</span>
+    <div class="sidebar-bottom">
+      <div class="theme-picker">
+        <div id="theme-label" class="theme-label" data-i18n="themeLabel">Appearance</div>
+        <div id="theme-switch" class="theme-switch" role="group" aria-labelledby="theme-label">
+          ${themeOptions.map((option) => `<button type="button" data-theme-option="${option.id}" aria-pressed="${option.id === theme}" data-i18n="${option.label}">${option.fallback}</button>`).join('')}
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <span class="local-dot" aria-hidden="true"></span>
+        <span data-i18n="localOnly">All data stays on your device</span>
+      </div>
     </div>
   `;
 }

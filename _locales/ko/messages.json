@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "모든 데이터는 기기 내에만 보관됩니다"
   },
+  "themeLabel": {
+    "message": "모양"
+  },
+  "themeNormal": {
+    "message": "기본"
+  },
+  "themeComfort": {
+    "message": "눈 편안함"
+  },
+  "themeDark": {
+    "message": "다크"
+  },
   "descFormat": {
     "message": "JSON을 보기 좋게 정리하고 트리 탐색, 단계별 펼치기, 검색을 사용할 수 있습니다."
   },

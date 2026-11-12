@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "すべてのデータはデバイス内に保持されます"
   },
+  "themeLabel": {
+    "message": "外観"
+  },
+  "themeNormal": {
+    "message": "通常"
+  },
+  "themeComfort": {
+    "message": "目に優しい"
+  },
+  "themeDark": {
+    "message": "ダーク"
+  },
   "descFormat": {
     "message": "JSON を整形し、ツリー表示、階層の展開、検索ができます。"
   },

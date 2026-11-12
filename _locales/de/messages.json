@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "Alle Daten bleiben auf Ihrem Gerät"
   },
+  "themeLabel": {
+    "message": "Darstellung"
+  },
+  "themeNormal": {
+    "message": "Normal"
+  },
+  "themeComfort": {
+    "message": "Schonend"
+  },
+  "themeDark": {
+    "message": "Dunkel"
+  },
   "descFormat": {
     "message": "JSON übersichtlich formatieren, als Baum durchsuchen und nach Ebenen aufklappen."
   },
