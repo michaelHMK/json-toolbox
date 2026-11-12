@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "تبقى جميع البيانات على جهازك"
   },
+  "themeLabel": {
+    "message": "المظهر"
+  },
+  "themeNormal": {
+    "message": "عادي"
+  },
+  "themeComfort": {
+    "message": "مريح للعين"
+  },
+  "themeDark": {
+    "message": "داكن"
+  },
   "descFormat": {
     "message": "تنسيق JSON مع استعراض شجري وتوسيع المستويات والبحث."
   },

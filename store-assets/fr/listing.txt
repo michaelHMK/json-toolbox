@@ -9,7 +9,7 @@ JSON Toolbox permet de formater, parcourir et comparer du JSON dans un onglet d�
 
 Formater et parcourir
 - Formatez le JSON avec une indentation de 2 espaces, 4 espaces ou tabulations.
-- Consultez les erreurs de syntaxe, avec la ligne, la colonne et un accès à la position lorsque le navigateur fournit ces informations.
+- Consultez les erreurs de syntaxe avec la ligne, la colonne et un accès à la position ; une vérification locale complète les informations manquantes du navigateur.
 - Parcourez une arborescence repliable avec défilement virtuel, déploiement par niveau, recherche de clés ou de valeurs et navigation entre les résultats.
 - Copiez le résultat complet en un clic.
 
@@ -30,7 +30,11 @@ Comparer du JSON
 - Affichez l’arborescence complète avec les différences en surbrillance ou uniquement les différences, et passez de l’une à l’autre.
 - Passez à la comparaison ligne par ligne du JSON formaté.
 
+Apparence
+- Choisissez Normal, Confort ou Sombre dans la barre latérale, avec des aperçus miniatures. Normal est le mode par défaut.
+- Seul le choix du thème est mémorisé localement, entre les outils et après réouverture. Les saisies et les résultats ne sont pas enregistrés.
+
 Confidentialité
 Tout est traité localement dans le navigateur. Aucune collecte ni transmission de données, aucune requête réseau, aucun code distant, aucune publicité ni aucun suivi. L’historique des saisies n’est pas enregistré. Le résultat est placé dans le presse-papiers uniquement lorsque vous le copiez.
 
-Les données et résultats complets restent en mémoire ; les performances dépendent de l’appareil et de la structure des données. Les vues virtuelles n’affichent qu’une partie du contenu à la fois : la recherche native du navigateur ne couvre que cette partie. Utilisez la recherche dans l’arborescence ou copiez le résultat complet si nécessaire. Les grandes différences textuelles peuvent être affichées par blocs entiers.
+Les données et résultats complets restent en mémoire ; les performances dépendent de l’appareil et de la structure des données. Les vues virtuelles n’affichent qu’une partie du contenu à la fois : la recherche native du navigateur ne couvre que cette partie. Utilisez la recherche dans l’arborescence ou copiez le résultat complet si nécessaire. En cas de différences textuelles importantes, les sections non correspondantes peuvent être affichées par blocs entiers.

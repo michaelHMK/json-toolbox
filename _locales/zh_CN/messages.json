@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "所有数据仅在本地处理"
   },
+  "themeLabel": {
+    "message": "外观"
+  },
+  "themeNormal": {
+    "message": "正常"
+  },
+  "themeComfort": {
+    "message": "护眼"
+  },
+  "themeDark": {
+    "message": "暗色"
+  },
   "descFormat": {
     "message": "美化 JSON，支持树形浏览、层级展开与搜索。"
   },

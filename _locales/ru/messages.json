@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "Все данные остаются на вашем устройстве"
   },
+  "themeLabel": {
+    "message": "Оформление"
+  },
+  "themeNormal": {
+    "message": "Обычный"
+  },
+  "themeComfort": {
+    "message": "Комфорт"
+  },
+  "themeDark": {
+    "message": "Тёмный"
+  },
   "descFormat": {
     "message": "Форматирование JSON с просмотром дерева, раскрытием уровней и поиском."
   },

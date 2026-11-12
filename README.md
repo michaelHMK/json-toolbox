@@ -22,6 +22,7 @@ See [Performance Checks](#performance-checks) below for verification commands an
 - **No uploads or tracking**: the extension makes no network requests, loads no remote code, and includes no telemetry, ads, or third-party SDKs.
 - **No extra extension permissions**: no website access or storage permissions, and no reading of website content, browsing history, cookies, or account information. See [`manifest.json`](manifest.json).
 - **No saved input history**: inputs and results are processed only in the memory of the tool page and its local Worker. The extension does not write them to browser storage, files, or cloud services; it writes to the system clipboard only when you copy.
+- **Local theme preference**: only your theme choice is saved in `localStorage` on your device. This does not save input content or require additional extension permissions.
 
 See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [publicly hosted version](https://github.com/michaelHMK/json-toolbox/blob/main/PRIVACY.md) for the store listing.
 
@@ -37,6 +38,8 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 Formatter and Minifier also accept one local UTF-8 `.json` file (up to 50 MiB) through a file picker or drag-and-drop. Importing loads the original text into the input pane and automatically runs the current operation. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
 
 Use the sidebar to switch between tools. The interface includes 13 locale catalogs in `_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), and Arabic (`ar`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
+
+Choose **Normal**, **Eye comfort**, or **Dark** under **Appearance** in the sidebar. The default is Normal. Your choice is remembered locally across tool pages and after reopening the extension.
 
 ## Load Locally (Developer Mode)
 
@@ -79,7 +82,7 @@ PRIVACY.md             # English and Chinese privacy policy hosted in the public
 store-assets/          # Store screenshots, promotional images, and generation script; excluded from the extension ZIP
 ```
 
-Runtime code uses native browser ES modules. No dependency installation or build step is needed to load the extension. Each HTML page loads a single entry module; navigation is rendered before translations are applied, without relying on global functions or the ordering of multiple script tags.
+Page logic uses native browser ES modules. No dependency installation or build step is needed to load the extension. Each HTML page has one entry module for page logic; a separate theme bootstrap script restores the saved appearance before the first paint. Navigation is rendered before translations are applied.
 
 | Boundary | Responsibilities and contracts |
 | --- | --- |
@@ -118,6 +121,7 @@ node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
+node bench/theme.mjs
 ```
 
 These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.

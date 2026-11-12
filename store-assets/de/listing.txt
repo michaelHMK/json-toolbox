@@ -9,7 +9,7 @@ Mit JSON Toolbox können Sie JSON in einem eigenen Browser-Tab formatieren, durc
 
 Formatieren und durchsuchen
 - Formatieren Sie JSON mit 2 Leerzeichen, 4 Leerzeichen oder Tabulatoren als Einzug.
-- Sehen Sie Syntaxfehler mit Zeilen- und Spaltenangabe sowie Navigation zur Fehlerstelle, sofern der Browser diese Angaben liefert.
+- Sehen Sie Syntaxfehler mit Zeilen- und Spaltenangabe sowie Navigation zur Fehlerstelle; eine lokale Prüfung ergänzt fehlende Positionsangaben des Browsers.
 - Nutzen Sie eine einklappbare Baumansicht mit virtuellem Scrollen, Aufklappen nach Ebene, Suche nach Schlüsseln oder Werten und Navigation zwischen Treffern.
 - Kopieren Sie das vollständige Ergebnis mit einem Klick.
 
@@ -30,7 +30,11 @@ JSON vergleichen
 - Zeigen Sie den vollständigen Baum mit markierten Unterschieden oder nur Unterschiede an und navigieren Sie zwischen ihnen.
 - Wechseln Sie zum zeilenweisen Textvergleich des formatierten JSON.
 
+Darstellung
+- Wählen Sie Normal, Schonend oder Dunkel in der Seitenleiste anhand von Miniaturvorschauen. Normal ist die Standardeinstellung.
+- Nur die Designauswahl wird lokal gespeichert und beim Werkzeugwechsel sowie nach erneutem Öffnen wiederhergestellt. Eingaben und Ergebnisse werden nicht gespeichert.
+
 Datenschutz
 Die gesamte Verarbeitung erfolgt lokal im Browser. Keine Datenerfassung oder Uploads, Netzwerkanfragen, extern nachgeladener Code, Werbung oder Tracking. Eingaben werden nicht als Verlauf gespeichert. Ergebnisse gelangen nur beim Kopieren in die Zwischenablage.
 
-Vollständige Eingaben und Ergebnisse bleiben im Arbeitsspeicher; die Leistung hängt vom Gerät und der Datenstruktur ab. Virtuelle Ansichten rendern jeweils nur einen Teil des Inhalts. Die Browsersuche erfasst deshalb nur diesen Teil. Nutzen Sie bei Bedarf die Baumsuche oder kopieren Sie das vollständige Ergebnis. Große Textunterschiede können als ganze Blöcke dargestellt werden.
+Vollständige Eingaben und Ergebnisse bleiben im Arbeitsspeicher; die Leistung hängt vom Gerät und der Datenstruktur ab. Virtuelle Ansichten rendern jeweils nur einen Teil des Inhalts. Die Browsersuche erfasst deshalb nur diesen Teil. Nutzen Sie bei Bedarf die Baumsuche oder kopieren Sie das vollständige Ergebnis. Bei umfangreichen Textunterschieden können nicht übereinstimmende Abschnitte als ganze Blöcke dargestellt werden.

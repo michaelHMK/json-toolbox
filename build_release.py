@@ -16,7 +16,7 @@ RUNTIME_FILES = (
     'manifest.json', 'src/background.js', 'styles/app.css', 'styles/virtual-tree.css',
     'formatter.html', 'compare.html', 'minify.html', 'escape.html', 'unescape.html',
     'src/pages/formatter.js', 'src/pages/compare.js', 'src/pages/transform.js',
-    'src/shared/page.js', 'src/shared/navigation.js', 'src/shared/i18n.js',
+    'src/shared/page.js', 'src/shared/navigation.js', 'src/shared/i18n.js', 'src/shared/theme.js',
     'src/shared/worker-client.js', 'src/shared/worker-protocol.js', 'src/shared/feedback.js',
     'src/shared/file-import.js', 'src/shared/text-input.js', 'src/shared/clipboard.js', 'src/shared/json-tree.js',
     'src/shared/virtual-tree.js', 'src/shared/virtual-text.js',

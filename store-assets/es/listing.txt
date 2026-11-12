@@ -9,7 +9,7 @@ JSON Toolbox permite formatear, explorar y comparar JSON en una pestaña del nav
 
 Formatear y explorar
 - Formatea JSON con sangría de 2 espacios, 4 espacios o tabulaciones.
-- Consulta errores de sintaxis, con línea, columna y navegación a la posición cuando el navegador proporciona esos datos.
+- Consulta errores de sintaxis con línea, columna y navegación a la posición; una comprobación local aporta la ubicación cuando el navegador no la proporciona.
 - Explora un árbol plegable con desplazamiento virtual, expansión por nivel, búsqueda de claves o valores y navegación entre coincidencias.
 - Copia el resultado completo con un clic.
 
@@ -30,7 +30,11 @@ Comparar JSON
 - Explora el árbol completo con diferencias resaltadas o muestra solo las diferencias y navega entre ellas.
 - Cambia a la comparación de texto línea por línea del JSON formateado.
 
+Apariencia
+- Elige Normal, Confort u Oscuro en la barra lateral, con vistas previas en miniatura. Normal es el modo predeterminado.
+- Solo se guarda localmente la elección del tema, para conservarla entre herramientas y al volver a abrir la extensión. No se guardan las entradas ni los resultados.
+
 Privacidad
 Todo el procesamiento se realiza en el navegador. Sin recopilación ni subida de datos, solicitudes de red, código remoto, anuncios o rastreo. No se guarda un historial de entradas. El resultado se escribe en el portapapeles del sistema únicamente cuando lo copias.
 
-Las entradas y los resultados completos permanecen en memoria; el rendimiento depende del dispositivo y de la estructura de los datos. Las vistas virtuales solo muestran parte del contenido a la vez, por lo que la búsqueda nativa del navegador solo abarca la parte representada. Usa la búsqueda del árbol o copia el resultado completo cuando lo necesites. Las diferencias de texto grandes pueden mostrarse como bloques completos.
+Las entradas y los resultados completos permanecen en memoria; el rendimiento depende del dispositivo y de la estructura de los datos. Las vistas virtuales solo muestran parte del contenido a la vez, por lo que la búsqueda nativa del navegador solo abarca la parte representada. Usa la búsqueda del árbol o copia el resultado completo cuando lo necesites. Si hay muchas diferencias, las secciones de texto no coincidentes pueden mostrarse como bloques completos.

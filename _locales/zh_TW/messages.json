@@ -47,6 +47,18 @@
   "localOnly": {
     "message": "所有資料僅在本機處理"
   },
+  "themeLabel": {
+    "message": "外觀"
+  },
+  "themeNormal": {
+    "message": "正常"
+  },
+  "themeComfort": {
+    "message": "護眼"
+  },
+  "themeDark": {
+    "message": "暗色"
+  },
   "descFormat": {
     "message": "美化 JSON，支援樹狀瀏覽、階層展開與搜尋。"
   },
