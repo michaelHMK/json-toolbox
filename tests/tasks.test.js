@@ -160,6 +160,66 @@ test('escape/unescape round-trip quotes, control characters and Unicode', () => 
   assert.equal(run('unescape', 'raw\nline\tend').text, 'raw\nline\tend');
 });
 
+test('unescape accepts complete JSON strings as well as their contents', () => {
+  for (const text of ['{"a":1}', 'quoted "value"\nline', '', '😀\\']) {
+    const quoted = JSON.stringify(text);
+    assert.equal(run('unescape', quoted).text, text);
+    assert.equal(run('unescape', quoted.slice(1, -1)).text, text);
+  }
+  assert.equal(run('unescape', '  "value"\n').text, 'value');
+  assert.equal(run('unescape', '123').text, '123');
+});
+
+test('unescape errors refer to original input after wrapping and control expansion', () => {
+  const handler = createTaskHandler();
+  for (const [text, position, line, column] of [
+    ['\\x', 1, 1, 2],
+    ['raw\n\\x', 5, 2, 2],
+    ['\u0000\\x', 2, 1, 3],
+    ['"\\x"', 2, 1, 3],
+    ['tail\\', 5, 1, 6],
+  ]) {
+    const response = handler({ action: 'unescape', text });
+    assert.equal(response.ok, false, text);
+    assert.equal(response.code, 'INVALID_ESCAPE', text);
+    assert.deepEqual([response.position, response.line, response.column], [position, line, column], text);
+  }
+});
+
+test('worker errors have locale-neutral codes and actionable JSON locations', () => {
+  const handler = createTaskHandler();
+  for (const [text, position, line, column] of [
+    ['{"a":1,"b":}', 11, 1, 12],
+    ['{"a":tru}', 8, 1, 9],
+    ['{\n  "a":tru\n}', 11, 2, 10],
+  ]) {
+    const response = handler({ action: 'parse', text });
+    assert.equal(response.ok, false);
+    assert.equal(response.code, 'INVALID_JSON');
+    assert.deepEqual([response.position, response.line, response.column], [position, line, column]);
+  }
+  assert.equal(handler({ action: 'search', text: 'x' }).code, 'SEARCH_NOT_READY');
+  assert.equal(handler({ action: 'parseSnapshot', snapshotId: 42 }).code, 'SNAPSHOT_UNAVAILABLE');
+  const unknown = handler({ action: 'unknown', text: '{' });
+  assert.equal(unknown.code, 'UNKNOWN_ACTION');
+  assert.equal(unknown.position, null);
+});
+
+test('search retains displayed numeric literals through every parsing route', () => {
+  const handler = createTaskHandler();
+  for (const [action, options] of [
+    ['format', {}], ['format', { includeData: false }], ['minify', {}], ['parse', {}],
+  ]) {
+    run(action, '{"value":1.20,"large":9007199254740993}', options, handler);
+    assert.equal(run('search', '1.20', {}, handler).matchCount, 1, action);
+    assert.equal(run('search', '9007199254740993', {}, handler).matchCount, 1, action);
+    assert.equal(run('search', '9007199254740992', {}, handler).matchCount, 0, action);
+  }
+  run('clear', undefined, {}, handler);
+  run('parse', '{"value":1.2}', {}, handler);
+  assert.equal(run('search', '1.20', {}, handler).matchCount, 0);
+});
+
 test('task errors preserve ids, error locations and unknown-action failure', () => {
   const handler = createTaskHandler();
   const error = handler({ id: 42, action: 'parse', text: '{\n  a:1}' });
@@ -208,8 +268,16 @@ test('structural diff caps details without losing total counts', () => {
 
 test('diff reports which input is invalid', () => {
   const handler = createTaskHandler();
-  assert.match(handler({ action: 'diff', text: '{', text2: '{}' }).error, /^左侧/);
-  assert.match(handler({ action: 'diff', text: '{}', text2: '{' }).error, /^右侧/);
+  for (const action of ['diff', 'textDiff']) {
+    const left = handler({ action, text: '{', text2: '{}' });
+    const right = handler({ action, text: '{}', text2: '{\n  "a":tru}' });
+    assert.equal(left.code, 'INVALID_JSON');
+    assert.equal(left.side, 'left');
+    assert.equal(right.code, 'INVALID_JSON');
+    assert.equal(right.side, 'right');
+    assert.deepEqual([right.position, right.line, right.column], [11, 2, 10]);
+    assert.doesNotMatch(right.error, /[\u3400-\u9fff]/);
+  }
 });
 
 function assertTextDiffReconstructs(result) {

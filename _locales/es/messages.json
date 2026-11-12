@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "; algunos elementos del array no tienen el campo clave — se comparan por índice"
+    "message": "; faltan algunas claves, no son compatibles o están duplicadas — comparación por índice"
   },
   "diffIdenticalNote": {
     "message": " — los contenidos son idénticos"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "Cancelar"
+  },
+  "statusCancelled": {
+    "message": "Cancelado"
+  },
+  "errInvalidJson": {
+    "message": "Sintaxis JSON no válida."
+  },
+  "errInvalidEscape": {
+    "message": "Cadena escapada no válida."
+  },
+  "errSnapshotUnavailable": {
+    "message": "El resultado guardado ya no está disponible. Repita la operación."
+  },
+  "errTaskFailed": {
+    "message": "La operación ha fallado. Inténtelo de nuevo."
+  },
+  "errWorkerFailed": {
+    "message": "El proceso de trabajo se detuvo inesperadamente. Inténtelo de nuevo."
   }
 }

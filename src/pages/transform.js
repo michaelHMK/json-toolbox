@@ -1,7 +1,7 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
-import { createFeedback } from '../shared/feedback.js';
+import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput } from '../shared/text-input.js';
 import { copyText } from '../shared/clipboard.js';
@@ -19,11 +19,15 @@ const action = document.body.dataset.action;
 const textInput = createTextInput(inputEl, action === 'minify' ? document.getElementById('input-view') : null);
 
 let outputText = '';
+let hasOutput = false;
 let dataVersion = 0;
 
 const runTask = createTaskRunner({
   serialize: true,
-  onBusyChange: (busy) => { busyEl.hidden = !busy; },
+  onBusyChange: createBusyFeedback({
+    busyEl, cancelEl: document.getElementById('btn-cancel'),
+    onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
+  }),
 });
 
 const { setStatus, showError, hideError, showParseError } = createFeedback({
@@ -54,17 +58,19 @@ async function runTransform() {
     return;
   }
   hideError();
+  runTask.cancel({ onlyIfBusy: true });
   const version = ++dataVersion;
   const res = await runTask(action, { text, retainSearch: false }, { key: 'transform' });
   if (res.cancelled) return;
   if (version !== dataVersion) return;
   if (!res.ok) {
     if (action === 'minify') showParseError(text, res);
-    else if (action === 'unescape') showError(t('errUnescapeFailed') + res.error);
-    else showError(res.error);
+    else if (action === 'unescape') showParseError(text, res, 'errUnescapeFailed');
+    else showError(taskErrorMessage(res));
     return;
   }
   outputText = res.result.text;
+  hasOutput = true;
   outputView.setText(outputText);
   if (action === 'minify') {
     setStatus(t('statusMinified', [outputText.length.toLocaleString(), String(res.duration)]));
@@ -74,8 +80,8 @@ async function runTransform() {
 }
 
 async function doCopy() {
-  const text = outputText || textInput.getText();
-  if (!text) {
+  const text = hasOutput ? outputText : textInput.getText();
+  if (!hasOutput && !text) {
     showError(t('errNothingToCopy'));
     return;
   }
@@ -89,6 +95,7 @@ function resetDocument() {
   runTask('clear', {}, { discardQueued: true });
   textInput.clear();
   outputText = '';
+  hasOutput = false;
   outputView.clear();
   hideError();
   setStatus('');
@@ -125,8 +132,12 @@ inputEl.addEventListener('keydown', (e) => {
     runTransform();
   }
 });
+inputEl.addEventListener('input', () => {
+  fileImport.reset();
+  dataVersion++;
+  runTask.cancel({ onlyIfBusy: true });
+});
 if (action === 'minify') {
-  inputEl.addEventListener('input', () => fileImport.reset());
   document.getElementById('input-view').addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();

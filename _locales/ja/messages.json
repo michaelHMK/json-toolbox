@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "；キー項目のない配列要素はインデックスで比較しました"
+    "message": "；一部の配列のキーが未指定、非対応の型、または重複のため、インデックスで比較しました"
   },
   "diffIdenticalNote": {
     "message": " — 内容は同一です"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "キャンセル"
+  },
+  "statusCancelled": {
+    "message": "キャンセルしました"
+  },
+  "errInvalidJson": {
+    "message": "JSON の構文が無効です。"
+  },
+  "errInvalidEscape": {
+    "message": "エスケープされた文字列が無効です。"
+  },
+  "errSnapshotUnavailable": {
+    "message": "保存された結果は利用できません。操作をもう一度実行してください。"
+  },
+  "errTaskFailed": {
+    "message": "操作に失敗しました。再試行してください。"
+  },
+  "errWorkerFailed": {
+    "message": "バックグラウンド処理が予期せず停止しました。再試行してください。"
   }
 }

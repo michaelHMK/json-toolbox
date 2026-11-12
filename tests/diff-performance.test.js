@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { diffData } from '../src/core/structural-diff.js';
 import { makeTextDiff } from '../src/core/text-diff.js';
+import { collectNumberLiterals } from '../src/core/json.js';
+import { performance } from 'node:perf_hooks';
 
 function checkTextDiff(result) {
   const a = result.aText.split('\n');
@@ -98,13 +100,13 @@ test('structural diff retains independent escaped sibling paths and numeric prev
   ]);
 });
 
-test('keyed arrays keep duplicate-key matching, nested pairs and exact ignore semantics', () => {
+test('keyed arrays keep unique-key matching, nested pairs and exact ignore semantics', () => {
   const left = {
-    list: [{ id: 1, child: [{ id: 'a', value: 1 }, { id: 'b', value: 2 }] }, { id: 1 }],
+    list: [{ id: 1, child: [{ id: 'a', value: 1 }, { id: 'b', value: 2 }] }, { id: 3 }],
     metadata: { update: 1 },
   };
   const right = {
-    list: [{ id: 2 }, { id: 1, child: [{ id: 'b', value: 3 }, { id: 'a', value: 4 }] }, { id: 1 }],
+    list: [{ id: 2 }, { id: 1, child: [{ id: 'b', value: 3 }, { id: 'a', value: 4 }] }, { id: 4 }],
     metadata: { update: 2 },
   };
   const result = diffData(left, right, {
@@ -124,12 +126,14 @@ test('keyed arrays keep duplicate-key matching, nested pairs and exact ignore se
   assert.equal(result.keyFallback, false);
 });
 
-test('identical references still report key fallback and duplicate-key differences', () => {
+test('identical references report key fallback without duplicate-key differences', () => {
   const value = { list: [1, 2] };
   assert.equal(diffData(value, value).total, 0);
   assert.equal(diffData(value, value, { keyField: 'id' }).keyFallback, true);
   const duplicates = [{ id: 1 }, { id: 1 }];
-  assert.equal(diffData(duplicates, duplicates, { keyField: 'id' }).total, 2);
+  const result = diffData(duplicates, duplicates, { keyField: 'id' });
+  assert.equal(result.total, 0);
+  assert.equal(result.keyFallback, true);
 });
 
 test('structural diff handles 20,000 nested objects and restores sibling paths', () => {
@@ -177,4 +181,58 @@ test('iterative structural diff keeps detail caps after returning from a deep br
   assert.equal(result.truncated, true);
   assert.equal(result.diffs[0].leftPath, '/deep' + '/child'.repeat(depth));
   assert.equal(result.diffs[4999].leftPath, '/wide/4998');
+});
+
+
+test('duplicate keys do not rescan unrelated numeric literal paths', () => {
+  const count = 20_000;
+  const text = '{"n":[' + Array(count).fill('1.0').join(',') + '],"o":{'
+    + Array.from({ length: count }, (_, i) => '"k":' + i).join(',') + '}}';
+  const started = performance.now();
+  const literals = collectNumberLiterals(text);
+  const elapsed = performance.now() - started;
+  assert.equal(Object.keys(literals).length, count);
+  assert.equal(literals['/n/0'], '1.0');
+  assert.equal(literals['/n/' + (count - 1)], '1.0');
+  assert.ok(elapsed < 2000, `literal scan took ${elapsed.toFixed(0)} ms`);
+});
+
+test('sparse precision literals do not rebuild paths for a deep array of equal numbers', () => {
+  const depth = 5000;
+  const count = 10_000;
+  let left = Array(count).fill(9007199254740992);
+  let right = [...left];
+  for (let i = 0; i < depth; i++) { left = [left]; right = [right]; }
+  const prefix = '/0'.repeat(depth);
+  const started = performance.now();
+  const result = diffData(left, right, {
+    leftNumberLiterals: { [prefix + '/9999']: '9007199254740993' },
+    rightNumberLiterals: { [prefix + '/9998']: '9007199254740993' },
+  });
+  const elapsed = performance.now() - started;
+  assert.equal(result.total, 2);
+  assert.deepEqual(result.diffs.map(({ type, leftPath, rightPath }) => [type, leftPath, rightPath]), [
+    ['changed', prefix + '/9998', prefix + '/9998'],
+    ['changed', prefix + '/9999', prefix + '/9999'],
+  ]);
+  assert.ok(elapsed < 1500, `deep numeric array diff took ${elapsed.toFixed(0)} ms`);
+});
+
+test('a precision literal at the end of a deep numeric chain keeps traversal linear', () => {
+  const depth = 10_000;
+  let left = 1;
+  let right = 1;
+  for (let i = 0; i < depth; i++) {
+    left = { number: 1, next: left };
+    right = { number: 1, next: right };
+  }
+  const path = '/next'.repeat(depth);
+  const started = performance.now();
+  const result = diffData(left, right, {
+    leftNumberLiterals: { [path]: '1.00000000000000001' },
+    rightNumberLiterals: { [path]: '1.00000000000000001' },
+  });
+  const elapsed = performance.now() - started;
+  assert.equal(result.total, 0);
+  assert.ok(elapsed < 1500, `deep numeric chain diff took ${elapsed.toFixed(0)} ms`);
 });

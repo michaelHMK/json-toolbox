@@ -2,16 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskRunner } from '../src/shared/worker-client.js';
 
-function setup() {
+function setup(options = {}) {
   const busy = [];
   const requests = [];
-  const worker = {
+  const workers = [];
+  const resets = [];
+  const makeWorker = () => ({
     terminated: false,
     postMessage: (message) => requests.push(message),
     terminate() { this.terminated = true; },
-  };
-  const run = createTaskRunner({ createWorker: () => worker, onBusyChange: (value) => busy.push(value) });
-  return { run, worker, busy, requests };
+  });
+  const worker = makeWorker();
+  const run = createTaskRunner({
+    ...options,
+    createWorker() {
+      const next = workers.length ? makeWorker() : worker;
+      workers.push(next);
+      return next;
+    },
+    onBusyChange: (value) => busy.push(value),
+    onReset: () => resets.push(true),
+  });
+  return { run, worker, workers, busy, requests, resets };
 }
 
 test('out-of-order replies reach their callers and busy lasts until all replies arrive', async () => {
@@ -28,27 +40,61 @@ test('out-of-order replies reach their callers and busy lasts until all replies 
   assert.equal(busy.at(-1), false);
 });
 
-test('worker failure settles all pending and future requests', async () => {
-  const { run, worker, busy } = setup();
+test('worker failure settles pending requests and the next request creates a usable worker', async () => {
+  const { run, worker, workers, busy, requests, resets } = setup();
+  assert.equal(workers.length, 0, 'construction is lazy');
   const first = run('format', { text: '{}' });
   const second = run('parse', { text: '[]' });
   worker.onerror({ message: 'load failed', preventDefault() {} });
-  for (const response of await Promise.all([first, second, run('search', { text: 'x' })])) {
+  for (const response of await Promise.all([first, second])) {
     assert.equal(response.ok, false);
+    assert.equal(response.code, 'WORKER_FAILED');
     assert.equal(response.error, 'load failed');
   }
   assert.equal(worker.terminated, true);
   assert.equal(busy.at(-1), false);
+  assert.equal(resets.length, 1);
+  assert.equal(workers.length, 1, 'failure does not immediately construct a replacement');
+  const next = run('parse', { text: '{"recovered":true}' });
+  assert.equal(workers.length, 2);
+  workers[1].onmessage({ data: { id: requests.at(-1).id, ok: true, result: { recovered: true } } });
+  assert.deepEqual((await next).result, { recovered: true });
 });
 
-test('worker construction and unreadable responses use the same error contract', async () => {
-  const run = createTaskRunner({ createWorker() { throw new Error('cannot create'); } });
-  assert.equal((await run('parse')).error, 'cannot create');
+test('worker construction can be retried after a failure', async () => {
+  let attempts = 0;
+  const busy = [];
+  const requests = [];
+  const worker = { postMessage(request) { requests.push(request); }, terminate() {} };
+  const run = createTaskRunner({
+    createWorker() {
+      if (++attempts === 1) throw new Error('cannot create');
+      return worker;
+    },
+    onBusyChange(value) { busy.push(value); },
+  });
+  const failed = await run('parse');
+  assert.equal(failed.error, 'cannot create');
+  assert.equal(failed.code, 'WORKER_FAILED');
+  assert.equal(busy.at(-1), false);
+  assert.equal(attempts, 1);
+  const retry = run('parse');
+  assert.equal(attempts, 2);
+  worker.onmessage({ data: { id: requests[0].id, ok: true, result: {} } });
+  assert.equal((await retry).ok, true);
+  assert.equal(busy.at(-1), false);
+});
+
+test('unreadable responses terminate the worker and allow recovery', async () => {
   const setupResult = setup();
   const pending = setupResult.run('parse');
   setupResult.worker.onmessageerror();
   assert.equal((await pending).ok, false);
   assert.equal(setupResult.busy.at(-1), false);
+  assert.equal(setupResult.worker.terminated, true);
+  const retry = setupResult.run('parse');
+  setupResult.workers[1].onmessage({ data: { id: setupResult.requests.at(-1).id, ok: true } });
+  assert.equal((await retry).ok, true);
 });
 
 test('postMessage failure only fails that request and clears busy', async () => {
@@ -85,18 +131,74 @@ test('serialized work replaces unsent requests without cloning stale inputs', as
   assert.equal(busy.at(-1), false);
 });
 
-test('discardQueued settles queued work and keeps clear before new work', async () => {
-  const requests = [];
-  const worker = { postMessage(request) { requests.push(request); }, terminate() {} };
-  const run = createTaskRunner({ serialize: true, createWorker: () => worker });
+test('cancel terminates running work and settles active and queued requests immediately', async () => {
+  const { run, worker, workers, requests, busy, resets } = setup({ serialize: true });
+  const active = run('format');
+  const queued = run('parse');
+  assert.equal(run.cancel(), true);
+  assert.equal(worker.terminated, true);
+  assert.equal(busy.at(-1), false);
+  assert.equal(resets.length, 1);
+  assert.equal(workers.length, 1, 'cancel leaves worker recreation until a new task');
+  const results = await Promise.all([active, queued]);
+  assert.ok(results.every((result) => result.ok === false && result.cancelled === true));
+  assert.deepEqual(requests.map((request) => request.action), ['format']);
+  const next = run('parse');
+  assert.equal(workers.length, 2);
+  workers[1].onmessage({ data: { id: requests.at(-1).id, ok: true } });
+  assert.equal((await next).ok, true);
+});
+
+test('clear terminates active work without posting or creating a worker', async () => {
+  const { run, worker, workers, requests, busy } = setup({ serialize: true });
+  assert.equal((await run('clear')).ok, true);
+  assert.equal(workers.length, 0, 'clearing an unused runner does not create a worker');
   const active = run('format');
   const queued = run('parse');
   const clear = run('clear', {}, { discardQueued: true });
-  const next = run('format');
+  assert.equal(worker.terminated, true);
+  assert.equal(busy.at(-1), false);
+  assert.equal(workers.length, 1);
+  assert.deepEqual(requests.map((request) => request.action), ['format']);
+  assert.equal((await active).cancelled, true);
   assert.equal((await queued).cancelled, true);
-  for (let i = 0; i < 3; i++) worker.onmessage({ data: { id: requests[i].id, ok: true } });
-  await Promise.all([active, clear, next]);
-  assert.deepEqual(requests.map((request) => request.action), ['format', 'clear', 'format']);
+  assert.deepEqual((await clear).result, {});
+  assert.equal((await run('clear')).ok, true);
+  assert.equal(workers.length, 1, 'repeated clears remain lazy');
+});
+
+test('events from a terminated worker cannot settle or fail new requests', async () => {
+  const { run, worker, workers, requests, busy, resets } = setup();
+  const active = run('parse');
+  run.cancel();
+  assert.equal((await active).cancelled, true);
+  const next = run('format');
+  const id = requests.at(-1).id;
+  worker.onmessage({ data: { id, ok: true, result: 'stale' } });
+  worker.onerror({ message: 'late failure', preventDefault() {} });
+  worker.onmessageerror();
+  assert.equal(busy.at(-1), true);
+  assert.equal(workers[1].terminated, false);
+  assert.equal(resets.length, 1);
+  workers[1].onmessage({ data: { id, ok: true, result: 'new' } });
+  assert.equal((await next).result, 'new');
+  assert.equal(busy.at(-1), false);
+});
+
+test('cancel onlyIfBusy preserves an idle worker and its cached data', async () => {
+  const { run, worker, workers, requests, resets } = setup();
+  assert.equal(run.cancel({ onlyIfBusy: true }), false);
+  assert.equal(workers.length, 0);
+  const parse = run('parse');
+  worker.onmessage({ data: { id: requests[0].id, ok: true } });
+  await parse;
+  assert.equal(run.cancel({ onlyIfBusy: true }), false);
+  assert.equal(worker.terminated, false);
+  assert.equal(resets.length, 0);
+  const search = run('search');
+  assert.equal(run.cancel({ onlyIfBusy: true }), true);
+  assert.equal((await search).cancelled, true);
+  assert.equal(resets.length, 1);
 });
 
 test('worker failure settles serialized active and queued work without sending more', async () => {

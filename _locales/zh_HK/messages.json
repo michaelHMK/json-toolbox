@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "；部分陣列元素缺少鍵欄位，已按索引比較"
+    "message": "；部分陣列的主鍵缺失、類型不支援或重複，已按索引比較"
   },
   "diffIdenticalNote": {
     "message": "，兩邊內容相同"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "取消"
+  },
+  "statusCancelled": {
+    "message": "已取消"
+  },
+  "errInvalidJson": {
+    "message": "JSON 語法無效。"
+  },
+  "errInvalidEscape": {
+    "message": "轉義字串無效。"
+  },
+  "errSnapshotUnavailable": {
+    "message": "儲存的結果已失效，請重新執行操作。"
+  },
+  "errTaskFailed": {
+    "message": "操作失敗，請重試。"
+  },
+  "errWorkerFailed": {
+    "message": "背景工作意外停止，請重試。"
   }
 }

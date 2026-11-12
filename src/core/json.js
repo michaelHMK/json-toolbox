@@ -1,4 +1,4 @@
-import { appendJsonPath, PATH_SEP } from './json-path.js';
+import { appendJsonPath } from './json-path.js';
 
 const NATIVE_STRINGIFY_THRESHOLD = 2 * 1024 * 1024;
 const NUMBER_LITERAL_PROBE_LIMIT = 256;
@@ -26,8 +26,11 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
   const parentDepths = [];
   const containerIsArray = [];
   const arrayIndexes = [];
-  const objectKeys = [];
-  const objectKeySets = [];
+  const objectRanges = [];
+  const activeRanges = [];
+  const literalPaths = restore ? null : [];
+  const literalValues = restore ? null : [];
+  const invalidEnds = restore ? null : [];
   const pathSegments = [];
   const encodedPaths = [''];
   const chunks = restore ? [] : null;
@@ -66,6 +69,7 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
         }
       } else {
         i++;
+        if (!restore && !containerIsArray[depth - 1]) activeRanges[depth - 1].end = literalCount;
         depth--;
         pathSegments.length = parentDepth;
         encodedPaths.length = Math.min(encodedPaths.length, parentDepth + 1);
@@ -95,22 +99,17 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
       setSegment(parentDepth, key);
       if (!restore) {
         const frame = depth - 1;
-        const seen = objectKeys[frame];
-        const seenSet = objectKeySets[frame];
-        const duplicate = seenSet ? seenSet.has(key) : seen.includes(key);
-        if (duplicate) {
-          const prefix = currentPath();
-          const descendants = prefix + PATH_SEP;
-          for (const stored in numberLiterals) {
-            if (stored === prefix || stored.startsWith(descendants)) delete numberLiterals[stored];
-          }
+        const ranges = objectRanges[frame];
+        if (activeRanges[frame]) activeRanges[frame].end = literalCount;
+        const previous = ranges.get(key);
+        if (previous) {
+          // Values occupy contiguous literal ranges. Superseded ranges are
+          // nested or disjoint, so one final sweep can discard them all.
+          invalidEnds[previous.start] = Math.max(invalidEnds[previous.start] || 0, previous.end);
         }
-        if (seenSet) {
-          seenSet.add(key);
-        } else {
-          seen.push(key);
-          if (seen.length === 16) objectKeySets[frame] = new Set(seen);
-        }
+        const range = { start: literalCount, end: literalCount };
+        ranges.set(key, range);
+        activeRanges[frame] = range;
       }
       state = 0;
       continue;
@@ -127,10 +126,10 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
         containerIsArray[depth] = false;
         arrayIndexes[depth] = 0;
         if (!restore) {
-          const keys = objectKeys[depth] || [];
-          keys.length = 0;
-          objectKeys[depth] = keys;
-          objectKeySets[depth] = null;
+          const ranges = objectRanges[depth] || new Map();
+          ranges.clear();
+          objectRanges[depth] = ranges;
+          activeRanges[depth] = null;
         }
         depth++;
         state = 1;
@@ -147,8 +146,7 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
         parentDepths[depth] = parentDepth;
         containerIsArray[depth] = true;
         arrayIndexes[depth] = 0;
-        objectKeys[depth] = null;
-        objectKeySets[depth] = null;
+        activeRanges[depth] = null;
         depth++;
         setSegment(parentDepth, 0);
         state = 0;
@@ -191,7 +189,8 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
         if (!Number.isFinite(value) || raw !== String(value)) {
           // null means the probe is incomplete, never a usable partial map.
           if (++literalCount > literalLimit) return null;
-          numberLiterals[currentPath()] = raw;
+          literalPaths.push(currentPath());
+          literalValues.push(raw);
         }
       }
       state = 2;
@@ -212,7 +211,17 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
     state = 2;
   }
 
-  if (!restore) return numberLiterals;
+  if (!restore) {
+    for (let n = 0; n < literalCount;) {
+      if (invalidEnds[n] > n) {
+        n = invalidEnds[n];
+      } else {
+        numberLiterals[literalPaths[n]] = literalValues[n];
+        n++;
+      }
+    }
+    return numberLiterals;
+  }
   if (copyFrom === 0) return text;
   chunks.push(text.slice(copyFrom));
   return chunks.join('');

@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "；部分数组元素无主键，已按下标对比"
+    "message": "；部分数组的主键缺失、类型不支持或重复，已按下标比较"
   },
   "diffIdenticalNote": {
     "message": "，两边内容一致"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "取消"
+  },
+  "statusCancelled": {
+    "message": "已取消"
+  },
+  "errInvalidJson": {
+    "message": "JSON 语法无效。"
+  },
+  "errInvalidEscape": {
+    "message": "转义字符串无效。"
+  },
+  "errSnapshotUnavailable": {
+    "message": "保存的结果已失效，请重新执行操作。"
+  },
+  "errTaskFailed": {
+    "message": "操作失败，请重试。"
+  },
+  "errWorkerFailed": {
+    "message": "后台任务意外停止，请重试。"
   }
 }

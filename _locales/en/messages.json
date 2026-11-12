@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "; some array items lack the key field — compared by index"
+    "message": "; some array keys are missing, unsupported or duplicated — compared by index"
   },
   "diffIdenticalNote": {
     "message": " — contents are identical"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "Cancel"
+  },
+  "statusCancelled": {
+    "message": "Cancelled"
+  },
+  "errInvalidJson": {
+    "message": "Invalid JSON syntax."
+  },
+  "errInvalidEscape": {
+    "message": "Invalid escaped string."
+  },
+  "errSnapshotUnavailable": {
+    "message": "The saved result is no longer available. Run the operation again."
+  },
+  "errTaskFailed": {
+    "message": "The operation failed. Please try again."
+  },
+  "errWorkerFailed": {
+    "message": "The worker stopped unexpectedly. Please try again."
   }
 }

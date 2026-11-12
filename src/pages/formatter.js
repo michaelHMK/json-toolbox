@@ -1,7 +1,7 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
-import { createFeedback } from '../shared/feedback.js';
+import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput } from '../shared/text-input.js';
 import { copyText } from '../shared/clipboard.js';
@@ -48,11 +48,24 @@ const state = {
 };
 
 let dataVersion = 0;
+let formattingVersion = null;
+let pendingView = null;
+let viewRequestVersion = 0;
 let treeView = null;
+let workerSearchReady = false;
 
 const runTask = createTaskRunner({
   serialize: true,
-  onBusyChange: (busy) => { busyEl.hidden = !busy; },
+  onReset: () => {
+    state.snapshotId = null;
+    workerSearchReady = false;
+    formattingVersion = null;
+    invalidateViewRequest();
+  },
+  onBusyChange: createBusyFeedback({
+    busyEl, cancelEl: $('btn-cancel'),
+    onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
+  }),
 });
 
 /* ================= 状态展示 ================= */
@@ -79,6 +92,11 @@ const fileImport = createFileImport({
 });
 
 /* ================= 视图切换 ================= */
+function invalidateViewRequest() {
+  pendingView = null;
+  viewRequestVersion++;
+}
+
 function updateViewButtons() {
   $('view-text').classList.toggle('active', state.view === 'text');
   $('view-tree').classList.toggle('active', state.view === 'tree');
@@ -95,12 +113,20 @@ function showText(text) {
   outputView.setText(text);
 }
 
+function showTree() {
+  renderTree();
+  state.view = 'tree';
+  updateViewButtons();
+  if (searchInput.value.trim()) runSearch();
+}
+
 function currentText() {
   return state.outputText || textInput.getText();
 }
 
 // 树视图需要解析后的数据；若源文本没变则复用
 async function ensureTreeData() {
+  if (formattingVersion !== null) return false;
   const text = currentText();
   if (!text.trim()) {
     showError(t('errNothingToParse'));
@@ -118,6 +144,7 @@ async function ensureTreeData() {
     return false;
   }
   state.data = res.result.data;
+  workerSearchReady = true;
   state.numberLiterals = res.result.numberLiterals || null;
   state.dataSource = text;
   if (res.result.snapshotId !== undefined) state.snapshotId = res.result.snapshotId;
@@ -125,16 +152,26 @@ async function ensureTreeData() {
 }
 
 async function setView(view) {
-  if (view === state.view) return;
+  const requestVersion = ++viewRequestVersion;
+  pendingView = view;
+  // Keep the rendered view visible until its replacement is ready. A pending
+  // choice is not a completed tree, and cancellation must leave it retryable.
+  if (formattingVersion !== null) return false;
+  if (view === state.view && (view !== 'tree' || treeView)) {
+    pendingView = null;
+    return true;
+  }
   if (view === 'tree') {
-    if (!(await ensureTreeData())) return;
-    state.view = 'tree';
-    updateViewButtons();
-    if (searchInput.value.trim()) runSearch();
-    else renderTree();
+    const ready = await ensureTreeData();
+    if (requestVersion !== viewRequestVersion) return false;
+    pendingView = null;
+    if (!ready) return false;
+    showTree();
   } else {
+    pendingView = null;
     showText(state.outputText);
   }
+  return true;
 }
 
 /* ================= 操作 ================= */
@@ -145,33 +182,43 @@ async function doFormat() {
     return;
   }
   hideError();
+  runTask.cancel({ onlyIfBusy: true });
   const version = ++dataVersion;
+  formattingVersion = version;
   const retainDocument = state.view === 'tree' || !textInput.isLarge();
   const res = await runTask('format', {
     text, indent: indentSel.value, includeData: state.view === 'tree',
     retainSnapshot: retainDocument, retainSearch: retainDocument,
   }, { key: 'format' });
+  if (formattingVersion === version) formattingVersion = null;
   if (res.cancelled || version !== dataVersion) return;
   if (!res.ok) {
+    invalidateViewRequest();
     showParseError(text, res);
     return;
   }
+  const nextView = pendingView ?? state.view;
+  invalidateViewRequest();
   treeView?.destroy();
   treeView = null;
   outputView.clear();
   state.outputText = res.result.text;
   state.snapshotId = res.result.snapshotId ?? null;
+  workerSearchReady = retainDocument;
   state.data = res.result.data;
   state.numberLiterals = res.result.numberLiterals || null;
   state.dataSource = state.data === undefined ? '' : state.outputText;
   state.matchIndex = -1;
-  if (state.view === 'tree') {
-    if (state.data === undefined && !(await ensureTreeData())) return;
-    if (version !== dataVersion) return;
-    if (searchInput.value.trim()) runSearch();
-    else renderTree();
+  if (nextView === 'tree' && state.data !== undefined) {
+    showTree();
   } else {
+    // A lazy tree still needs a snapshot transfer. Keep the available text
+    // usable if that follow-up is cancelled or fails.
     showText(state.outputText);
+    if (nextView === 'tree') {
+      if (!(await setView('tree'))) return;
+      if (version !== dataVersion) return;
+    }
   }
   setStatus(t('statusFormatted', [state.outputText.length.toLocaleString(), String(res.duration)]));
 }
@@ -189,6 +236,8 @@ async function doCopy() {
 
 function resetDocument() {
   dataVersion++;
+  formattingVersion = null;
+  invalidateViewRequest();
   clearTimeout(searchTimer);
   searchTimer = 0;
   void runTask('clear', {}, { discardQueued: true });
@@ -281,6 +330,9 @@ async function runSearch() {
   const q = searchInput.value.trim();
   state.searchQuery = q;
   state.matchIndex = -1;
+  // A queued parse of the displayed old document would overwrite the new
+  // format's Worker cache. doFormat searches the current query once it settles.
+  if (formattingVersion !== null) return;
   if (state.data === undefined) {
     updateMatchInfo();
     return;
@@ -294,10 +346,20 @@ async function runSearch() {
     return;
   }
   const version = dataVersion;
+  if (!workerSearchReady) {
+    const parsed = await runTask('parse', { text: currentText(), retainSnapshot: true });
+    if (parsed.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
+    if (!parsed.ok) {
+      showError(t('errSearchFailed') + taskErrorMessage(parsed));
+      return;
+    }
+    workerSearchReady = true;
+    state.snapshotId = parsed.result.snapshotId ?? null;
+  }
   const res = await runTask('search', { text: q }, { key: 'search' });
   if (res.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
   if (!res.ok) {
-    showError(t('errSearchFailed') + res.error);
+    showError(t('errSearchFailed') + taskErrorMessage(res));
     return;
   }
   state.highlights = new Set(res.result.highlights);
@@ -371,7 +433,12 @@ $('input-view').addEventListener('keydown', (e) => {
   }
 });
 
-inputEl.addEventListener('input', () => fileImport.reset());
+inputEl.addEventListener('input', () => {
+  fileImport.reset();
+  dataVersion++;
+  invalidateViewRequest();
+  runTask.cancel({ onlyIfBusy: true });
+});
 inputEl.addEventListener('paste', () => {
   if (autoFormatChk.checked) setTimeout(doFormat, 0);
 });

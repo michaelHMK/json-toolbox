@@ -1,7 +1,7 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
-import { createFeedback } from '../shared/feedback.js';
+import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createChildPathIndex } from '../shared/json-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
@@ -56,17 +56,32 @@ const state = {
 
 const treeViews = { left: null, right: null };
 let dataVersion = 0;
+let comparingVersion = null;
 let textRequest = null;
 let dataRequest = null;
 
 const runTask = createTaskRunner({
   serialize: true,
-  onBusyChange: (busy) => { busyEl.hidden = !busy; },
+  onReset: () => {
+    if (state.result) delete state.result.snapshotId;
+    textRequest = null;
+    dataRequest = null;
+    comparingVersion = null;
+  },
+  onBusyChange: createBusyFeedback({
+    busyEl, cancelEl: $('btn-cancel'),
+    onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
+  }),
 });
 
 /* ================= 状态展示 ================= */
-const { setStatus, showError, hideError } = createFeedback({
+const { setStatus, showError, hideError, showParseError } = createFeedback({
   statusEl, errorEl,
+  selectInputPosition: (position, _line, side) => {
+    const input = side === 'right' ? inputRight : inputLeft;
+    input.focus();
+    input.setSelectionRange(position, position);
+  },
 });
 
 /* ================= 对比主流程 ================= */
@@ -78,7 +93,9 @@ async function doCompare() {
     return;
   }
   hideError();
+  runTask.cancel({ onlyIfBusy: true });
   const version = ++dataVersion;
+  comparingVersion = version;
   textRequest = null;
   dataRequest = null;
   const ignorePaths = ignoreInput.value
@@ -90,9 +107,10 @@ async function doCompare() {
     text: lt, text2: rt, keyField, ignorePaths,
     includeData: state.view === 'struct', retainSnapshot: true,
   }, { key: 'diff' });
+  if (comparingVersion === version) comparingVersion = null;
   if (res.cancelled || version !== dataVersion) return;
   if (!res.ok) {
-    showError(t('errCompareFailed') + res.error);
+    showParseError(res.side === 'right' ? rt : lt, res, 'errCompareFailed');
     return;
   }
   state.result = res.result;
@@ -114,7 +132,7 @@ async function doCompare() {
   state.diffIndex = -1;
   resultEl.hidden = false;
   if (state.view === 'text') {
-    await loadTextDiff();
+    if (!(await loadTextDiff())) return;
     if (version !== dataVersion) return;
   } else {
     if (!(await ensureComparisonData())) return;
@@ -125,19 +143,24 @@ async function doCompare() {
 }
 
 async function ensureComparisonData() {
+  if (comparingVersion !== null) return false;
   if (state.leftData !== undefined) return true;
   const comparison = state.result;
   if (!comparison) return false;
   const version = dataVersion;
-  dataRequest ||= runTask('comparisonData', { snapshotId: comparison.snapshotId });
+  dataRequest ||= comparison.snapshotId !== undefined
+    ? runTask('comparisonData', { snapshotId: comparison.snapshotId })
+    : runTask('diff', { text: state.leftText, text2: state.rightText, retainSnapshot: true });
   const res = await dataRequest;
   if (res.cancelled || version !== dataVersion || comparison !== state.result) return false;
   dataRequest = null;
   if (!res.ok) {
-    showError(t('errCompareFailed') + res.error);
+    showError(t('errCompareFailed') + taskErrorMessage(res));
     return false;
   }
-  Object.assign(comparison, res.result);
+  for (const key of ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals', 'snapshotId']) {
+    if (res.result[key] !== undefined) comparison[key] = res.result[key];
+  }
   state.leftData = res.result.leftData;
   state.rightData = res.result.rightData;
   state.leftNumberLiterals = res.result.leftNumberLiterals;
@@ -270,6 +293,7 @@ function updateDiffInfo() {
 
 /* ================= 文本 diff 视图 ================= */
 async function loadTextDiff() {
+  if (comparingVersion !== null) return false;
   const version = dataVersion;
   const comparison = state.result;
   if (!state.textResult) {
@@ -283,7 +307,7 @@ async function loadTextDiff() {
     if (res.cancelled || version !== dataVersion || comparison !== state.result) return false;
     textRequest = null;
     if (!res.ok) {
-      showError(t('errTextDiffFailed') + res.error);
+      showError(t('errTextDiffFailed') + taskErrorMessage(res));
       return false;
     }
     state.textResult = res.result;
@@ -304,7 +328,7 @@ async function setCompareView(view) {
   structView.hidden = view !== 'struct';
   textView.hidden = view !== 'text';
   diffNavEl.style.visibility = view === 'struct' ? '' : 'hidden';
-  if (!state.result) return;
+  if (!state.result || comparingVersion !== null) return;
   if (view === 'text') await loadTextDiff();
   else if (state.treesDirty && await ensureComparisonData() && state.view === 'struct') refreshTrees();
   else if (state.view === 'struct') {
@@ -315,6 +339,8 @@ async function setCompareView(view) {
 
 /* ================= 其他操作 ================= */
 function doSwap() {
+  dataVersion++;
+  runTask.cancel({ onlyIfBusy: true });
   const t2 = inputLeft.value;
   inputLeft.value = inputRight.value;
   inputRight.value = t2;
@@ -323,6 +349,7 @@ function doSwap() {
 
 function doClear() {
   dataVersion++;
+  comparingVersion = null;
   textRequest = null;
   dataRequest = null;
   void runTask('clear', {}, { discardQueued: true });
@@ -419,10 +446,14 @@ arrayModeSel.addEventListener('change', () => {
 onlyDiffChk.addEventListener('change', () => {
   state.onlyDiff = onlyDiffChk.checked;
   state.treesDirty = true;
-  if (state.result && state.view === 'struct') refreshTrees();
+  if (state.result && state.view === 'struct' && comparingVersion === null && state.leftData !== undefined) refreshTrees();
 });
 
 for (const el of [inputLeft, inputRight]) {
+  el.addEventListener('input', () => {
+    dataVersion++;
+    runTask.cancel({ onlyIfBusy: true });
+  });
   el.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();

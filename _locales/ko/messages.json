@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "; 일부 배열 항목에 키 필드가 없어 인덱스로 비교했습니다"
+    "message": "; 일부 배열 키가 없거나 지원되지 않거나 중복되어 인덱스로 비교했습니다"
   },
   "diffIdenticalNote": {
     "message": " — 내용이 동일합니다"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "취소"
+  },
+  "statusCancelled": {
+    "message": "취소됨"
+  },
+  "errInvalidJson": {
+    "message": "잘못된 JSON 구문입니다."
+  },
+  "errInvalidEscape": {
+    "message": "잘못된 이스케이프 문자열입니다."
+  },
+  "errSnapshotUnavailable": {
+    "message": "저장된 결과를 더 이상 사용할 수 없습니다. 작업을 다시 실행하세요."
+  },
+  "errTaskFailed": {
+    "message": "작업에 실패했습니다. 다시 시도하세요."
+  },
+  "errWorkerFailed": {
+    "message": "백그라운드 작업이 예기치 않게 중단되었습니다. 다시 시도하세요."
   }
 }
