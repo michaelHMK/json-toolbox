@@ -2,6 +2,7 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs \
 // CHROMIUM_EXECUTABLE=/path/to/full/chromium node store-assets/generate.mjs
 // Optional: STORE_LOCALES=en,zh_CN to regenerate selected locales only.
+// Add --promos-only to update promotional images without recapturing screenshots.
 // Extension loading requires full Chromium, not chrome-headless-shell.
 import assert from 'node:assert/strict';
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
@@ -22,6 +23,7 @@ const locales = process.env.STORE_LOCALES
 assert(locales.length && locales.every((locale) => available.includes(locale)),
   `STORE_LOCALES must use catalog directories: ${available.join(', ')}`);
 const output = [];
+const promosOnly = process.argv.includes('--promos-only');
 
 async function capture(page, name, width, height) {
   await page.evaluate(() => document.fonts.ready);
@@ -65,23 +67,33 @@ async function verifyPage(page, catalog) {
     const problems = [];
     for (const [attribute, property] of [
       ['data-i18n', 'textContent'], ['data-i18n-title', 'title'], ['data-i18n-placeholder', 'placeholder'],
+      ['data-i18n-aria-label', 'aria-label'],
     ]) {
       for (const element of document.querySelectorAll(`[${attribute}]`)) {
         const key = element.getAttribute(attribute);
-        if (element[property] !== catalog[key].message) problems.push(`${key}: incorrect ${property}`);
+        const value = property === 'aria-label' ? element.getAttribute(property) : element[property];
+        if (value !== catalog[key].message) problems.push(`${key}: incorrect ${property}`);
       }
     }
     if (document.documentElement.scrollWidth > innerWidth) problems.push('Horizontal page overflow');
     for (const element of document.querySelectorAll('button, .nav-link, .page-heading, .field')) {
       if (!element.checkVisibility()) continue;
       const rect = element.getBoundingClientRect();
-      if (rect.left < -1 || rect.right > innerWidth + 1 || rect.bottom > innerHeight + 1) {
+      if (rect.left < -1 || rect.right > innerWidth + 1 || rect.top < -1 || rect.bottom > innerHeight + 1) {
         problems.push(`Control outside viewport: ${element.id || element.textContent.trim()}`);
       }
     }
     return problems;
   }, catalog);
   assert.deepEqual(problems, [], `Localized page: ${page.url()}`);
+}
+
+async function selectTheme(page, theme) {
+  await page.locator('#theme-trigger').click();
+  await page.locator(`[data-theme-option="${theme}"]`).click();
+  assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
+  assert.equal(await page.locator('#theme-switch').isHidden(), true);
+  assert.equal(await page.evaluate(() => localStorage.getItem('json-toolbox.theme')), theme);
 }
 
 async function waitForOutput(page) {
@@ -144,10 +156,26 @@ for (const directory of locales) {
       assert.deepEqual(overflow, [], `${svg}: text must fit`);
       await capture(page, png, width, height);
     }
+    if (directory === 'en') {
+      // Preserve the original English asset URLs as byte-identical aliases.
+      for (const [source, target] of [
+        ['promo-440x280.svg', 'promo.svg'],
+        ['promo-1400x560.svg', 'promo-1400x560.svg'],
+        ['promo-440x280.png', 'promo-440x280.png'],
+        ['promo-1400x560.png', 'promo-1400x560.png'],
+      ]) await copyFile(join(assets, 'en', source), join(assets, target));
+    }
+    if (promosOnly) {
+      assert.deepEqual(errors, [], `${locale}: browser errors`);
+      console.log(`${directory}: generated 2 promotional images`);
+      continue;
+    }
     await page.setViewportSize({ width: 1280, height: 800 });
 
     await page.goto(base + '/formatter.html');
     await verifyCatalog(page, catalog, directory);
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'normal');
+    assert.equal(await page.locator('html').getAttribute('dir'), directory === 'ar' ? 'rtl' : 'ltr');
     assert.equal(await page.locator('.brand-name').textContent(), brand);
     await page.locator('#btn-sample').click();
     await waitForOutput(page);
@@ -167,6 +195,12 @@ for (const directory of locales) {
     await page.locator('h1').click();
     await verifyPage(page, catalog);
     await capture(page, `${directory}/01-formatter-tree.png`, 1280, 800);
+    await page.locator('#theme-trigger').click();
+    assert.equal(await page.locator('#theme-switch').isVisible(), true);
+    assert.equal(await page.locator('#theme-switch .theme-preview').count(), 3);
+    await verifyPage(page, catalog);
+    await capture(page, `${directory}/05-theme-picker.png`, 1280, 800);
+    await page.keyboard.press('Escape');
 
     await page.goto(base + '/compare.html');
     const left = {
@@ -193,11 +227,13 @@ for (const directory of locales) {
     await capture(page, `${directory}/02-compare-structure.png`, 1280, 800);
     await page.locator('#view-text').click();
     await page.waitForFunction(() => !document.querySelector('#text-view').hidden && document.querySelector('#text-view .tline'));
+    await selectTheme(page, 'dark');
     await page.locator('h1').click();
     await verifyPage(page, catalog);
     await capture(page, `${directory}/03-compare-text.png`, 1280, 800);
 
     await page.goto(base + '/minify.html');
+    await selectTheme(page, 'comfort');
     const minifyData = { id: 42, active: true, items: [1, 2, 3] };
     await importJson(page, 'data.json', JSON.stringify(minifyData, null, 2));
     assert.equal(await page.locator('#output-text').textContent(), JSON.stringify(minifyData));
@@ -219,15 +255,6 @@ for (const directory of locales) {
     await context?.close();
     await rm(profile, { recursive: true, force: true });
   }
-  if (directory === 'en') {
-    // Preserve the original English asset URLs as byte-identical aliases.
-    for (const [source, target] of [
-      ['promo-440x280.svg', 'promo.svg'],
-      ['promo-1400x560.svg', 'promo-1400x560.svg'],
-      ['promo-440x280.png', 'promo-440x280.png'],
-      ['promo-1400x560.png', 'promo-1400x560.png'],
-    ]) await copyFile(join(assets, 'en', source), join(assets, target));
-  }
-  console.log(`${directory}: generated 4 screenshots and 2 promotional images`);
+  console.log(`${directory}: generated 5 screenshots and 2 promotional images`);
 }
 console.log(JSON.stringify({ generated: output }, null, 2));

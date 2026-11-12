@@ -9,7 +9,7 @@ JSON Toolbox lets you format, browse and compare JSON in a dedicated browser tab
 
 Format and browse
 - Beautify JSON with 2-space, 4-space or Tab indentation.
-- See syntax errors, with line/column details and navigation when the browser provides them.
+- See syntax errors with line/column details and navigation to the error, including a local fallback when the browser omits the location.
 - Explore a collapsible tree with virtual scrolling, expansion by level, key/value search and match navigation.
 - Copy the complete result with one click.
 
@@ -30,7 +30,11 @@ Compare JSON
 - Browse the full tree with highlighted differences or show only differences, with navigation between them.
 - Switch to a line-by-line text comparison of formatted JSON.
 
+Appearance
+- Choose Normal, Eye comfort or Dark from the sidebar, with thumbnail previews. Normal is the default.
+- Your theme choice is remembered locally across tools and after reopening. Input and results are not saved.
+
 Privacy
 All processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. Results are written to the system clipboard only when you copy.
 
-Large inputs and results remain in memory; performance depends on your device and data structure. Virtual views render only part of the content at a time, so native browser Find covers only the rendered portion. Use tree search or copy the complete result when needed. Large text differences may be shown as whole blocks.
+Large inputs and results remain in memory; performance depends on your device and data structure. Virtual views render only part of the content at a time, so native browser Find covers only the rendered portion. Use tree search or copy the complete result when needed. For extensive text differences, unmatched sections may be shown as whole blocks.

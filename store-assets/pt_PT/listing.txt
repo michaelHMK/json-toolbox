@@ -9,7 +9,7 @@ O JSON Toolbox permite formatar, explorar e comparar JSON num separador dedicado
 
 Formatar e explorar
 - Formate JSON com recuo de 2 espaços, 4 espaços ou tabulações.
-- Veja erros de sintaxe, com linha, coluna e navegação até à posição quando o navegador fornece essas informações.
+- Veja erros de sintaxe com linha, coluna e navegação até ao erro; uma verificação local fornece a posição quando o navegador não a indica.
 - Explore uma árvore recolhível com deslocamento virtual, expansão por nível, pesquisa por chave ou valor e navegação entre correspondências.
 - Copie o resultado completo com um clique.
 
@@ -30,7 +30,11 @@ Comparar JSON
 - Explore a árvore completa com diferenças destacadas ou mostre só as diferenças e navegue entre elas.
 - Alterne para a comparação de texto linha a linha do JSON formatado.
 
+Aparência
+- Escolha Normal, Conforto ou Escuro na barra lateral, com pré-visualizações em miniatura. Normal é o modo predefinido.
+- Apenas a escolha do tema é guardada localmente, para ser reposta ao mudar de ferramenta ou reabrir a extensão. As entradas e os resultados não são guardados.
+
 Privacidade
 Todo o processamento ocorre no navegador. Sem recolha ou envio de dados, pedidos de rede, código remoto, anúncios ou rastreio. O histórico de entradas não é guardado. O resultado só é escrito na área de transferência do sistema quando o copia.
 
-As entradas e os resultados completos permanecem na memória; o desempenho depende do dispositivo e da estrutura dos dados. As vistas virtuais apresentam apenas parte do conteúdo de cada vez, pelo que a pesquisa nativa do navegador abrange apenas a parte apresentada. Use a pesquisa na árvore ou copie o resultado completo quando necessário. Diferenças de texto grandes podem ser apresentadas em blocos inteiros.
+As entradas e os resultados completos permanecem na memória; o desempenho depende do dispositivo e da estrutura dos dados. As vistas virtuais apresentam apenas parte do conteúdo de cada vez, pelo que a pesquisa nativa do navegador abrange apenas a parte apresentada. Use a pesquisa na árvore ou copie o resultado completo quando necessário. Quando há muitas diferenças, os trechos de texto sem correspondência podem ser apresentados em blocos inteiros.
