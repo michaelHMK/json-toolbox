@@ -50,9 +50,6 @@
   "themeLabel": {
     "message": "外观"
   },
-  "themeSaved": {
-    "message": "本地保存"
-  },
   "themeNormal": {
     "message": "正常"
   },
@@ -61,9 +58,6 @@
   },
   "themeDark": {
     "message": "暗色"
-  },
-  "themeSync": {
-    "message": "偏好会同步到其他工具页面"
   },
   "descFormat": {
     "message": "美化 JSON，支持树形浏览、层级展开与搜索。"

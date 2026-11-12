@@ -50,9 +50,6 @@
   "themeLabel": {
     "message": "外観"
   },
-  "themeSaved": {
-    "message": "ローカルに保存"
-  },
   "themeNormal": {
     "message": "通常"
   },
@@ -61,9 +58,6 @@
   },
   "themeDark": {
     "message": "ダーク"
-  },
-  "themeSync": {
-    "message": "設定はすべてのツールで共有されます"
   },
   "descFormat": {
     "message": "JSON を整形し、ツリー表示、階層の展開、検索ができます。"

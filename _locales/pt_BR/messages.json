@@ -50,9 +50,6 @@
   "themeLabel": {
     "message": "Aparência"
   },
-  "themeSaved": {
-    "message": "Salvo localmente"
-  },
   "themeNormal": {
     "message": "Normal"
   },
@@ -61,9 +58,6 @@
   },
   "themeDark": {
     "message": "Escuro"
-  },
-  "themeSync": {
-    "message": "Preferência aplicada a todas as ferramentas"
   },
   "descFormat": {
     "message": "Formate JSON com navegação em árvore, expansão por nível e busca."

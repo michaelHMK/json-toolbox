@@ -50,9 +50,6 @@
   "themeLabel": {
     "message": "Darstellung"
   },
-  "themeSaved": {
-    "message": "Lokal gespeichert"
-  },
   "themeNormal": {
     "message": "Normal"
   },
@@ -61,9 +58,6 @@
   },
   "themeDark": {
     "message": "Dunkel"
-  },
-  "themeSync": {
-    "message": "Gilt für alle Werkzeuge"
   },
   "descFormat": {
     "message": "JSON übersichtlich formatieren, als Baum durchsuchen und nach Ebenen aufklappen."

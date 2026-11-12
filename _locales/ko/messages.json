@@ -50,9 +50,6 @@
   "themeLabel": {
     "message": "모양"
   },
-  "themeSaved": {
-    "message": "로컬에 저장됨"
-  },
   "themeNormal": {
     "message": "기본"
   },
@@ -61,9 +58,6 @@
   },
   "themeDark": {
     "message": "다크"
-  },
-  "themeSync": {
-    "message": "설정이 모든 도구에 적용됩니다"
   },
   "descFormat": {
     "message": "JSON을 보기 좋게 정리하고 트리 탐색, 단계별 펼치기, 검색을 사용할 수 있습니다."

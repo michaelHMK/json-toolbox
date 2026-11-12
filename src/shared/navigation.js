@@ -82,14 +82,13 @@ export function renderNavigation() {
           <svg class="theme-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
         </button>
         <div id="theme-switch" class="theme-switch" role="dialog" aria-labelledby="theme-menu-title" hidden>
-          <div class="theme-menu-heading"><strong id="theme-menu-title" data-i18n="themeLabel">Appearance</strong><span data-i18n="themeSaved">Saved locally</span></div>
+          <div class="theme-menu-heading"><strong id="theme-menu-title" data-i18n="themeLabel">Appearance</strong></div>
           <div class="theme-options">
             ${themeOptions.map((option) => `<button type="button" class="theme-option" data-theme-option="${option.id}" data-theme-label="${option.label}" aria-pressed="${option.id === theme}">
               ${renderThemePreview(option.id)}
               <span class="theme-option-caption"><svg class="theme-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${option.icon}</svg><span class="theme-option-name" data-i18n="${option.label}">${option.fallback}</span><svg class="theme-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span>
             </button>`).join('')}
           </div>
-          <div class="theme-menu-footer"><span class="local-dot" aria-hidden="true"></span><span data-i18n="themeSync">Preference shared across all tools</span></div>
         </div>
       </div>
       <div class="sidebar-footer">
