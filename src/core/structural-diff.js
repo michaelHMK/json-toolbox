@@ -17,9 +17,33 @@ function canonicalNumber(literal) {
   return match[1] + coefficient + 'e' + exponent;
 }
 
-function hasLiterals(literals) {
-  for (const path in literals) return true;
-  return false;
+// Only precision-changing literals affect equality. Keep those values in a
+// sparse path trie so traversal can carry a child index without rebuilding or
+// hashing a complete JSON Pointer for every equal numeric leaf.
+function indexNumberValues(literals) {
+  let root;
+  for (const path in literals) {
+    const literal = literals[path];
+    const exact = canonicalNumber(literal);
+    if (exact === canonicalNumber(String(Number(literal)))) continue;
+    if (path === '') {
+      root = exact;
+      continue;
+    }
+    const segments = path.slice(1).split('/');
+    let node = root ?? (root = new Map());
+    for (let i = 0; i < segments.length; i++) {
+      const key = segments[i].replace(/~1/g, '/').replace(/~0/g, '~');
+      if (i === segments.length - 1) {
+        node.set(key, exact);
+      } else {
+        let child = node.get(key);
+        if (!child) node.set(key, child = new Map());
+        node = child;
+      }
+    }
+  }
+  return root;
 }
 
 // 解析忽略路径模式：'a.b[0].c' → ['a','b','0','c']；'list[*].x' → ['list','*','x']
@@ -80,9 +104,10 @@ export function diffData(left, right, options) {
   const keyField = (options && options.keyField) || '';
   const leftNumberLiterals = (options && options.leftNumberLiterals) || null;
   const rightNumberLiterals = (options && options.rightNumberLiterals) || null;
-  const leftHasLiterals = hasLiterals(leftNumberLiterals);
-  const rightHasLiterals = hasLiterals(rightNumberLiterals);
-  const compareNumberLiterals = leftHasLiterals || rightHasLiterals;
+  const sameDocument = left === right && leftNumberLiterals === rightNumberLiterals && !keyField;
+  const leftNumbers = sameDocument ? undefined : indexNumberValues(leftNumberLiterals);
+  const rightNumbers = sameDocument || leftNumberLiterals === rightNumberLiterals
+    ? leftNumbers : indexNumberValues(rightNumberLiterals);
   const ignoreSegs = ((options && options.ignorePaths) || [])
     .map(parseIgnorePattern)
     .filter((s) => s.length > 0);
@@ -131,10 +156,9 @@ export function diffData(left, right, options) {
   }
 
   // A primary key must be present, scalar, typed and unique on each side.
-  function keyedIndex(arr, segs, numberLiterals, hasNumberLiterals) {
+  function keyedIndex(arr, numbers) {
     if (!keyField) return null;
     const index = new Map();
-    const parentPath = hasNumberLiterals ? toPath(segs) : null;
     for (let i = 0; i < arr.length; i++) {
       const item = arr[i];
       if (item === null || typeof item !== 'object' || Array.isArray(item)
@@ -144,8 +168,7 @@ export function diffData(left, right, options) {
       if (value === null || (type !== 'string' && type !== 'number' && type !== 'boolean')) return null;
       let token = String(value);
       if (type === 'number') {
-        const path = hasNumberLiterals ? appendJsonPath(appendJsonPath(parentPath, i), keyField) : null;
-        token = canonicalNumber((path !== null && numberLiterals[path]) || token);
+        token = numbers?.get(String(i))?.get(keyField) ?? canonicalNumber(token);
       }
       const key = type + ':' + token;
       if (index.has(key)) return null;
@@ -154,11 +177,9 @@ export function diffData(left, right, options) {
     return index;
   }
 
-  function numbersDiffer(lv, rv) {
-    if (!compareNumberLiterals) return false;
-    const leftLiteral = leftNumberLiterals?.[toPath(leftSegs)] ?? String(lv);
-    const rightLiteral = rightNumberLiterals?.[toPath(rightSegs)] ?? String(rv);
-    return leftLiteral !== rightLiteral && canonicalNumber(leftLiteral) !== canonicalNumber(rightLiteral);
+  function numbersDiffer(lv, rv, leftLiteral, rightLiteral) {
+    if (leftLiteral === rightLiteral) return false;
+    return (leftLiteral ?? canonicalNumber(String(lv))) !== (rightLiteral ?? canonicalNumber(String(rv)));
   }
 
   // 活动帧按深度复用，不依赖调用栈，也不为每个待访问节点分配任务对象。
@@ -167,14 +188,13 @@ export function diffData(left, right, options) {
   const leftSegs = [];
   const rightSegs = [];
 
-  function enter(lv, rv, depth) {
-    if (lv === rv && !keyField
-      && (!compareNumberLiterals || leftNumberLiterals === rightNumberLiterals)) return false;
+  function enter(lv, rv, depth, leftNumbers, rightNumbers) {
+    if (lv === rv && !keyField && leftNumbers === rightNumbers) return false;
     const lObj = lv !== null && typeof lv === 'object';
     const rObj = rv !== null && typeof rv === 'object';
     if (!lObj || !rObj) {
       if (lObj !== rObj) record('typeChanged', leftSegs, rightSegs, lv, rv);
-      else if (lv !== rv || (typeof lv === 'number' && typeof rv === 'number' && numbersDiffer(lv, rv))) {
+      else if (lv !== rv || (typeof lv === 'number' && typeof rv === 'number' && numbersDiffer(lv, rv, leftNumbers, rightNumbers))) {
         record('changed', leftSegs, rightSegs, lv, rv);
       }
       return false;
@@ -186,18 +206,20 @@ export function diffData(left, right, options) {
     }
     let frame = frames[depth];
     if (!frame) {
-      frame = { left: null, right: null, type: 0, index: 0, length: 0, keys: null, rightByKey: null, leftKeys: null, matched: null };
+      frame = { left: null, right: null, leftNumbers: null, rightNumbers: null, type: 0, index: 0, length: 0, keys: null, rightByKey: null, leftKeys: null, matched: null };
       frames[depth] = frame;
     }
     frame.left = lv;
     frame.right = rv;
+    frame.leftNumbers = leftNumbers;
+    frame.rightNumbers = rightNumbers;
     frame.index = 0;
     if (!lArr) {
       frame.type = 1;
       frame.keys = Object.keys(lv);
     } else {
-      const leftByKey = keyedIndex(lv, leftSegs, leftNumberLiterals, leftHasLiterals);
-      const rightByKey = leftByKey && keyedIndex(rv, rightSegs, rightNumberLiterals, rightHasLiterals);
+      const leftByKey = keyedIndex(lv, leftNumbers);
+      const rightByKey = leftByKey && keyedIndex(rv, rightNumbers);
       if (leftByKey && rightByKey) {
         frame.type = 3;
         frame.leftKeys = leftByKey.keys();
@@ -212,7 +234,7 @@ export function diffData(left, right, options) {
     return true;
   }
 
-  let depth = enter(left, right, 0) ? 0 : -1;
+  let depth = enter(left, right, 0, leftNumbers, rightNumbers) ? 0 : -1;
   while (depth >= 0) {
     const frame = frames[depth];
     const lv = frame.left;
@@ -223,7 +245,7 @@ export function diffData(left, right, options) {
         leftSegs.push(key);
         if (Object.prototype.hasOwnProperty.call(rv, key)) {
           rightSegs.push(key);
-          if (enter(lv[key], rv[key], depth + 1)) depth++;
+          if (enter(lv[key], rv[key], depth + 1, frame.leftNumbers?.get(key), frame.rightNumbers?.get(key))) depth++;
           else { leftSegs.pop(); rightSegs.pop(); }
         } else {
           record('removed', leftSegs, null, lv[key]);
@@ -244,7 +266,7 @@ export function diffData(left, right, options) {
         const key = String(i);
         leftSegs.push(key);
         rightSegs.push(key);
-        if (enter(lv[i], rv[i], depth + 1)) depth++;
+        if (enter(lv[i], rv[i], depth + 1, frame.leftNumbers?.get(key), frame.rightNumbers?.get(key))) depth++;
         else { leftSegs.pop(); rightSegs.pop(); }
         continue;
       }
@@ -267,7 +289,7 @@ export function diffData(left, right, options) {
           frame.matched[j] = 1;
           rightSegs.push(String(j));
           if (i !== j && pairs.length < MAX_PAIRS) pairs.push([toPath(leftSegs), toPath(rightSegs)]);
-          if (enter(lv[i], rv[j], depth + 1)) depth++;
+          if (enter(lv[i], rv[j], depth + 1, frame.leftNumbers?.get(String(i)), frame.rightNumbers?.get(String(j)))) depth++;
           else { leftSegs.pop(); rightSegs.pop(); }
         } else {
           record('removed', leftSegs, null, lv[i]);
@@ -284,6 +306,8 @@ export function diffData(left, right, options) {
       }
     }
     frame.keys = null;
+    frame.leftNumbers = null;
+    frame.rightNumbers = null;
     frame.rightByKey = null;
     frame.leftKeys = null;
     frame.matched = null;

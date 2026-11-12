@@ -19,6 +19,7 @@ const action = document.body.dataset.action;
 const textInput = createTextInput(inputEl, action === 'minify' ? document.getElementById('input-view') : null);
 
 let outputText = '';
+let hasOutput = false;
 let dataVersion = 0;
 
 const runTask = createTaskRunner({
@@ -69,6 +70,7 @@ async function runTransform() {
     return;
   }
   outputText = res.result.text;
+  hasOutput = true;
   outputView.setText(outputText);
   if (action === 'minify') {
     setStatus(t('statusMinified', [outputText.length.toLocaleString(), String(res.duration)]));
@@ -78,8 +80,8 @@ async function runTransform() {
 }
 
 async function doCopy() {
-  const text = outputText || textInput.getText();
-  if (!text) {
+  const text = hasOutput ? outputText : textInput.getText();
+  if (!hasOutput && !text) {
     showError(t('errNothingToCopy'));
     return;
   }
@@ -93,6 +95,7 @@ function resetDocument() {
   runTask('clear', {}, { discardQueued: true });
   textInput.clear();
   outputText = '';
+  hasOutput = false;
   outputView.clear();
   hideError();
   setStatus('');

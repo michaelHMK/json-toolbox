@@ -88,3 +88,29 @@ test('duplicate keys on either side fall back to index comparison', () => {
     assert.deepEqual(result.diffs, compare(left, right).diffs);
   }
 });
+
+test('precision literals follow each side of nested keyed pairs with escaped key fields', () => {
+  const result = compare(
+    '{"list":[{"a/b":9007199254740993,"value":1.00000000000000001},{"a/b":9007199254740992,"value":1}]}',
+    '{"list":[{"a/b":9007199254740992,"value":1.0},{"a/b":9007199254740993.0,"value":1}]}',
+    { keyField: 'a/b' },
+  );
+  assert.equal(result.total, 1);
+  assert.equal(result.keyFallback, false);
+  assert.deepEqual(result.pairs, [['/list/0', '/list/1'], ['/list/1', '/list/0']]);
+  assert.equal(result.diffs[0].leftPath, '/list/0/value');
+  assert.equal(result.diffs[0].rightPath, '/list/1/value');
+  assert.equal(result.diffs[0].leftPreview, '1.00000000000000001');
+  assert.equal(result.diffs[0].rightPreview, '1');
+});
+
+test('identical retained documents skip scanning their shared literal table', () => {
+  const { data, numberLiterals } = parseJsonPreservingNumberLiterals('[1.20,9007199254740993,1e400]');
+  const unneededLiterals = new Proxy(numberLiterals, {
+    ownKeys() { throw new Error('identical documents must not scan literals'); },
+  });
+  const result = diffData(data, data, {
+    leftNumberLiterals: unneededLiterals, rightNumberLiterals: unneededLiterals,
+  });
+  assert.equal(result.total, 0);
+});

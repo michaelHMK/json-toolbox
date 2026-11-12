@@ -196,3 +196,43 @@ test('duplicate keys do not rescan unrelated numeric literal paths', () => {
   assert.equal(literals['/n/' + (count - 1)], '1.0');
   assert.ok(elapsed < 2000, `literal scan took ${elapsed.toFixed(0)} ms`);
 });
+
+test('sparse precision literals do not rebuild paths for a deep array of equal numbers', () => {
+  const depth = 5000;
+  const count = 10_000;
+  let left = Array(count).fill(9007199254740992);
+  let right = [...left];
+  for (let i = 0; i < depth; i++) { left = [left]; right = [right]; }
+  const prefix = '/0'.repeat(depth);
+  const started = performance.now();
+  const result = diffData(left, right, {
+    leftNumberLiterals: { [prefix + '/9999']: '9007199254740993' },
+    rightNumberLiterals: { [prefix + '/9998']: '9007199254740993' },
+  });
+  const elapsed = performance.now() - started;
+  assert.equal(result.total, 2);
+  assert.deepEqual(result.diffs.map(({ type, leftPath, rightPath }) => [type, leftPath, rightPath]), [
+    ['changed', prefix + '/9998', prefix + '/9998'],
+    ['changed', prefix + '/9999', prefix + '/9999'],
+  ]);
+  assert.ok(elapsed < 1500, `deep numeric array diff took ${elapsed.toFixed(0)} ms`);
+});
+
+test('a precision literal at the end of a deep numeric chain keeps traversal linear', () => {
+  const depth = 10_000;
+  let left = 1;
+  let right = 1;
+  for (let i = 0; i < depth; i++) {
+    left = { number: 1, next: left };
+    right = { number: 1, next: right };
+  }
+  const path = '/next'.repeat(depth);
+  const started = performance.now();
+  const result = diffData(left, right, {
+    leftNumberLiterals: { [path]: '1.00000000000000001' },
+    rightNumberLiterals: { [path]: '1.00000000000000001' },
+  });
+  const elapsed = performance.now() - started;
+  assert.equal(result.total, 0);
+  assert.ok(elapsed < 1500, `deep numeric chain diff took ${elapsed.toFixed(0)} ms`);
+});

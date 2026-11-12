@@ -94,6 +94,7 @@ export function loadPage(name, {
   createFileImport = () => ({ reset() {} }),
   createTaskRunner,
   translate = (key) => key,
+  copyText = async () => {},
 }) {
   const elements = new Map();
   const get = (id) => {
@@ -128,7 +129,7 @@ export function loadPage(name, {
     requestAnimationFrame: (callback) => setTimeout(callback, 0),
     cancelAnimationFrame: clearTimeout,
     ResizeObserver: class { observe() {} disconnect() {} },
-    copyText: async () => {},
+    copyText,
     setTimeout,
     clearTimeout,
   });

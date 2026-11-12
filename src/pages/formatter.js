@@ -49,12 +49,19 @@ const state = {
 
 let dataVersion = 0;
 let formattingVersion = null;
+let pendingView = null;
+let viewRequestVersion = 0;
 let treeView = null;
 let workerSearchReady = false;
 
 const runTask = createTaskRunner({
   serialize: true,
-  onReset: () => { state.snapshotId = null; workerSearchReady = false; formattingVersion = null; },
+  onReset: () => {
+    state.snapshotId = null;
+    workerSearchReady = false;
+    formattingVersion = null;
+    invalidateViewRequest();
+  },
   onBusyChange: createBusyFeedback({
     busyEl, cancelEl: $('btn-cancel'),
     onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
@@ -85,6 +92,11 @@ const fileImport = createFileImport({
 });
 
 /* ================= 视图切换 ================= */
+function invalidateViewRequest() {
+  pendingView = null;
+  viewRequestVersion++;
+}
+
 function updateViewButtons() {
   $('view-text').classList.toggle('active', state.view === 'text');
   $('view-tree').classList.toggle('active', state.view === 'tree');
@@ -99,6 +111,13 @@ function showText(text) {
   state.view = 'text';
   updateViewButtons();
   outputView.setText(text);
+}
+
+function showTree() {
+  renderTree();
+  state.view = 'tree';
+  updateViewButtons();
+  if (searchInput.value.trim()) runSearch();
 }
 
 function currentText() {
@@ -133,21 +152,26 @@ async function ensureTreeData() {
 }
 
 async function setView(view) {
-  if (view === state.view) return;
-  if (formattingVersion !== null) {
-    state.view = view;
-    updateViewButtons();
-    return;
+  const requestVersion = ++viewRequestVersion;
+  pendingView = view;
+  // Keep the rendered view visible until its replacement is ready. A pending
+  // choice is not a completed tree, and cancellation must leave it retryable.
+  if (formattingVersion !== null) return false;
+  if (view === state.view && (view !== 'tree' || treeView)) {
+    pendingView = null;
+    return true;
   }
   if (view === 'tree') {
-    if (!(await ensureTreeData())) return;
-    state.view = 'tree';
-    updateViewButtons();
-    if (searchInput.value.trim()) runSearch();
-    else renderTree();
+    const ready = await ensureTreeData();
+    if (requestVersion !== viewRequestVersion) return false;
+    pendingView = null;
+    if (!ready) return false;
+    showTree();
   } else {
+    pendingView = null;
     showText(state.outputText);
   }
+  return true;
 }
 
 /* ================= 操作 ================= */
@@ -169,9 +193,12 @@ async function doFormat() {
   if (formattingVersion === version) formattingVersion = null;
   if (res.cancelled || version !== dataVersion) return;
   if (!res.ok) {
+    invalidateViewRequest();
     showParseError(text, res);
     return;
   }
+  const nextView = pendingView ?? state.view;
+  invalidateViewRequest();
   treeView?.destroy();
   treeView = null;
   outputView.clear();
@@ -182,13 +209,16 @@ async function doFormat() {
   state.numberLiterals = res.result.numberLiterals || null;
   state.dataSource = state.data === undefined ? '' : state.outputText;
   state.matchIndex = -1;
-  if (state.view === 'tree') {
-    if (state.data === undefined && !(await ensureTreeData())) return;
-    if (version !== dataVersion) return;
-    if (searchInput.value.trim()) runSearch();
-    else renderTree();
+  if (nextView === 'tree' && state.data !== undefined) {
+    showTree();
   } else {
+    // A lazy tree still needs a snapshot transfer. Keep the available text
+    // usable if that follow-up is cancelled or fails.
     showText(state.outputText);
+    if (nextView === 'tree') {
+      if (!(await setView('tree'))) return;
+      if (version !== dataVersion) return;
+    }
   }
   setStatus(t('statusFormatted', [state.outputText.length.toLocaleString(), String(res.duration)]));
 }
@@ -207,6 +237,7 @@ async function doCopy() {
 function resetDocument() {
   dataVersion++;
   formattingVersion = null;
+  invalidateViewRequest();
   clearTimeout(searchTimer);
   searchTimer = 0;
   void runTask('clear', {}, { discardQueued: true });
@@ -405,6 +436,7 @@ $('input-view').addEventListener('keydown', (e) => {
 inputEl.addEventListener('input', () => {
   fileImport.reset();
   dataVersion++;
+  invalidateViewRequest();
   runTask.cancel({ onlyIfBusy: true });
 });
 inputEl.addEventListener('paste', () => {
