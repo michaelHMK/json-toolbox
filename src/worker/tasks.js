@@ -2,7 +2,7 @@ import { formatJson, parseJsonPreservingNumberLiterals, collectNumberLiterals } 
 import { escapeJsonString, unescapeJsonString } from '../core/escape.js';
 import { searchData } from '../core/search.js';
 import { diffData } from '../core/structural-diff.js';
-import { makeTextDiff, diffFormattedText } from '../core/text-diff.js';
+import { diffFormattedText } from '../core/text-diff.js';
 import { parseErrorLocation } from '../core/parse-error.js';
 
 /**
@@ -13,12 +13,24 @@ import { parseErrorLocation } from '../core/parse-error.js';
  */
 export function createTaskHandler() {
   let lastData;
+  let lastSource = null;
+  let lastNumberLiterals = null;
   let document = null;
   let comparison = null;
   let snapshotSequence = 0;
 
+  function taskError(code, message) {
+    return Object.assign(new Error(message), { code });
+  }
+
+  function retainSearch(data, source, numberLiterals, enabled = true) {
+    lastData = enabled ? data : undefined;
+    lastNumberLiterals = enabled ? numberLiterals : null;
+    lastSource = enabled && numberLiterals === null ? source : null;
+  }
+
   function requireSnapshot(snapshot, id) {
-    if (!snapshot || snapshot.id !== id) throw new Error('JSON snapshot is no longer available');
+    if (!snapshot || snapshot.id !== id) throw taskError('SNAPSHOT_UNAVAILABLE', 'JSON snapshot is no longer available');
     return snapshot;
   }
 
@@ -38,20 +50,25 @@ export function createTaskHandler() {
     };
   }
 
-  function parseComparison(text, label) {
+  function withInputSide(text, side, parse) {
+    try {
+      return parse();
+    } catch (error) {
+      if (error instanceof SyntaxError) Object.assign(error, { code: 'INVALID_JSON', side, source: text });
+      throw error;
+    }
+  }
+
+  function parseComparison(text, side) {
     if (comparison && comparison.left.source === text) return comparison.left;
     if (comparison && comparison.right.source === text) return comparison.right;
-    try {
-      return { source: text, ...parseJsonPreservingNumberLiterals(text) };
-    } catch (error) {
-      throw new Error(label + ' JSON 无效：' + error.message);
-    }
+    return withInputSide(text, side, () => ({ source: text, ...parseJsonPreservingNumberLiterals(text) }));
   }
 
   function runAction({ action, text, indent, ...options }) {
     switch (action) {
       case 'clear':
-        lastData = undefined;
+        retainSearch(undefined, null, null, false);
         document = null;
         comparison = null;
         return {};
@@ -59,7 +76,7 @@ export function createTaskHandler() {
         const includeData = options.includeData !== false;
         const cached = document?.source === text ? document : null;
         const formatted = formatJson(text, { indent, includeNumberLiterals: includeData, parsed: cached });
-        lastData = options.retainSearch === false ? undefined : formatted.data;
+        retainSearch(formatted.data, text, formatted.numberLiterals, options.retainSearch !== false);
         document = options.retainSnapshot ? {
           id: ++snapshotSequence, source: text, output: formatted.text,
           data: formatted.data, numberLiterals: formatted.numberLiterals,
@@ -70,7 +87,7 @@ export function createTaskHandler() {
       }
       case 'minify': {
         const formatted = formatJson(text, { indent: null });
-        lastData = options.retainSearch === false ? undefined : formatted.data;
+        retainSearch(formatted.data, text, formatted.numberLiterals, options.retainSearch !== false);
         document = null;
         return { text: formatted.text };
       }
@@ -78,7 +95,7 @@ export function createTaskHandler() {
         const cached = document && (document.source === text ||
           (document.output !== undefined && document.output === text));
         const parsed = cached ? documentData(document) : parseJsonPreservingNumberLiterals(text);
-        lastData = parsed.data;
+        retainSearch(parsed.data, text, parsed.numberLiterals, options.retainSearch !== false);
         if (options.retainSnapshot) {
           if (!cached) document = { id: ++snapshotSequence, source: text, ...parsed };
           return { ...parsed, snapshotId: document.id };
@@ -102,11 +119,15 @@ export function createTaskHandler() {
       case 'unescape':
         return { text: unescapeJsonString(text) };
       case 'search':
-        if (lastData === undefined) throw new Error('请先解析 JSON');
-        return searchData(lastData, text);
+        if (lastData === undefined) throw taskError('SEARCH_NOT_READY', 'Parse JSON before searching');
+        if (lastNumberLiterals === null) {
+          lastNumberLiterals = collectNumberLiterals(lastSource);
+          lastSource = null;
+        }
+        return searchData(lastData, text, lastNumberLiterals);
       case 'diff': {
-        const left = parseComparison(text, '左侧');
-        const right = options.text2 === text ? left : parseComparison(options.text2, '右侧');
+        const left = parseComparison(text, 'left');
+        const right = options.text2 === text ? left : parseComparison(options.text2, 'right');
         const result = diffData(left.data, right.data, {
           ...options,
           leftNumberLiterals: left.numberLiterals,
@@ -119,7 +140,12 @@ export function createTaskHandler() {
         return result;
       }
       case 'textDiff': {
-        if (options.snapshotId === undefined) return makeTextDiff(text, options.text2, indent);
+        if (options.snapshotId === undefined) {
+          const left = withInputSide(text, 'left', () => formatJson(text, { indent }).text);
+          const right = text === options.text2 ? left
+            : withInputSide(options.text2, 'right', () => formatJson(options.text2, { indent }).text);
+          return diffFormattedText(left, right);
+        }
         const snapshot = requireSnapshot(comparison, options.snapshotId);
         if (!snapshot.textDiff || snapshot.indent !== indent) {
           const left = formatJson(snapshot.left.source, { indent, parsed: snapshot.left }).text;
@@ -131,7 +157,7 @@ export function createTaskHandler() {
         return snapshot.textDiff;
       }
       default:
-        throw new Error('未知操作: ' + action);
+        throw taskError('UNKNOWN_ACTION', 'Unknown action: ' + action);
     }
   }
 
@@ -141,11 +167,19 @@ export function createTaskHandler() {
       const result = runAction(request);
       return { id: request.id, ok: true, result, duration: Date.now() - started };
     } catch (error) {
+      const code = error.code || (error instanceof SyntaxError ? 'INVALID_JSON' : 'TASK_FAILED');
+      const location = typeof error.position === 'number'
+        ? { position: error.position, line: error.line, column: error.column }
+        : code === 'INVALID_JSON' || code === 'INVALID_ESCAPE'
+          ? parseErrorLocation(error.message, error.source ?? request.text)
+          : { position: null, line: null, column: null };
       return {
         id: request.id,
         ok: false,
         error: error.message,
-        ...parseErrorLocation(error.message, request.text),
+        code,
+        ...(error.side ? { side: error.side } : {}),
+        ...location,
         duration: Date.now() - started,
       };
     }

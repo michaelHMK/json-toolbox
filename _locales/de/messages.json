@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "; bei einigen Array-Elementen fehlt das Schlüsselfeld — Vergleich nach Index"
+    "message": "; einige Array-Schlüssel fehlen, werden nicht unterstützt oder sind doppelt — Vergleich nach Index"
   },
   "diffIdenticalNote": {
     "message": " — Inhalte sind identisch"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "Abbrechen"
+  },
+  "statusCancelled": {
+    "message": "Abgebrochen"
+  },
+  "errInvalidJson": {
+    "message": "Ungültige JSON-Syntax."
+  },
+  "errInvalidEscape": {
+    "message": "Ungültige maskierte Zeichenfolge."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Das gespeicherte Ergebnis ist nicht mehr verfügbar. Führen Sie den Vorgang erneut aus."
+  },
+  "errTaskFailed": {
+    "message": "Der Vorgang ist fehlgeschlagen. Bitte erneut versuchen."
+  },
+  "errWorkerFailed": {
+    "message": "Der Hintergrundprozess wurde unerwartet beendet. Bitte erneut versuchen."
   }
 }

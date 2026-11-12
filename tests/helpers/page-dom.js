@@ -92,6 +92,8 @@ export function loadPage(name, {
   expose,
   bodyDataset = {},
   createFileImport = () => ({ reset() {} }),
+  createTaskRunner,
+  translate = (key) => key,
 }) {
   const elements = new Map();
   const get = (id) => {
@@ -116,9 +118,9 @@ export function loadPage(name, {
       }),
     },
     initializePage: () => {},
-    createTaskRunner: () => runTask,
+    createTaskRunner: createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) })),
     createFileImport,
-    t: (key) => key,
+    t: translate,
     appendJsonPath,
     PATH_SEP,
     createPlainTextRows, createDiffTextRows, safeTextWindow,

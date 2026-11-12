@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": "؛ بعض عناصر المصفوفة تفتقر إلى حقل المفتاح — تمت مقارنتها حسب الفهرس"
+    "message": "؛ بعض مفاتيح المصفوفات مفقودة أو غير مدعومة أو مكررة — تمت المقارنة حسب الفهرس"
   },
   "diffIdenticalNote": {
     "message": " — المحتوى متطابق"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "إلغاء"
+  },
+  "statusCancelled": {
+    "message": "تم الإلغاء"
+  },
+  "errInvalidJson": {
+    "message": "صياغة JSON غير صالحة."
+  },
+  "errInvalidEscape": {
+    "message": "سلسلة الهروب غير صالحة."
+  },
+  "errSnapshotUnavailable": {
+    "message": "النتيجة المحفوظة لم تعد متاحة. أعد تنفيذ العملية."
+  },
+  "errTaskFailed": {
+    "message": "فشلت العملية. حاول مرة أخرى."
+  },
+  "errWorkerFailed": {
+    "message": "توقفت عملية الخلفية بشكل غير متوقع. حاول مرة أخرى."
   }
 }

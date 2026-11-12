@@ -460,7 +460,7 @@
     }
   },
   "diffKeyFallback": {
-    "message": " ; certains éléments de tableau n’ont pas de champ clé — comparaison par indice"
+    "message": " ; certaines clés sont absentes, non prises en charge ou dupliquées — comparaison par indice"
   },
   "diffIdenticalNote": {
     "message": " — les contenus sont identiques"
@@ -475,5 +475,26 @@
         "content": "$1"
       }
     }
+  },
+  "btnCancel": {
+    "message": "Annuler"
+  },
+  "statusCancelled": {
+    "message": "Annulé"
+  },
+  "errInvalidJson": {
+    "message": "Syntaxe JSON invalide."
+  },
+  "errInvalidEscape": {
+    "message": "Chaîne échappée invalide."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Le résultat enregistré n’est plus disponible. Relancez l’opération."
+  },
+  "errTaskFailed": {
+    "message": "L’opération a échoué. Réessayez."
+  },
+  "errWorkerFailed": {
+    "message": "Le processus de traitement s’est arrêté inopinément. Réessayez."
   }
 }

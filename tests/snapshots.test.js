@@ -207,8 +207,15 @@ test('invalid and missing input never overwrite successful document or compariso
     assert.strictEqual(recovered.rightData, compared.rightData);
     assert.equal(run(handler, { action: 'search', text: 'needle' }).matchCount, 1);
   }
-  rejects(createTaskHandler(), { action: 'diff', text2: '{}' }, /^左侧 JSON 无效/);
-  rejects(createTaskHandler(), { action: 'diff', text: '{}' }, /^右侧 JSON 无效/);
+  for (const [request, side] of [
+    [{ action: 'diff', text2: '{}' }, 'left'],
+    [{ action: 'diff', text: '{}' }, 'right'],
+  ]) {
+    const response = createTaskHandler()(request);
+    assert.equal(response.ok, false);
+    assert.equal(response.code, 'INVALID_JSON');
+    assert.equal(response.side, side);
+  }
 });
 
 test('replacing and clearing snapshots rejects stale ids without reusing them', () => {
@@ -254,7 +261,7 @@ test('snapshots remain isolated between worker sessions', () => {
   assertNumberLiterals(run(first, { action: 'parseSnapshot', snapshotId: saved.snapshotId }));
 });
 
-test('cached keyed comparisons retain duplicate-key matching and literal previews', () => {
+test('cached keyed comparisons retain duplicate-key fallback and literal previews', () => {
   const handler = createTaskHandler();
   const request = {
     action: 'diff', keyField: 'id', retainSnapshot: true,
@@ -266,9 +273,12 @@ test('cached keyed comparisons retain duplicate-key matching and literal preview
   assert.strictEqual(repeated.leftData, first.leftData);
   assert.strictEqual(repeated.rightData, first.rightData);
   assert.deepEqual(repeated.diffs, first.diffs);
-  assert.deepEqual(repeated.stats, { added: 1, removed: 1, changed: 1, typeChanged: 0 });
+  assert.deepEqual(repeated.stats, { added: 0, removed: 0, changed: 2, typeChanged: 0 });
+  assert.equal(repeated.keyFallback, true);
   assert.equal(repeated.diffs[0].leftPreview, '1.00');
   assert.equal(repeated.diffs[0].rightPreview, '3.00');
-  assert.equal(repeated.diffs[1].leftPath, '/1');
-  assert.equal(repeated.diffs[2].rightPath, '/1');
+  assert.equal(repeated.diffs[1].leftPath, '/1/value');
+  assert.equal(repeated.diffs[1].rightPath, '/1/value');
+  assert.equal(repeated.diffs[1].leftPreview, '2.00');
+  assert.equal(repeated.diffs[1].rightPreview, '4.00');
 });

@@ -186,7 +186,7 @@ test('transform clear releases cache and rejects stale successful or failed resu
   }
 });
 
-test('a text request for the old snapshot cannot populate the next comparison cache', async () => {
+test('switching views during comparison does not request the old snapshot', async () => {
   const handler = createTaskHandler();
   let hold = false;
   const requests = [];
@@ -203,10 +203,9 @@ test('a text request for the old snapshot cannot populate the next comparison ca
   const comparePending = page.doCompare();
   const oldTextPending = page.setCompareView('text');
   await page.setCompareView('struct');
-  assert.deepEqual(requests.map((request) => request.action), ['diff', 'textDiff']);
+  assert.deepEqual(requests.map((request) => request.action), ['diff']);
   requests[0].finish();
   await comparePending;
-  requests[1].finish();
   await oldTextPending;
   assert.equal(page.state.textResult, null, 'text for A must not be cached against result B');
   hold = false;

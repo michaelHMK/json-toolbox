@@ -4,6 +4,24 @@ import { appendJsonPath } from './json-path.js';
 const MAX_DIFFS = 5000;
 const MAX_PAIRS = 100000;
 
+// Compare decimal values without converting through IEEE-754. This preserves
+// equivalence of 1.00 and 1e0, while distinguishing rounded/overflowed numbers.
+function canonicalNumber(literal) {
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(literal);
+  if (!match) return literal;
+  const fraction = match[3] || '';
+  const digits = (match[2] + fraction).replace(/^0+/, '');
+  if (!digits) return '0';
+  const coefficient = digits.replace(/0+$/, '');
+  const exponent = BigInt(match[4] || '0') - BigInt(fraction.length) + BigInt(digits.length - coefficient.length);
+  return match[1] + coefficient + 'e' + exponent;
+}
+
+function hasLiterals(literals) {
+  for (const path in literals) return true;
+  return false;
+}
+
 // 解析忽略路径模式：'a.b[0].c' → ['a','b','0','c']；'list[*].x' → ['list','*','x']
 function parseIgnorePattern(pattern) {
   const segs = [];
@@ -62,6 +80,9 @@ export function diffData(left, right, options) {
   const keyField = (options && options.keyField) || '';
   const leftNumberLiterals = (options && options.leftNumberLiterals) || null;
   const rightNumberLiterals = (options && options.rightNumberLiterals) || null;
+  const leftHasLiterals = hasLiterals(leftNumberLiterals);
+  const rightHasLiterals = hasLiterals(rightNumberLiterals);
+  const compareNumberLiterals = leftHasLiterals || rightHasLiterals;
   const ignoreSegs = ((options && options.ignorePaths) || [])
     .map(parseIgnorePattern)
     .filter((s) => s.length > 0);
@@ -109,16 +130,35 @@ export function diffData(left, right, options) {
     }
   }
 
-  // 数组元素是否都可用主键配对
-  function isKeyed(arr) {
-    if (!keyField) return false;
-    for (const item of arr) {
-      if (item === null || typeof item !== 'object' || Array.isArray(item)) return false;
-      const kv = item[keyField];
-      const t = typeof kv;
-      if (kv === null || (t !== 'string' && t !== 'number' && t !== 'boolean')) return false;
+  // A primary key must be present, scalar, typed and unique on each side.
+  function keyedIndex(arr, segs, numberLiterals, hasNumberLiterals) {
+    if (!keyField) return null;
+    const index = new Map();
+    const parentPath = hasNumberLiterals ? toPath(segs) : null;
+    for (let i = 0; i < arr.length; i++) {
+      const item = arr[i];
+      if (item === null || typeof item !== 'object' || Array.isArray(item)
+        || !Object.prototype.hasOwnProperty.call(item, keyField)) return null;
+      const value = item[keyField];
+      const type = typeof value;
+      if (value === null || (type !== 'string' && type !== 'number' && type !== 'boolean')) return null;
+      let token = String(value);
+      if (type === 'number') {
+        const path = hasNumberLiterals ? appendJsonPath(appendJsonPath(parentPath, i), keyField) : null;
+        token = canonicalNumber((path !== null && numberLiterals[path]) || token);
+      }
+      const key = type + ':' + token;
+      if (index.has(key)) return null;
+      index.set(key, i);
     }
-    return true;
+    return index;
+  }
+
+  function numbersDiffer(lv, rv) {
+    if (!compareNumberLiterals) return false;
+    const leftLiteral = leftNumberLiterals?.[toPath(leftSegs)] ?? String(lv);
+    const rightLiteral = rightNumberLiterals?.[toPath(rightSegs)] ?? String(rv);
+    return leftLiteral !== rightLiteral && canonicalNumber(leftLiteral) !== canonicalNumber(rightLiteral);
   }
 
   // 活动帧按深度复用，不依赖调用栈，也不为每个待访问节点分配任务对象。
@@ -128,12 +168,15 @@ export function diffData(left, right, options) {
   const rightSegs = [];
 
   function enter(lv, rv, depth) {
-    if (lv === rv && !keyField) return false;
+    if (lv === rv && !keyField
+      && (!compareNumberLiterals || leftNumberLiterals === rightNumberLiterals)) return false;
     const lObj = lv !== null && typeof lv === 'object';
     const rObj = rv !== null && typeof rv === 'object';
     if (!lObj || !rObj) {
       if (lObj !== rObj) record('typeChanged', leftSegs, rightSegs, lv, rv);
-      else if (lv !== rv) record('changed', leftSegs, rightSegs, lv, rv);
+      else if (lv !== rv || (typeof lv === 'number' && typeof rv === 'number' && numbersDiffer(lv, rv))) {
+        record('changed', leftSegs, rightSegs, lv, rv);
+      }
       return false;
     }
     const lArr = Array.isArray(lv);
@@ -143,7 +186,7 @@ export function diffData(left, right, options) {
     }
     let frame = frames[depth];
     if (!frame) {
-      frame = { left: null, right: null, type: 0, index: 0, length: 0, keys: null, rightByKey: null, matched: null };
+      frame = { left: null, right: null, type: 0, index: 0, length: 0, keys: null, rightByKey: null, leftKeys: null, matched: null };
       frames[depth] = frame;
     }
     frame.left = lv;
@@ -152,19 +195,19 @@ export function diffData(left, right, options) {
     if (!lArr) {
       frame.type = 1;
       frame.keys = Object.keys(lv);
-    } else if (isKeyed(lv) && isKeyed(rv)) {
-      frame.type = 3;
-      const rightByKey = new Map();
-      for (let j = 0; j < rv.length; j++) {
-        const key = String(rv[j][keyField]);
-        if (!rightByKey.has(key)) rightByKey.set(key, j);
-      }
-      frame.rightByKey = rightByKey;
-      frame.matched = new Uint8Array(rv.length);
     } else {
-      frame.type = 2;
-      frame.length = Math.min(lv.length, rv.length);
-      if (keyField && (lv.length || rv.length)) keyFallback = true;
+      const leftByKey = keyedIndex(lv, leftSegs, leftNumberLiterals, leftHasLiterals);
+      const rightByKey = leftByKey && keyedIndex(rv, rightSegs, rightNumberLiterals, rightHasLiterals);
+      if (leftByKey && rightByKey) {
+        frame.type = 3;
+        frame.leftKeys = leftByKey.keys();
+        frame.rightByKey = rightByKey;
+        frame.matched = new Uint8Array(rv.length);
+      } else {
+        frame.type = 2;
+        frame.length = Math.min(lv.length, rv.length);
+        if (keyField && (lv.length || rv.length)) keyFallback = true;
+      }
     }
     return true;
   }
@@ -218,7 +261,7 @@ export function diffData(left, right, options) {
     } else {
       if (frame.index < lv.length) {
         const i = frame.index++;
-        const j = frame.rightByKey.get(String(lv[i][keyField]));
+        const j = frame.rightByKey.get(frame.leftKeys.next().value);
         leftSegs.push(String(i));
         if (j !== undefined && !frame.matched[j]) {
           frame.matched[j] = 1;
@@ -242,6 +285,7 @@ export function diffData(left, right, options) {
     }
     frame.keys = null;
     frame.rightByKey = null;
+    frame.leftKeys = null;
     frame.matched = null;
     leftSegs.pop();
     rightSegs.pop();
