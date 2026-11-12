@@ -36,7 +36,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 格式化与压缩页面还支持通过文件选择器或拖拽导入一个本地 UTF-8 `.json` 文件（最大 50 MiB）。导入后输入区保留文件原文，并自动执行当前格式化或压缩操作。大输入始终保留只读虚拟预览，语法出错时也在预览内定位浏览器提供的错误位置。
 
-侧边栏可在各工具页之间切换。界面支持中文（简体）与英文（`_locales/`）。
+侧边栏可在各工具页之间切换。`_locales/` 包含 13 个语言及地区版本：英文（`en`）、简体中文（`zh_CN`）、繁体中文（台湾 `zh_TW`、香港 `zh_HK`）、日语（`ja`）、韩语（`ko`）、德语（`de`）、法语（`fr`）、西班牙语（`es`）、葡萄牙语（巴西 `pt_BR`、葡萄牙 `pt_PT`）、俄语（`ru`）和阿拉伯语（`ar`）。Chrome 根据浏览器界面语言选择翻译，默认语言为英文；扩展 API 不可用时，页面静态文案也以英文兜底。阿拉伯语界面从右向左排列，JSON 输入、输出和树始终从左向右显示。
 
 ## 本地加载（开发者模式）
 
@@ -47,6 +47,8 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 5. 点击工具栏中的扩展图标，即可打开 JSON 工具箱
 
 快捷键：多数页面支持 **Cmd/Ctrl + Enter** 执行当前操作。
+
+按 **Tab** 进入 JSON 树；**上/下方向键**在可见节点间移动，**右/左方向键**展开、折叠分支并进入子节点或返回父节点，**Home/End** 跳到首个或末个可见节点。**Enter/空格**切换分支展开状态，**Tab** 离开树。
 
 ## 项目结构
 
@@ -111,11 +113,14 @@ python3 build_release.py --check
 export PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs
 # 可选：export CHROMIUM_EXECUTABLE=/path/to/chromium
 node bench/browser.mjs . --verify
+node bench/accessibility.mjs .
 node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 ```
+
+可访问性检查通过模拟扩展国际化 API 加载英文和阿拉伯语翻译，验证布局、键盘导航及 Chromium 无障碍树；它不能代替真实读屏软件测试。
 
 文件导入基准默认在两个页面对每个场景各跑三次，输出逐次测量及中位数。默认场景包括 50 MiB 常规文档（`regular`）、4 MiB 保留 `1.20` 字面量的数组（`decimals`）、50 MiB 无效单行 JSON（`invalid`）。样本及 `File` 构造在计时前完成；总耗时包含成功或错误反馈后的两次动画帧，长任务仅统计导入测量区间。完整输入/输出复制及错误位置检查在测量后执行。堆内存读数包含基准样本；耗时较长的跨代理内存测量需用 `BENCH_MEMORY=1` 显式开启。
 
@@ -155,7 +160,7 @@ python3 build_release.py --check
 python3 build_release.py
 ```
 
-脚本检查版本号、两种语言的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入和 Worker 入口的相对路径，再按白名单打包运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
+脚本检查版本号、所有语言版本的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入和 Worker 入口的相对路径，再按白名单打包运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
 
 上传前将 ZIP 解压到一个新目录，在 `chrome://extensions/` 中加载该目录并完成下面的检查。以后发布更新时先提高 `manifest.json` 的版本号，再重新打包。
 
@@ -173,5 +178,5 @@ python3 build_release.py
 - 检查格式化的三种缩进、无效 JSON 定位、树形展开、搜索、复制与清空。
 - 检查压缩、转义和去转义，包括换行、引号、反斜杠和 Unicode 文本。
 - 检查 JSON 对比的新增、删除、值及类型变化，数组主键配对、忽略路径、只看差异与文本对比。
-- 在中文和英文浏览器语言下检查文字，断网后重复主要操作。
+- 检查中文、英文和阿拉伯语文案，包括从右到左的界面布局、从左到右的代码区域及本地化可访问名称。检查树的键盘导航和状态、错误的读屏播报，断网后重复主要操作。
 - 发布材料与实际版本保持一致，不承诺未经验证的文件处理速度。

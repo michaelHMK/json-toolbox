@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="titleCompare">JSON 对比 - JSON 工具箱</title>
+  <title data-i18n="titleCompare">JSON Compare - JSON Toolbox</title>
   <link rel="stylesheet" href="styles/app.css">
   <link rel="stylesheet" href="styles/virtual-tree.css">
 </head>
@@ -14,81 +14,87 @@
     <div class="page-shell">
       <header class="page-header">
         <div class="page-heading">
-          <h1 data-i18n="navCompare">JSON 对比</h1>
-          <p data-i18n="descCompare">清晰查看两个 JSON 之间的新增、删除和变更。</p>
+          <h1 data-i18n="navCompare">JSON Compare</h1>
+          <p data-i18n="descCompare">See additions, removals and changes between two JSON documents.</p>
         </div>
         <div class="page-actions">
-          <button id="btn-cancel" hidden data-i18n="btnCancel">取消</button>
-          <button id="btn-sample" data-i18n="btnSample">示例</button>
-          <button id="btn-clear" data-i18n="btnClear">清空</button>
-          <button id="btn-compare" class="primary" data-i18n="btnCompare" data-i18n-title="btnCompareTitle">对比</button>
+          <button id="btn-cancel" hidden data-i18n="btnCancel">Cancel</button>
+          <button id="btn-sample" data-i18n="btnSample">Sample</button>
+          <button id="btn-clear" data-i18n="btnClear">Clear</button>
+          <button id="btn-compare" class="primary" data-i18n="btnCompare" data-i18n-title="btnCompareTitle" title="Shortcut: Cmd/Ctrl + Enter">Compare</button>
         </div>
       </header>
 
       <section class="options-bar compare-options">
-        <label class="field"><span data-i18n="labelArrayMode">数组</span>
+        <label class="field"><span data-i18n="labelArrayMode">Arrays</span>
           <select id="array-mode">
-            <option value="index" selected data-i18n="optArrayIndex">按下标对比</option>
-            <option value="key" data-i18n="optArrayKey">按主键配对</option>
+            <option value="index" selected data-i18n="optArrayIndex">By index</option>
+            <option value="key" data-i18n="optArrayKey">Match by key</option>
           </select>
         </label>
-        <label class="field" id="key-field-box" hidden><span data-i18n="labelKeyField">主键</span>
-          <input id="key-field" type="text" data-i18n-placeholder="keyFieldPlaceholder" placeholder="如 id">
+        <label class="field" id="key-field-box" hidden><span data-i18n="labelKeyField">Key</span>
+          <input id="key-field" dir="ltr" type="text" data-i18n-placeholder="keyFieldPlaceholder" placeholder="e.g. id">
         </label>
-        <label class="field ignore-field"><span data-i18n="labelIgnorePaths" data-i18n-title="ignorePathsTitle">忽略路径</span>
-          <input id="ignore-paths" type="text" data-i18n-placeholder="ignorePathsPlaceholder" placeholder="如 list[*].updatedAt，逗号分隔">
+        <label class="field ignore-field"><span data-i18n="labelIgnorePaths" data-i18n-title="ignorePathsTitle" title="Exact paths, * matches one segment, comma-separated">Ignore paths</span>
+          <input id="ignore-paths" dir="ltr" type="text" data-i18n-placeholder="ignorePathsPlaceholder" placeholder="e.g. list[*].updatedAt, comma-separated">
         </label>
         <span class="options-spacer"></span>
-        <button id="btn-swap" class="button-compact" data-i18n="btnSwap" data-i18n-title="btnSwapTitle">⇄ 交换</button>
+        <button id="btn-swap" class="button-compact" data-i18n="btnSwap" data-i18n-title="btnSwapTitle" title="Swap left and right">⇄ Swap</button>
       </section>
 
-      <div id="error" class="notice" hidden></div>
+      <div class="error-announcement" role="alert" aria-atomic="true">
+        <div id="error" class="notice" hidden></div>
+      </div>
 
       <main class="workspace compare-main">
         <section class="pane">
-          <div class="pane-title" data-i18n="paneOld">旧版本（左）</div>
-          <textarea id="input-left" spellcheck="false" wrap="off"
-            data-i18n-placeholder="inputLeftPlaceholder" placeholder="粘贴旧版本 JSON…"></textarea>
+          <div class="pane-title" data-i18n="paneOld">Old (left)</div>
+          <textarea id="input-left" dir="ltr" data-i18n-aria-label="paneOld" aria-label="Old (left)" spellcheck="false" wrap="off"
+            data-i18n-placeholder="inputLeftPlaceholder" placeholder="Paste old JSON…"></textarea>
         </section>
         <section class="pane">
-          <div class="pane-title" data-i18n="paneNew">新版本（右）</div>
-          <textarea id="input-right" spellcheck="false" wrap="off"
-            data-i18n-placeholder="inputRightPlaceholder" placeholder="粘贴新版本 JSON…（Cmd/Ctrl + Enter 开始对比）"></textarea>
+          <div class="pane-title" data-i18n="paneNew">New (right)</div>
+          <textarea id="input-right" dir="ltr" data-i18n-aria-label="paneNew" aria-label="New (right)" spellcheck="false" wrap="off"
+            data-i18n-placeholder="inputRightPlaceholder" placeholder="Paste new JSON… (Cmd/Ctrl + Enter to compare)"></textarea>
         </section>
       </main>
+
+      <div class="feedback-bar">
+        <span id="status" class="status" role="status" aria-atomic="true"></span>
+        <span role="status" aria-atomic="true"><span id="busy" hidden data-i18n="busyText">Working…</span></span>
+      </div>
 
       <section id="result" class="pane compare-result" hidden>
         <div class="pane-title compare-result-title">
           <div class="pane-label">
-            <span data-i18n="paneCompareResult">对比结果</span>
-            <span id="status" class="status"></span><span id="busy" hidden data-i18n="busyText">处理中…</span>
+            <span data-i18n="paneCompareResult">Result</span>
           </div>
           <div class="pane-actions">
-            <span class="view-toggle" role="tablist">
-              <button id="view-struct" class="active" data-i18n="viewStruct">结构对比</button>
-              <button id="view-text" data-i18n="viewTextDiff" data-i18n-title="viewTextDiffTitle">文本对比</button>
+            <span class="view-toggle" role="group" data-i18n-aria-label="paneCompareResult" aria-label="Result">
+              <button id="view-struct" class="active" data-i18n="viewStruct" aria-pressed="true">Structural</button>
+              <button id="view-text" data-i18n="viewTextDiff" data-i18n-title="viewTextDiffTitle" title="Line-by-line after formatting; ignore paths/array strategy do not apply" aria-pressed="false">Text diff</button>
             </span>
             <label class="field chk">
-              <input type="checkbox" id="only-diff"><span data-i18n="onlyDiffLabel" data-i18n-title="onlyDiffTitle">只看差异</span>
+              <input type="checkbox" id="only-diff"><span data-i18n="onlyDiffLabel" data-i18n-title="onlyDiffTitle" title="Hide branches without differences">Diffs only</span>
             </label>
             <span id="diff-nav">
-              <button id="diff-prev" class="icon-button" data-i18n-title="diffPrevTitle" title="上一处差异">↑</button>
-              <span id="diff-info"></span>
-              <button id="diff-next" class="icon-button" data-i18n-title="diffNextTitle" title="下一处差异">↓</button>
+              <button id="diff-prev" data-i18n-aria-label="diffPrevTitle" aria-label="Previous diff" class="icon-button" data-i18n-title="diffPrevTitle" title="Previous diff">↑</button>
+              <span id="diff-info" dir="ltr" role="status" aria-atomic="true"></span>
+              <button id="diff-next" data-i18n-aria-label="diffNextTitle" aria-label="Next diff" class="icon-button" data-i18n-title="diffNextTitle" title="Next diff">↓</button>
             </span>
           </div>
         </div>
         <div id="struct-view">
           <div class="tree-col">
-            <div class="col-title" data-i18n="colOld">旧</div>
-            <div id="tree-left" class="diff-tree"></div>
+            <div class="col-title" data-i18n="colOld">Old</div>
+            <div id="tree-left" dir="ltr" data-i18n-aria-label="paneOld" aria-label="Old (left)" class="diff-tree"></div>
           </div>
           <div class="tree-col">
-            <div class="col-title" data-i18n="colNew">新</div>
-            <div id="tree-right" class="diff-tree"></div>
+            <div class="col-title" data-i18n="colNew">New</div>
+            <div id="tree-right" dir="ltr" data-i18n-aria-label="paneNew" aria-label="New (right)" class="diff-tree"></div>
           </div>
         </div>
-        <pre id="text-view" hidden></pre>
+        <pre role="region" tabindex="0" id="text-view" dir="ltr" data-i18n-aria-label="viewTextDiff" aria-label="Text diff" hidden></pre>
       </section>
     </div>
   </div>

@@ -35,6 +35,8 @@ export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
   }
 
   function showError(text) {
+    // Clear the previous node so repeating the same error is a new live-region update.
+    errorEl.textContent = '';
     errorEl.textContent = text;
     errorEl.hidden = false;
   }

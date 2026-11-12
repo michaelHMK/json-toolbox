@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="titleFormatter">JSON 格式化 - JSON 工具箱</title>
+  <title data-i18n="titleFormatter">JSON Formatter - JSON Toolbox</title>
   <link rel="stylesheet" href="styles/app.css">
   <link rel="stylesheet" href="styles/virtual-tree.css">
 </head>
@@ -14,89 +14,92 @@
     <div class="page-shell">
       <header class="page-header">
         <div class="page-heading">
-          <h1 data-i18n="navFormat">JSON 格式化</h1>
-          <p data-i18n="descFormat">美化 JSON，支持树形浏览、层级展开与搜索。</p>
+          <h1 data-i18n="navFormat">JSON Formatter</h1>
+          <p data-i18n="descFormat">Beautify JSON with tree browsing, level expansion and search.</p>
         </div>
         <div class="page-actions">
-          <button id="btn-cancel" hidden data-i18n="btnCancel">取消</button>
-          <button id="btn-sample" data-i18n="btnSample">示例</button>
-          <button id="btn-clear" data-i18n="btnClear">清空</button>
-          <button id="btn-format" class="primary" data-i18n="btnFormat" data-i18n-title="btnFormatTitle">格式化</button>
+          <button id="btn-cancel" hidden data-i18n="btnCancel">Cancel</button>
+          <button id="btn-sample" data-i18n="btnSample">Sample</button>
+          <button id="btn-clear" data-i18n="btnClear">Clear</button>
+          <button id="btn-format" class="primary" data-i18n="btnFormat" data-i18n-title="btnFormatTitle" title="Shortcut: Cmd/Ctrl + Enter">Format</button>
         </div>
       </header>
 
       <section class="options-bar">
-        <label class="field"><span data-i18n="labelIndent">缩进</span>
+        <label class="field"><span data-i18n="labelIndent">Indent</span>
           <select id="indent">
-            <option value="2" selected data-i18n="optSpaces2">2 空格</option>
-            <option value="4" data-i18n="optSpaces4">4 空格</option>
+            <option value="2" selected data-i18n="optSpaces2">2 spaces</option>
+            <option value="4" data-i18n="optSpaces4">4 spaces</option>
             <option value="tab">Tab</option>
           </select>
         </label>
         <label class="field chk">
-          <input type="checkbox" id="auto-format" checked><span data-i18n="labelAutoFormat" data-i18n-title="labelAutoFormatTitle">粘贴即格式化</span>
+          <input type="checkbox" id="auto-format" checked><span data-i18n="labelAutoFormat" data-i18n-title="labelAutoFormatTitle" title="Format immediately after pasting">Format on paste</span>
         </label>
         <span class="options-spacer"></span>
         <span class="shortcut">Cmd/Ctrl + Enter</span>
       </section>
 
-      <div id="error" class="notice" hidden></div>
+      <div class="error-announcement" role="alert" aria-atomic="true">
+        <div id="error" class="notice" hidden></div>
+      </div>
 
       <main class="workspace">
         <section id="input-pane" class="pane input-pane">
           <div class="pane-title">
             <div class="pane-label">
-              <span data-i18n="paneInput">输入</span>
+              <span data-i18n="paneInput">Input</span>
               <span id="file-name" class="file-name" aria-live="polite" hidden></span>
             </div>
             <button id="btn-import" type="button" class="button-compact"
               data-i18n="btnImportFile" data-i18n-title="btnImportFileTitle"
-              title="选择本地 .json 文件，也可以将文件拖到输入区">导入文件</button>
+              title="Choose a local .json file, or drop one into the input pane">Import file</button>
             <input id="file-input" type="file" accept=".json" hidden>
           </div>
-          <textarea id="input" spellcheck="false" wrap="off"
+          <textarea id="input" dir="ltr" data-i18n-aria-label="paneInput" aria-label="Input" spellcheck="false" wrap="off"
             data-i18n-placeholder="inputPlaceholder"
-            placeholder="在此粘贴 JSON 或拖入 .json 文件…（Cmd/Ctrl + Enter 格式化）"></textarea>
-          <pre id="input-view" data-i18n-title="largeInputTitle" title="大文件只读预览" hidden></pre>
-          <div id="file-drop-hint" class="file-drop-hint" data-i18n="fileDropHint" hidden>释放以导入 JSON 文件</div>
+            placeholder="Paste JSON or drop a .json file here… (Cmd/Ctrl + Enter to format)"></textarea>
+          <pre role="region" tabindex="0" id="input-view" dir="ltr" data-i18n-aria-label="largeInputTitle" aria-label="Read-only large-file preview" data-i18n-title="largeInputTitle" title="Read-only large-file preview" hidden></pre>
+          <div id="file-drop-hint" class="file-drop-hint" data-i18n="fileDropHint" hidden>Release to import a JSON file</div>
         </section>
 
         <section class="pane result-pane">
           <div class="pane-title">
             <div class="pane-label">
-              <span data-i18n="paneResult">结果</span>
-              <span id="status" class="status"></span><span id="busy" hidden data-i18n="busyText">处理中…</span>
+              <span data-i18n="paneResult">Result</span>
+              <span id="status" class="status" role="status" aria-atomic="true"></span>
+              <span role="status" aria-atomic="true"><span id="busy" hidden data-i18n="busyText">Working…</span></span>
             </div>
             <div class="pane-actions">
-              <span class="view-toggle" role="tablist">
-                <button id="view-text" class="active" data-i18n="viewRaw">原文</button>
-                <button id="view-tree" data-i18n="viewTree">树形</button>
+              <span class="view-toggle" role="group" data-i18n-aria-label="paneResult" aria-label="Result">
+                <button id="view-text" class="active" data-i18n="viewRaw" aria-pressed="true">Raw</button>
+                <button id="view-tree" data-i18n="viewTree" aria-pressed="false">Tree</button>
               </span>
-              <button id="btn-copy" class="button-compact" data-i18n="btnCopy">复制结果</button>
+              <button id="btn-copy" class="button-compact" data-i18n="btnCopy">Copy result</button>
             </div>
           </div>
           <div id="tree-tools" class="pane-subheader" hidden>
             <span id="level-box">
-              <select id="level-select" data-i18n-title="levelTitle" title="把树形结构展开到指定层级">
-                <option value="" disabled selected data-i18n="levelPlaceholder">展开层级…</option>
-                <option value="1" data-i18n="level1">1 级</option>
-                <option value="2" data-i18n="level2">2 级</option>
-                <option value="3" data-i18n="level3">3 级</option>
-                <option value="4" data-i18n="level4">4 级</option>
-                <option value="5" data-i18n="level5">5 级</option>
-                <option value="8" data-i18n="level8">8 级</option>
-                <option value="all" data-i18n="levelAll">全部</option>
+              <select id="level-select" data-i18n-aria-label="levelTitle" aria-label="Expand the tree to a chosen level" data-i18n-title="levelTitle" title="Expand the tree to a chosen level">
+                <option value="" disabled selected data-i18n="levelPlaceholder">Expand levels…</option>
+                <option value="1" data-i18n="level1">Level 1</option>
+                <option value="2" data-i18n="level2">Level 2</option>
+                <option value="3" data-i18n="level3">Level 3</option>
+                <option value="4" data-i18n="level4">Level 4</option>
+                <option value="5" data-i18n="level5">Level 5</option>
+                <option value="8" data-i18n="level8">Level 8</option>
+                <option value="all" data-i18n="levelAll">All</option>
               </select>
             </span>
             <span id="search-box">
-              <input id="search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="搜索 key 或值…" autocomplete="off">
-              <span id="match-info"></span>
-              <button id="match-prev" class="icon-button" data-i18n-title="matchPrevTitle" title="上一个（Shift+Enter）">↑</button>
-              <button id="match-next" class="icon-button" data-i18n-title="matchNextTitle" title="下一个（Enter）">↓</button>
+              <input id="search" data-i18n-aria-label="searchPlaceholder" aria-label="Search key or value…" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Search key or value…" autocomplete="off">
+              <span id="match-info" dir="ltr" role="status" aria-atomic="true"></span>
+              <button id="match-prev" data-i18n-aria-label="matchPrevTitle" aria-label="Previous (Shift+Enter)" class="icon-button" data-i18n-title="matchPrevTitle" title="Previous (Shift+Enter)">↑</button>
+              <button id="match-next" data-i18n-aria-label="matchNextTitle" aria-label="Next (Enter)" class="icon-button" data-i18n-title="matchNextTitle" title="Next (Enter)">↓</button>
             </span>
           </div>
-          <pre id="output-text"></pre>
-          <div id="tree" hidden></div>
+          <pre role="region" tabindex="0" id="output-text" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result"></pre>
+          <div id="tree" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result" hidden></div>
         </section>
       </main>
     </div>

@@ -148,3 +148,153 @@ test('string and key previews never leave half of a surrogate pair', () => withD
   }
   tree.destroy();
 }));
+
+function activeEntry(container) {
+  const id = container.getAttribute('aria-activedescendant');
+  return container.querySelectorAll('.entry').find((entry) => entry.id === id);
+}
+
+function press(container, key) {
+  let prevented = false;
+  container.events.keydown({ key, preventDefault() { prevented = true; } });
+  assert.equal(prevented, true, `${key} must not also scroll the page`);
+  return activeEntry(container)?.dataset.path;
+}
+
+test('virtual tree exposes sibling counts and levels while excluding decorative closing rows', () => withDom(() => {
+  const container = new Element();
+  container.setAttribute('aria-label', 'Formatted JSON');
+  const tree = createVirtualTree(container, {
+    data: { first: 1, nested: { a: 2, b: 3 }, empty: [] }, expandLevel: Infinity,
+  });
+  assert.equal(container.getAttribute('role'), 'tree');
+  assert.equal(container.getAttribute('tabindex'), '0');
+  assert.equal(container.getAttribute('aria-label'), 'Formatted JSON');
+  const entries = container.querySelectorAll('.entry');
+  for (const entry of entries) {
+    if (entry.classList.contains('virtual-close')) {
+      assert.equal(entry.getAttribute('aria-hidden'), 'true');
+      assert.equal(entry.getAttribute('role'), null);
+    } else {
+      assert.equal(entry.getAttribute('role'), 'treeitem');
+      assert.equal(entry.getAttribute('tabindex'), null, 'the tree has one Tab stop');
+    }
+  }
+  const nested = entries.find((entry) => entry.dataset.path === '/nested');
+  assert.equal(nested.getAttribute('aria-level'), '2');
+  assert.equal(nested.getAttribute('aria-posinset'), '2');
+  assert.equal(nested.getAttribute('aria-setsize'), '3');
+  assert.equal(nested.getAttribute('aria-expanded'), 'true');
+  assert.ok(nested.getAttribute('aria-label').startsWith('nested: '));
+  const b = entries.find((entry) => entry.dataset.path === '/nested/b');
+  assert.equal(b.getAttribute('aria-level'), '3');
+  assert.equal(b.getAttribute('aria-posinset'), '2');
+  assert.equal(b.getAttribute('aria-setsize'), '2');
+  assert.equal(b.getAttribute('aria-expanded'), null);
+  const empty = entries.find((entry) => entry.dataset.path === '/empty');
+  assert.equal(empty.getAttribute('aria-expanded'), null, 'empty containers have no child nodes');
+  tree.update({ onlyRequired: true, requiredChildren: createChildPathIndex(['/nested/b']) });
+  const filtered = container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/nested/b');
+  assert.equal(filtered.getAttribute('aria-posinset'), '1');
+  assert.equal(filtered.getAttribute('aria-setsize'), '1');
+  tree.destroy();
+  assert.equal(container.getAttribute('role'), null);
+  assert.equal(container.getAttribute('tabindex'), null);
+  assert.equal(container.getAttribute('aria-activedescendant'), null);
+  assert.equal(container.getAttribute('aria-label'), 'Formatted JSON');
+}));
+
+test('keyboard navigation expands nodes, visits children and siblings, and skips closing brackets', () => withDom(() => {
+  const changes = [];
+  const container = new Element();
+  const tree = createVirtualTree(container, {
+    data: { parent: { leaf: 1 }, last: 2 }, onToggle: (...args) => changes.push(args),
+  });
+  assert.equal(activeEntry(container).dataset.path, '');
+  assert.equal(press(container, 'ArrowRight'), '/parent');
+  assert.equal(press(container, 'ArrowRight'), '/parent', 'opening keeps focus on the parent');
+  assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'true');
+  assert.equal(press(container, 'ArrowRight'), '/parent/leaf');
+  assert.equal(press(container, 'ArrowRight'), '/parent/leaf', 'leaf nodes do not expand');
+  assert.equal(press(container, 'ArrowDown'), '/last');
+  assert.equal(press(container, 'ArrowUp'), '/parent/leaf');
+  assert.equal(press(container, 'ArrowLeft'), '/parent');
+  assert.equal(press(container, 'ArrowLeft'), '/parent');
+  assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'false');
+  assert.equal(press(container, 'Enter'), '/parent');
+  assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'true');
+  assert.equal(press(container, ' '), '/parent');
+  assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'false');
+  assert.equal(press(container, 'End'), '/last');
+  assert.equal(press(container, 'ArrowDown'), '/last');
+  assert.equal(press(container, 'Home'), '');
+  assert.equal(press(container, 'ArrowUp'), '');
+  assert.deepEqual(changes, [['/parent', true], ['/parent', false], ['/parent', true], ['/parent', false]]);
+  tree.destroy();
+  assert.equal(container.events.keydown, undefined);
+  assert.equal(container.events.focus, undefined);
+}));
+
+test('virtual scrolling keeps the active descendant mounted and keyboard focus on the tree', () => withDom(() => {
+  const container = new Element();
+  container.focus = () => { document.activeElement = container; };
+  const tree = createVirtualTree(container, { data: Array(2_000_000).fill(7) });
+  container.focus();
+  const originalId = container.getAttribute('aria-activedescendant');
+  container.scrollTop = 4_000_000;
+  tree.refresh();
+  assert.equal(container.getAttribute('aria-activedescendant'), originalId);
+  assert.equal(activeEntry(container).dataset.path, '');
+  assert.ok(activeEntry(container).classList.contains('virtual-active-outside'));
+  assert.ok(container.querySelectorAll('.entry').length <= 46, 'pinning costs at most one row');
+  assert.equal(document.activeElement, container);
+  assert.equal(press(container, 'End'), '/1999999');
+  assert.ok(!activeEntry(container).classList.contains('virtual-active-outside'));
+  assert.equal(activeEntry(container).getAttribute('aria-posinset'), '2000000');
+  assert.equal(activeEntry(container).getAttribute('aria-setsize'), '2000000');
+  assert.equal(document.activeElement, container);
+  assert.equal(press(container, 'ArrowUp'), '/1999998');
+  tree.destroy();
+}));
+
+test('collapsing or filtering an active descendant falls back to a visible ancestor', () => withDom(() => {
+  const container = new Element();
+  const tree = createVirtualTree(container, { data: { parent: { leaf: 1 }, other: 2 } });
+  tree.reveal('/parent/leaf');
+  tree.setCurrent('/other');
+  assert.equal(activeEntry(container).dataset.path, '/parent/leaf', 'search decoration is independent of keyboard focus');
+  tree.setOpen('/parent', false);
+  assert.equal(activeEntry(container).dataset.path, '/parent');
+  tree.update({ onlyRequired: true, requiredChildren: createChildPathIndex(['/other']) });
+  assert.equal(activeEntry(container).dataset.path, '');
+  tree.update({ data: undefined });
+  assert.equal(container.getAttribute('aria-activedescendant'), null);
+  tree.update({ data: [1] });
+  assert.equal(activeEntry(container).dataset.path, '');
+  tree.destroy();
+}));
+
+test('pointer activation preserves value text nodes and native selections after virtual scrolling', () => withDom(() => {
+  const container = new Element();
+  container.focus = () => {
+    if (document.activeElement === container) return;
+    document.activeElement = container;
+    container.events.focus?.();
+  };
+  const tree = createVirtualTree(container, { data: Array(1000).fill('selectable') });
+  container.scrollTop = 1200;
+  tree.refresh();
+  const entry = container.querySelectorAll('.entry').find((item) => item.dataset.path === '/50');
+  const row = entry.querySelector('.row');
+  const value = entry.querySelector('.v');
+  row.events.pointerdown();
+  container.focus();
+  row.events.click({ target: value });
+  assert.equal(activeEntry(container), entry);
+  assert.equal(activeEntry(container).querySelector('.v'), value, 'pointer focus must not replace selectable text');
+  document.getSelection = () => ({ isCollapsed: false, anchorNode: value, focusNode: value });
+  row.events.click({ target: value });
+  assert.equal(activeEntry(container).querySelector('.v'), value);
+  assert.equal(container.scrollTop, 1200, 'clicking a visible row must not jump back to the old active row');
+  tree.destroy();
+}));

@@ -38,6 +38,8 @@ function setup() {
 function assertView(page, expected) {
   assert.equal(page.state.view, expected);
   assert.equal(page.get('view-' + expected).classList.contains('active'), true);
+  assert.equal(page.get('view-' + expected).getAttribute('aria-pressed'), 'true');
+  assert.equal(page.get('view-' + (expected === 'text' ? 'tree' : 'text')).getAttribute('aria-pressed'), 'false');
   assert.equal(page.get('tree').hidden, expected !== 'tree');
   if (expected === 'tree') {
     assert.ok(page.getTree(), 'the active tree must have been built');

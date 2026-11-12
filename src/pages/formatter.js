@@ -100,6 +100,8 @@ function invalidateViewRequest() {
 function updateViewButtons() {
   $('view-text').classList.toggle('active', state.view === 'text');
   $('view-tree').classList.toggle('active', state.view === 'tree');
+  $('view-text').setAttribute('aria-pressed', String(state.view === 'text'));
+  $('view-tree').setAttribute('aria-pressed', String(state.view === 'tree'));
   outputTextEl.hidden = state.view !== 'text';
   treeEl.hidden = state.view !== 'tree';
   $('tree-tools').hidden = state.view !== 'tree';

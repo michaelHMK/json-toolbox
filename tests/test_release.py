@@ -34,6 +34,19 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_release.check_reference('src/shared/worker-client.js', './worker/index.js', {'src/worker/index.js'})
 
+    def test_missing_accessible_label_translation_is_rejected(self):
+        original_read = Path.read_text
+
+        def read_text(path, *args, **kwargs):
+            source = original_read(path, *args, **kwargs)
+            if path.name == 'formatter.html':
+                source += '<button data-i18n-aria-label="missingAccessibleLabel"></button>'
+            return source
+
+        with patch.object(Path, 'read_text', read_text):
+            with self.assertRaisesRegex(ValueError, 'missingAccessibleLabel'):
+                self.check()
+
     def test_missing_file_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
