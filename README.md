@@ -12,7 +12,7 @@ See the `version` field in [`manifest.json`](manifest.json) for the current vers
 
 - **Responsive interactions**: Web Workers handle parsing, search, and comparison, reducing computation on the main thread.
 - **Lightweight browsing**: trees and long text render only around the visible area, avoiding a DOM node for every result while supporting tree search navigation and full copying.
-- **Large-input virtualization**: inputs above 256 KiB use a read-only virtual preview, avoiding full native textarea layout.
+- **Large-input virtualization**: inputs above 262,144 UTF-16 code units (about 256 KiB for ASCII text) use a read-only virtual preview, avoiding full native textarea layout.
 - **Less repeated work**: ordinary documents reuse parsed data and results; large text-only operations choose native or direct serialization for the data, fall back to iteration for deep nesting, and release unused Worker document caches.
 
 See [Performance Checks](#performance-checks) below for verification commands and large-output limitations.
