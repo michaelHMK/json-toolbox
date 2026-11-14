@@ -21,7 +21,9 @@ function setup(name) {
           terminate() { this.terminated = true; },
           postMessage(request) {
             this.requests.push(request);
-            if (heldAction === request.action) return;
+            if (heldAction !== request.action) this.complete(request);
+          },
+          complete(request) {
             queueMicrotask(() => {
               if (!this.terminated) this.onmessage({ data: structuredClone(handle(structuredClone(request))) });
             });
@@ -149,4 +151,108 @@ test('large comparison preserves paired toggles, filters and snapshot navigation
   page.doClear();
   assert.equal(page.get('tree-left').children.length, 0);
   assert.equal(page.get('tree-right').children.length, 0);
+});
+
+test('old tree interactions cannot replace the snapshot of a pending new format', async () => {
+  const { page, workers, hold } = setup('formatter');
+  const padding = 'x'.repeat(LARGE_INPUT_THRESHOLD);
+  page.state.view = 'tree';
+  page.textInput.setText(JSON.stringify({ old: 1, nested: { n: 1 }, padding }));
+  await page.doFormat();
+  const previous = page.getTree();
+  await previous.ready;
+  hold('tree');
+  const firstOpen = previous.setOpen('/nested', true);
+  await settle();
+  page.textInput.setText(JSON.stringify({ fresh: 2, nested: { n: 2 }, padding }));
+  page.get('input').events.input();
+  hold('format');
+  const formatting = page.doFormat();
+  const nextOpen = previous.setOpen('/nested', false);
+  await settle();
+  assert.deepEqual(workers[1].requests.map((request) => request.action), ['format']);
+  hold(null);
+  workers[1].complete(workers[1].requests[0]);
+  await Promise.all([formatting, firstOpen, nextOpen]);
+  await page.getTree().ready;
+  await page.getTree().setOpen('/nested', true);
+  const paths = page.get('tree').querySelectorAll('.entry').map((row) => row.dataset.path);
+  assert.ok(page.state.outputText.includes('fresh'));
+  assert.ok(paths.includes('/fresh'));
+  assert.ok(!paths.includes('/old'));
+  assert.equal(page.get('error').hidden, true);
+  page.doClear();
+});
+
+for (const outcome of ['cancelled', 'invalid']) {
+  test(`the displayed tree remains usable after a ${outcome} replacement format`, async () => {
+    const { page, workers, hold } = setup('formatter');
+    page.state.view = 'tree';
+    page.textInput.setText(JSON.stringify({ original: { n: 1 }, padding: 'x'.repeat(LARGE_INPUT_THRESHOLD) }));
+    await page.doFormat();
+    const previous = page.getTree();
+    await previous.ready;
+    page.textInput.setText(outcome === 'cancelled' ? '{"replacement":true}' : '{"invalid":');
+    if (outcome === 'cancelled') hold('format');
+    const formatting = page.doFormat();
+    await previous.setOpen('/original', true);
+    if (outcome === 'cancelled') page.get('btn-cancel').click();
+    await formatting;
+    hold(null);
+    await previous.setOpen('/original', true);
+    assert.equal(page.getTree(), previous);
+    assert.ok(page.get('tree').querySelectorAll('.entry').some((row) => row.dataset.path === '/original/n'));
+    assert.ok(page.state.outputText.includes('original'));
+    if (outcome === 'cancelled') {
+      assert.equal(workers[1].requests[0].action, 'parse');
+      assert.ok(workers[1].requests[0].text.includes('original'));
+      assert.equal(page.get('error').hidden, true);
+    }
+    page.doClear();
+  });
+}
+
+test('Worker recovery stays bound to the displayed tree after unformatted input edits', async () => {
+  const { page, workers } = setup('formatter');
+  const padding = 'x'.repeat(LARGE_INPUT_THRESHOLD);
+  page.textInput.setText(JSON.stringify({ displayed: 1, branch: { n: 1 }, padding }));
+  await page.setView('tree');
+  await page.getTree().ready;
+  assert.equal(page.state.outputText, '');
+  workers[0].crash();
+  page.textInput.setText(JSON.stringify({ edited: 2, branch: { n: 2 }, padding }));
+  page.get('input').events.input();
+  await page.getTree().setOpen('/branch', true);
+  const paths = page.get('tree').querySelectorAll('.entry').map((row) => row.dataset.path);
+  assert.ok(paths.includes('/displayed'));
+  assert.ok(!paths.includes('/edited'));
+  assert.ok(workers[1].requests[0].text.includes('displayed'));
+  await page.doFormat();
+  await page.getTree().ready;
+  assert.ok(page.get('tree').querySelectorAll('.entry').some((row) => row.dataset.path === '/edited'));
+  page.doClear();
+});
+
+test('concurrent tree recovery shares one parse and retains all expansion intentions', async () => {
+  const { page, workers, hold } = setup('formatter');
+  page.state.view = 'tree';
+  page.textInput.setText(JSON.stringify({ a: { n: 1 }, b: { n: 2 }, padding: 'x'.repeat(LARGE_INPUT_THRESHOLD) }));
+  await page.doFormat();
+  await page.getTree().ready;
+  workers[0].crash();
+  hold('parse');
+  const a = page.getTree().setOpen('/a', true);
+  const b = page.getTree().setOpen('/b', true);
+  await settle();
+  assert.deepEqual(workers[1].requests.map((request) => request.action), ['parse']);
+  hold(null);
+  workers[1].complete(workers[1].requests[0]);
+  await Promise.all([a, b]);
+  await settle();
+  assert.equal(workers[1].requests.filter((request) => request.action === 'parse').length, 1);
+  const paths = page.get('tree').querySelectorAll('.entry').map((row) => row.dataset.path);
+  assert.ok(paths.includes('/a/n'));
+  assert.ok(paths.includes('/b/n'));
+  assert.equal(page.get('error').hidden, true);
+  page.doClear();
 });

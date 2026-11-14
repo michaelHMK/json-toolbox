@@ -299,7 +299,7 @@ async function requestTree(side, payload) {
   if (payload.operation !== 'rows') suspendScrollSync(pending);
   const response = await pending;
   if (version !== dataVersion) return { ok: false, cancelled: true };
-  if (!response.ok && !response.cancelled) showError(taskErrorMessage(response));
+  if (!response.ok && !response.cancelled && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
   return response;
 }
 

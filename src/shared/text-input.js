@@ -8,6 +8,8 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
   let large = false;
 
   function setText(text) {
+    const previousInput = large ? preview : textarea;
+    const hadFocus = (textarea.ownerDocument || document).activeElement === previousInput;
     large = view !== null && text.length > threshold;
     if (large) {
       source = text;
@@ -15,13 +17,17 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
       textarea.value = '';
       preview.hidden = false;
       view.setText(text);
-      return;
+    } else {
+      source = '';
+      if (preview) preview.hidden = true;
+      view?.clear();
+      textarea.hidden = false;
+      textarea.value = text;
     }
-    source = '';
-    if (preview) preview.hidden = true;
-    view?.clear();
-    textarea.hidden = false;
-    textarea.value = text;
+    // Keep keyboard shortcuts on the replacement input without taking focus
+    // from another control during an import, swap or programmatic update.
+    const currentInput = large ? preview : textarea;
+    if (hadFocus && currentInput !== previousInput) currentInput.focus({ preventScroll: true });
   }
 
   // Intercept before the browser lays out a multi-megabyte textarea value.

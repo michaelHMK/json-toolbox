@@ -35,6 +35,7 @@ function session(text) {
     request(payload) {
       requests.push(payload);
       const result = structuredClone(handler({ action: 'tree', kind: 'document', snapshotId, ...structuredClone(payload) }));
+      if (result.code === 'TREE_MODEL_UNAVAILABLE') return Promise.resolve(result);
       assert.equal(result.ok, true, result.error);
       assert.ok(result.result.rows.length <= 256);
       for (const row of [...result.result.rows, result.result.activeRow].filter(Boolean)) {
@@ -49,6 +50,12 @@ function session(text) {
 function activeEntry(container) {
   const id = container.getAttribute('aria-activedescendant');
   return container.querySelectorAll('.entry').find((entry) => entry.id === id);
+}
+
+function activate(container, path) {
+  const entry = container.querySelectorAll('.entry').find((row) => row.dataset.path === path && !row.classList.contains('virtual-close'));
+  assert.ok(entry, `Expected a mounted entry for ${path}`);
+  entry.querySelector('.row').events.pointerdown();
 }
 
 async function press(container, key) {
@@ -151,7 +158,9 @@ test('remote cache is bounded and carries expansion state into a replacement Wor
   await settle();
   assert.ok(worker.requests.length > before, 'old windows are evicted instead of retaining all visited rows');
   assert.ok(container.querySelectorAll('.entry').some((row) => row.dataset.path === '/branch/child/n'));
-  assert.ok(worker.requests.at(-1).options.expanded.has('/branch/child'));
+  const restored = worker.requests.filter((request) => request.options).at(-1);
+  assert.ok(restored.options.expanded.has('/branch/child'));
+  assert.equal(worker.requests.filter((request) => request.options).length, 2, 'only initialization and recovery send full configuration');
   tree.destroy();
 }));
 
@@ -249,5 +258,323 @@ test('an initial reveal grows the scroller before browsers clamp its scroll posi
   assert.ok(container.scrollTop > 400_000);
   assert.equal(activeEntry(container).dataset.path, '/19999');
   assert.equal(activeEntry(container).classList.contains('virtual-active-outside'), false);
+  tree.destroy();
+}));
+
+test('routine windows, toggles and keyboard navigation do not resend the complete tree configuration', () => withDom(async () => {
+  const worker = session(JSON.stringify({ branch: { n: 1 }, rows: Array(2000).fill(1) }));
+  const requiredChildren = new Map(Array.from({ length: 5000 }, (_, index) => [`/unused/${index}`, new Set([`/unused/${index}/n`])]));
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: worker.request, requiredChildren });
+  await tree.ready;
+  await tree.setOpen('/branch', true);
+  await tree.reveal('/branch');
+  await press(container, 'ArrowRight');
+  await press(container, 'ArrowDown');
+  await tree.setOpen('/rows', true);
+  container.scrollTop = 30_000;
+  tree.refresh();
+  await settle();
+  assert.equal(worker.requests[0].options.requiredChildren.size, 5000);
+  assert.ok(worker.requests.some((request) => request.operation === 'rows'));
+  assert.ok(worker.requests.some((request) => request.operation === 'move'));
+  assert.ok(worker.requests.some((request) => request.operation === 'child'));
+  for (const request of worker.requests.slice(1)) assert.equal(Object.hasOwn(request, 'options'), false, request.operation);
+  await tree.update({ onlyRequired: false });
+  await settle();
+  const updates = worker.requests.filter((request) => request.options);
+  assert.equal(updates.length, 2);
+  assert.equal(updates[1].operation, 'update');
+  assert.equal(updates[1].options.requiredChildren.size, 5000);
+  tree.destroy();
+}));
+
+test('concurrent windows and a toggle share one configuration restore after Worker replacement', () => withDom(async () => {
+  const worker = session(JSON.stringify({ branch: { n: 1 }, rows: Array(2000).fill(1), hidden: 2 }));
+  const container = new Element();
+  const tree = createRemoteTree(container, {
+    request: worker.request, onlyRequired: true,
+    requiredChildren: new Map([
+      ['', new Set(['/branch', '/rows'])], ['/branch', new Set(['/branch/n'])],
+      ['/rows', new Set(Array.from({ length: 2000 }, (_, index) => '/rows/' + index))],
+    ]),
+  });
+  await tree.ready;
+  await tree.setOpen('/rows', true);
+  const before = tree.rowCount;
+  const requestCount = worker.requests.length;
+  worker.reset();
+  const toggled = tree.setOpen('/branch', true);
+  container.scrollTop = 30_000;
+  tree.refresh();
+  await toggled;
+  await settle();
+  const recovery = worker.requests.slice(requestCount).filter((request) => request.options);
+  assert.equal(recovery.length, 1);
+  assert.equal(recovery[0].operation, 'update');
+  assert.equal(recovery[0].options.onlyRequired, true);
+  assert.equal(recovery[0].options.expanded.has('/rows'), true);
+  assert.equal(recovery[0].options.expanded.has('/branch'), true);
+  assert.equal(tree.rowCount, before + 2);
+  assert.equal(container.querySelectorAll('.entry').some((row) => row.dataset.path === '/hidden'), false);
+  tree.destroy();
+}));
+
+test('a superseded recovery never replays an old toggle over the latest state', () => withDom(async () => {
+  const worker = session('{"branch":{"n":1}}');
+  let delay = false;
+  let release;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: async (payload) => {
+    const response = await worker.request(payload);
+    if (delay && payload.operation === 'update') return new Promise((resolve) => { release = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  worker.reset();
+  delay = true;
+  const old = tree.setOpen('/branch', true);
+  await settle();
+  await tree.setOpen('/branch', false);
+  release();
+  await old;
+  assert.equal(tree.rowCount, 3);
+  assert.deepEqual(worker.requests.filter((request) => request.operation === 'setOpen').map((request) => request.open), [true, false]);
+  tree.destroy();
+}));
+
+test('destroy during model recovery prevents its queued operation from being replayed', () => withDom(async () => {
+  const worker = session('{"branch":{"n":1}}');
+  let delay = false;
+  let release;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: async (payload) => {
+    const response = await worker.request(payload);
+    if (delay && payload.operation === 'update') return new Promise((resolve) => { release = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  worker.reset();
+  delay = true;
+  const pending = tree.setOpen('/branch', true);
+  await settle();
+  const count = worker.requests.length;
+  tree.destroy();
+  release();
+  await pending;
+  assert.equal(worker.requests.length, count);
+  assert.equal(container.children.length, 0);
+  assert.equal(tree.rowCount, 0);
+}));
+
+test('a delayed expansion keeps a newer pointer selection and resolves its shifted row index', () => withDom(async () => {
+  const worker = session('{"first":{"n":1},"second":2,"third":3}');
+  let release;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'setOpen') return new Promise((resolve) => { release = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  activate(container, '/first');
+  const pending = tree.setOpen('/first', true);
+  await settle();
+  activate(container, '/second');
+  release();
+  await pending;
+  assert.equal(tree.rowCount, 7, 'the legal expansion result must still be installed');
+  assert.equal(activeEntry(container).dataset.path, '/second');
+  assert.match(activeEntry(container).id, /-item-4$/);
+  assert.equal(await press(container, 'ArrowDown'), '/third');
+  const resolved = worker.requests.find((request) => request.operation === 'resolve');
+  assert.equal(resolved.activePath, '/second');
+  assert.equal(Object.hasOwn(resolved, 'options'), false);
+  tree.destroy();
+}));
+
+test('a pointer selection hidden by a pending collapse falls back to its visible ancestor', () => withDom(async () => {
+  const worker = session('{"branch":{"leaf":1},"next":2}');
+  let release;
+  const container = new Element();
+  const tree = createRemoteTree(container, { expandLevel: Infinity, request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'setOpen') return new Promise((resolve) => { release = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  const pending = tree.setOpen('/branch', false);
+  await settle();
+  activate(container, '/branch/leaf');
+  release();
+  await pending;
+  assert.equal(tree.rowCount, 4);
+  assert.equal(activeEntry(container).dataset.path, '/branch');
+  assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'false');
+  assert.equal(await press(container, 'ArrowDown'), '/next');
+  tree.destroy();
+}));
+
+test('a second pointer choice during active-path resolution wins without losing the expansion', () => withDom(async () => {
+  const worker = session('{"branch":{"n":1},"second":2,"third":3}');
+  const releases = [];
+  let heldResolve = false;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'setOpen' || (payload.operation === 'resolve' && !heldResolve)) {
+      if (payload.operation === 'resolve') heldResolve = true;
+      return new Promise((resolve) => releases.push(() => resolve(response)));
+    }
+    return response;
+  } });
+  await tree.ready;
+  const pending = tree.setOpen('/branch', true);
+  await settle();
+  activate(container, '/second');
+  releases[0]();
+  await settle();
+  activate(container, '/third');
+  releases[1]();
+  await pending;
+  assert.equal(tree.rowCount, 7);
+  assert.equal(activeEntry(container).dataset.path, '/third');
+  assert.match(activeEntry(container).id, /-item-5$/);
+  assert.equal(worker.requests.filter((request) => request.operation === 'resolve').length, 2);
+  tree.destroy();
+}));
+
+test('a delayed reveal cannot override a pointer selection made after navigation started', () => withDom(async () => {
+  const worker = session('{"branch":{"leaf":1},"next":2}');
+  let release;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'reveal') return new Promise((resolve) => { release = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  const pending = tree.reveal('/branch/leaf');
+  await settle();
+  activate(container, '/next');
+  release();
+  await pending;
+  assert.equal(tree.rowCount, 6);
+  assert.equal(activeEntry(container).dataset.path, '/next');
+  tree.destroy();
+}));
+
+test('pointer activation supersedes older queued keyboard movements as well as their pending response', () => withDom(async () => {
+  const worker = session('[0,1,2,3,4,5]');
+  let release;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'move') return new Promise((resolve) => { release = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  container.events.keydown({ key: 'ArrowDown', preventDefault() {} });
+  container.events.keydown({ key: 'ArrowDown', preventDefault() {} });
+  await settle();
+  activate(container, '/3');
+  release();
+  await settle();
+  assert.equal(activeEntry(container).dataset.path, '/3');
+  assert.equal(worker.requests.filter((request) => request.operation === 'move').length, 1);
+  tree.destroy();
+}));
+
+test('keyboard movement waits for a pending pointer-path correction before reading row indexes', () => withDom(async () => {
+  const worker = session('{"a":{"x":1,"y":2},"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9}');
+  let releaseCollapse;
+  let releaseResolve;
+  const container = new Element();
+  const tree = createRemoteTree(container, { expandLevel: Infinity, request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'setOpen') return new Promise((resolve) => { releaseCollapse = () => resolve(response); });
+    if (payload.operation === 'resolve') return new Promise((resolve) => { releaseResolve = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  const pending = tree.setOpen('/a', false);
+  await settle();
+  activate(container, '/d');
+  releaseCollapse();
+  await settle();
+  assert.equal(typeof releaseResolve, 'function');
+  container.events.keydown({ key: 'ArrowDown', preventDefault() {} });
+  await settle();
+  assert.equal(worker.requests.some((request) => request.operation === 'move'), false, 'no navigation may use the pre-collapse index');
+  releaseResolve();
+  await pending;
+  await settle();
+  assert.equal(activeEntry(container).dataset.path, '/e');
+  tree.destroy();
+}));
+
+test('ArrowRight waits for active-path correction before deciding which container to enter', () => withDom(async () => {
+  const worker = session('{"a":{"x":1,"y":2},"b":{"child":3},"c":4,"d":5,"e":6}');
+  let releaseCollapse;
+  let releaseResolve;
+  const container = new Element();
+  const tree = createRemoteTree(container, { expandLevel: Infinity, request: async (payload) => {
+    const response = await worker.request(payload);
+    if (payload.operation === 'setOpen') return new Promise((resolve) => { releaseCollapse = () => resolve(response); });
+    if (payload.operation === 'resolve') return new Promise((resolve) => { releaseResolve = () => resolve(response); });
+    return response;
+  } });
+  await tree.ready;
+  const pending = tree.setOpen('/a', false);
+  await settle();
+  activate(container, '/b');
+  releaseCollapse();
+  await settle();
+  container.events.keydown({ key: 'ArrowRight', preventDefault() {} });
+  await settle();
+  assert.equal(worker.requests.some((request) => request.operation === 'child'), false);
+  releaseResolve();
+  await pending;
+  await settle();
+  assert.equal(activeEntry(container).dataset.path, '/b/child');
+  tree.destroy();
+}));
+
+test('window-driven recovery refreshes the active index after a cancelled expansion intention', () => withDom(async () => {
+  const worker = session(JSON.stringify({ first: { n: 1 }, rows: Array(2000).fill(1) }));
+  let cancelToggle = false;
+  const container = new Element();
+  const tree = createRemoteTree(container, { request: (payload) => {
+    if (cancelToggle && payload.operation === 'setOpen') return Promise.resolve({ ok: false, cancelled: true });
+    return worker.request(payload);
+  } });
+  await tree.ready;
+  await tree.reveal('/rows/500');
+  const previousCount = tree.rowCount;
+  cancelToggle = true;
+  await tree.setOpen('/first', true);
+  worker.reset();
+  cancelToggle = false;
+  container.scrollTop = 38_000;
+  tree.refresh();
+  await settle();
+  assert.equal(tree.rowCount, previousCount + 2, 'recovery includes the remembered open intention');
+  assert.equal(activeEntry(container).dataset.path, '/rows/500');
+  assert.match(activeEntry(container).id, /-item-505$/);
+  assert.equal(await press(container, 'ArrowDown'), '/rows/501');
+  tree.destroy();
+}));
+
+test('ArrowRight stays on a filtered container with no visible children, while ArrowDown reaches its sibling', () => withDom(async () => {
+  const worker = session('{"branch":{"hidden":1},"next":2}');
+  const container = new Element();
+  const tree = createRemoteTree(container, {
+    request: worker.request, expandLevel: Infinity, onlyRequired: true,
+    requiredChildren: new Map([['', new Set(['/branch', '/next'])]]),
+  });
+  await tree.ready;
+  await tree.reveal('/branch');
+  assert.equal(await press(container, 'ArrowRight'), '/branch');
+  assert.equal(await press(container, 'ArrowDown'), '/next');
   tree.destroy();
 }));

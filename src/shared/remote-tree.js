@@ -13,9 +13,12 @@ function createRemoteModel(request) {
   let initialized = false;
   let options = { expanded: new Set(), collapsed: new Set() };
   let active = { path: null, index: -1 };
+  let activeVersion = 0;
   const rows = new Map();
   const pendingOpen = new Map();
   let loading = null;
+  let recovery = null;
+  const pendingOperations = new Map();
 
   function snapshotOptions() {
     return { ...options, expanded: new Set(options.expanded), collapsed: new Set(options.collapsed) };
@@ -48,14 +51,51 @@ function createRemoteModel(request) {
     remember(result.activeIndex, result.activeRow);
   }
 
-  async function run(operation, payload = {}, mutate = false) {
-    if (destroyed) return false;
-    const expected = mutate ? ++revision : revision;
+  function restoreModel() {
+    if (recovery) return recovery;
+    const pending = Promise.resolve(request({ operation: 'update', options: snapshotOptions(),
+      activePath: active.path, activeIndex: active.index, start: 0, count: WINDOW_ROWS }))
+      .finally(() => { if (recovery === pending) recovery = null; });
+    recovery = pending;
+    return pending;
+  }
+
+  async function send(operation, payload, expected) {
+    const dispatch = () => {
+      const selected = activeVersion;
+      return Promise.resolve(request({ operation, activePath: active.path, activeIndex: active.index, ...payload }))
+        .then((response) => ({ response, selected }));
+    };
+    let reply = await dispatch();
+    if (!destroyed && expected === revision && reply.response?.code === 'TREE_MODEL_UNAVAILABLE') {
+      const restored = await restoreModel();
+      if (destroyed || expected !== revision || !restored?.ok) return null;
+      // Configuration is sent once to recreate a missing Worker model. Normal
+      // viewport, navigation and toggle messages contain only their operation.
+      reply = await dispatch();
+      reply.recovered = true;
+    }
+    return reply;
+  }
+
+  async function execute(operation, payload, mutate, expected) {
+    const intendedSelection = activeVersion;
     try {
-      const response = await request({ operation, options: snapshotOptions(),
-        activePath: active.path, activeIndex: active.index, ...payload });
+      const reply = await send(operation, payload, expected);
+      const response = reply?.response;
       if (destroyed || expected !== revision || !response?.ok) return false;
-      install(response.result, mutate, operation !== 'rows');
+      install(response.result, mutate || reply.recovered, intendedSelection === activeVersion);
+      // Pointer activation is an independent user intention, not a structural
+      // revision. Keep the valid expansion/filter result and resolve the latest
+      // selected path against its new row indexes (falling back to an ancestor
+      // if a collapse hid it), instead of accepting an old activeIndex.
+      let selected = intendedSelection;
+      while (selected !== activeVersion) {
+        const resolved = await send('resolve', { start: response.result.start, count: WINDOW_ROWS }, expected);
+        if (destroyed || expected !== revision || !resolved?.response?.ok) return false;
+        selected = resolved.selected;
+        install(resolved.response.result, resolved.recovered, selected === activeVersion);
+      }
       return response.result;
     } catch {
       // The page's request boundary displays Worker errors. A failed window
@@ -64,22 +104,41 @@ function createRemoteModel(request) {
     }
   }
 
+  function run(operation, payload = {}, mutate = false) {
+    if (destroyed) return Promise.resolve(false);
+    const expected = mutate ? ++revision : revision;
+    const pending = execute(operation, payload, mutate, expected);
+    pendingOperations.set(pending, expected);
+    pending.then(() => pendingOperations.delete(pending));
+    return pending;
+  }
+
   return {
     get rowCount() { return rowCount; },
     get active() { return active; },
     rowAt: (index) => rows.get(index) ?? null,
     openState: (path, fallback) => pendingOpen.get(path) ?? fallback,
+    async whenSettled() {
+      // Keyboard commands must not read a new row cache using the UI's old
+      // index while a structural response is resolving a newer pointer path.
+      // Superseded operations do not block the current model's navigation.
+      while (!destroyed) {
+        const current = [...pendingOperations].filter(([, version]) => version === revision).map(([pending]) => pending);
+        if (!current.length) return;
+        await Promise.all(current);
+      }
+    },
     // Remote descriptors carry their size, so the renderer never enumerates
     // an object graph on the UI thread.
     sizeOf: () => 0,
-    setActive(path, index) { active = { path, index }; },
+    setActive(path, index) { activeVersion++; active = { path, index }; },
     update(next) {
       const changes = {};
       for (const key of MODEL_OPTIONS) if (Object.hasOwn(next, key)) changes[key] = next[key];
       if (initialized && !Object.keys(changes).length) return;
       options = { ...options, ...changes };
       initialized = true;
-      return run('update', { start: 0, count: WINDOW_ROWS }, true);
+      return run('update', { options: snapshotOptions(), start: 0, count: WINDOW_ROWS }, true);
     },
     setOpen(path, open) {
       rememberOpen(path, open);
@@ -105,6 +164,10 @@ function createRemoteModel(request) {
       return run('move', { index, step, count: WINDOW_ROWS }, true)
         .then((result) => result === false ? false : result.revealIndex ?? -1);
     },
+    child(path) {
+      return run('child', { path, count: WINDOW_ROWS }, true)
+        .then((result) => result === false ? false : result.revealIndex ?? -1);
+    },
     ensureRange(start, end) {
       if (destroyed || start >= end) return null;
       let missing = -1;
@@ -125,6 +188,8 @@ function createRemoteModel(request) {
       rows.clear();
       pendingOpen.clear();
       loading = null;
+      recovery = null;
+      pendingOperations.clear();
       rowCount = 0;
       active = { path: null, index: -1 };
     },

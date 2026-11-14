@@ -43,6 +43,7 @@ export function createVirtualTree(container, initial = {}) {
   let options = { rowHeight: 24, overscan: 12, highlights: new Set(), decorations: new Map(), numberLiterals: null, ...initial };
   const model = initial.model || createTreeModel(options);
   let currentPath = null;
+  let activationVersion = 0;
   let activePath = model.rowCount ? '' : null;
   let activeIndex = model.rowCount ? 0 : -1;
   const treeId = `json-tree-${++nextTreeId}`;
@@ -90,6 +91,7 @@ export function createVirtualTree(container, initial = {}) {
       row.appendChild(span('toggle-spacer', ''));
       row.appendChild(span('punct', Array.isArray(value) ? ']' : '}'));
       row.addEventListener('click', () => {
+        activationVersion++;
         activePath = path;
         model.setActive?.(path, -1);
         setOpen(path, false, { notify: true });
@@ -167,7 +169,9 @@ export function createVirtualTree(container, initial = {}) {
     const start = Math.max(0, Math.floor(logicalTop / options.rowHeight) - options.overscan);
     const end = Math.min(model.rowCount, Math.ceil((logicalTop + g.viewport) / options.rowHeight) + options.overscan);
     const loading = model.ensureRange?.(start, end);
-    if (loading) loading.then((changed) => { if (changed && !destroyed) refresh(); });
+    if (loading) loading.then((changed) => {
+      if (changed && !destroyed) { restoreActive(); refresh(); }
+    });
     layer.style.top = `${scrollTop - logicalTop + start * options.rowHeight}px`;
     const fragment = document.createDocumentFragment();
     // Keep the active descendant mounted when wheel scrolling recycles its row.
@@ -237,7 +241,19 @@ export function createVirtualTree(container, initial = {}) {
     });
   }
   function reveal(path) {
-    return after(model.reveal(path), (index) => showPath(path, index));
+    return navigateResult(model.reveal(path), (index) => showPath(path, index));
+  }
+  function navigateResult(result, apply) {
+    const selected = activationVersion;
+    return after(result, (value) => {
+      if (model.active && selected !== activationVersion) {
+        restoreActive();
+        refresh();
+        ensureActiveVisible();
+        return true;
+      }
+      return apply(value);
+    });
   }
   function showPath(path, index) {
     if (index < 0) return false;
@@ -281,6 +297,7 @@ export function createVirtualTree(container, initial = {}) {
       && (container.contains(selection.anchorNode) || container.contains(selection.focusNode));
   }
   function setActive(path, index) {
+    activationVersion++;
     activePath = path;
     activeIndex = index;
     model.setActive?.(path, index);
@@ -310,7 +327,7 @@ export function createVirtualTree(container, initial = {}) {
     activeIndex = index;
   }
   function moveActive(index, step) {
-    if (model.move) return after(model.move(index, step), (next) => {
+    if (model.move) return navigateResult(model.move(index, step), (next) => {
       if (next >= 0) return showPath(model.active.path, next);
     });
     let row = model.rowAt(index);
@@ -331,7 +348,9 @@ export function createVirtualTree(container, initial = {}) {
       case 'ArrowRight':
         if (expandable && !row.open) return setOpen(row.path, true, { notify: true });
         else if (expandable) {
-          if (model.move) return moveActive(activeIndex + 1, 1);
+          if (model.child) return navigateResult(model.child(row.path), (index) => {
+            if (index >= 0) return showPath(model.active.path, index);
+          });
           const child = model.rowAt(activeIndex + 1);
           if (child?.kind === 'entry' && child.depth > row.depth) return moveActive(activeIndex + 1, 1);
         }
@@ -350,7 +369,17 @@ export function createVirtualTree(container, initial = {}) {
     if (event.altKey || event.ctrlKey || event.metaKey || activeIndex < 0) return;
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End', 'ArrowRight', 'ArrowLeft', 'Enter', ' '].includes(event.key)) return;
     event.preventDefault();
-    if (model.move) navigation = navigation.then(() => navigate(event.key));
+    if (model.move) {
+      const selected = activationVersion;
+      navigation = navigation.then(async () => {
+        if (selected !== activationVersion || destroyed) return;
+        await model.whenSettled?.();
+        if (selected === activationVersion && !destroyed) {
+          restoreActive();
+          return navigate(event.key);
+        }
+      });
+    }
     else { navigate(event.key); ensureActiveVisible(); }
   }
   function ensureActiveVisible() {

@@ -19,6 +19,7 @@ export function createTreeTasks() {
     const side = request.side || 'document';
     let model = models.get(side);
     if (!model) {
+      if (!request.options) throw Object.assign(new Error('Tree model is no longer available'), { code: 'TREE_MODEL_UNAVAILABLE' });
       model = createTreeModel({ ...request.options, data: document.data });
       models.set(side, model);
     } else if (request.operation === 'update') {
@@ -38,6 +39,17 @@ export function createTreeTasks() {
       let row = model.rowAt(index);
       while (row?.kind === 'close') row = model.rowAt(index += step);
       if (row) { activePath = row.path; revealIndex = index; }
+    }
+    if (request.operation === 'child') {
+      const index = model.indexOf(request.path);
+      const parent = model.rowAt(index);
+      const child = parent?.open ? model.rowAt(index + 1) : null;
+      // ArrowRight enters a visible direct child. Unlike ArrowDown it must
+      // never skip a closing row and land on a sibling after filtering.
+      if (child?.kind === 'entry' && child.depth === parent.depth + 1) {
+        activePath = child.path;
+        revealIndex = index + 1;
+      }
     }
     let activeIndex = model.indexOf(activePath);
     while (activeIndex < 0 && activePath !== '') {

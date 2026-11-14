@@ -13,7 +13,7 @@ function session(text) {
 test('Worker tree windows preserve numeric literals and counts without transferring subtrees', () => {
   const text = '[{"price":19.90,"huge":12345678901234567890,"text":"' + 'x'.repeat(10000) + '"},' + '0,'.repeat(100000) + '1]';
   const { request } = session(text);
-  const initial = request({ operation: 'update', count: 20 });
+  const initial = request({ operation: 'update', options: {}, count: 20 });
   assert.equal(initial.result.rowCount, 100004);
   assert.equal(initial.result.rows.length, 20);
   assert.deepEqual(initial.result.rows[0].value, []);
@@ -35,7 +35,7 @@ test('Worker tree windows preserve numeric literals and counts without transferr
 
 test('Worker tree expansion, filtering and keyboard movement retain exact paths and visible active ancestors', () => {
   const { request } = session('{"a/b":{"~key":{"value":1}},"hidden":2}');
-  const revealed = request({ operation: 'reveal', path: '/a~1b/~0key/value' });
+  const revealed = request({ operation: 'reveal', options: {}, path: '/a~1b/~0key/value' });
   assert.equal(revealed.result.activePath, '/a~1b/~0key/value');
   const closed = request({ operation: 'setOpen', path: '/a~1b', open: false, activePath: '/a~1b/~0key/value' });
   assert.equal(closed.result.activePath, '/a~1b');
@@ -50,11 +50,39 @@ test('Worker comparison owns both trees and rejects stale snapshots after cleari
   const handle = createTaskHandler();
   const diff = handle({ action: 'diff', text: '{"left":1}', text2: '{"right":2}', includeData: false, retainSnapshot: true });
   assert.equal(diff.result.leftData, undefined);
-  const request = (side) => handle({ action: 'tree', kind: 'comparison', side, snapshotId: diff.result.snapshotId });
+  const request = (side) => handle({ action: 'tree', kind: 'comparison', side, options: {}, snapshotId: diff.result.snapshotId });
   assert.equal(request('left').result.rows[1].value, 1);
   assert.equal(request('right').result.rows[1].value, 2);
   handle({ action: 'clear' });
   assert.equal(request('left').code, 'SNAPSHOT_UNAVAILABLE');
+});
+
+test('a missing Worker tree explicitly requests configuration before accepting small operation messages', () => {
+  const { request } = session('{"branch":{"n":1},"next":2}');
+  assert.equal(request({ operation: 'rows', start: 0, count: 10 }).code, 'TREE_MODEL_UNAVAILABLE');
+  const initialized = request({ operation: 'update', options: { expandLevel: 2 } });
+  assert.equal(initialized.ok, true);
+  const window = request({ operation: 'rows', start: 1, count: 3 });
+  assert.equal(window.ok, true);
+  assert.equal(window.result.rows[1].path, '/branch/n');
+  const closed = request({ operation: 'setOpen', path: '/branch', open: false, activePath: '/branch/n' });
+  assert.equal(closed.result.activePath, '/branch');
+});
+
+test('Worker child navigation enters only a visible direct child while normal movement skips closing rows', () => {
+  const { request } = session('{"branch":{"hidden":1},"next":2}');
+  const requiredChildren = new Map([['', new Set(['/branch', '/next'])]]);
+  request({ operation: 'update', options: { expandLevel: Infinity, onlyRequired: true, requiredChildren } });
+  const child = request({ operation: 'child', path: '/branch', activePath: '/branch' });
+  assert.equal(child.result.activePath, '/branch');
+  assert.equal(child.result.revealIndex, undefined);
+  const moved = request({ operation: 'move', index: child.result.activeIndex + 1, step: 1 });
+  assert.equal(moved.result.activePath, '/next');
+  requiredChildren.set('/branch', new Set(['/branch/hidden']));
+  request({ operation: 'update', options: { requiredChildren } });
+  const visible = request({ operation: 'child', path: '/branch', activePath: '/branch' });
+  assert.equal(visible.result.activePath, '/branch/hidden');
+  assert.equal(visible.result.revealIndex, visible.result.activeIndex);
 });
 
 test('Worker supplies cloneable large text indexes for format and cached text comparisons', () => {

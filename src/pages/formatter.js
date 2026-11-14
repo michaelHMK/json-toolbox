@@ -55,12 +55,14 @@ let formattingVersion = null;
 let pendingView = null;
 let viewRequestVersion = 0;
 let treeView = null;
+let treeSession = null;
 let workerSearchReady = false;
 
 const runTask = createTaskRunner({
   serialize: true,
   onReset: () => {
     state.snapshotId = null;
+    if (treeSession) treeSession.recovery = null;
     workerSearchReady = false;
     formattingVersion = null;
     invalidateViewRequest();
@@ -214,6 +216,7 @@ async function doFormat() {
   invalidateViewRequest();
   treeView?.destroy();
   treeView = null;
+  treeSession = null;
   outputView.clear();
   state.outputText = res.result.text;
   state.outputLineIndex = res.result.lineIndex ?? null;
@@ -258,6 +261,7 @@ function resetDocument() {
   void runTask('clear', {}, { discardQueued: true });
   treeView?.destroy();
   treeView = null;
+  treeSession = null;
   textInput.clear();
   state.outputText = '';
   state.outputLineIndex = null;
@@ -315,10 +319,17 @@ function renderTree() {
     forceExpand: state.searchForce,
     highlights: state.highlights,
   };
+  if (treeView && (Boolean(treeSession) !== state.remote || (treeSession && treeSession.source !== state.dataSource))) {
+    treeView.destroy();
+    treeView = null;
+    treeSession = null;
+  }
   if (treeView) treeView.update(options);
-  else treeView = state.remote
-    ? createRemoteTree(treeEl, { ...options, request: requestTree })
-    : createVirtualTree(treeEl, options);
+  else if (state.remote) {
+    const session = { source: state.dataSource, recovery: null };
+    treeSession = session;
+    treeView = createRemoteTree(treeEl, { ...options, request: (payload) => requestTree(payload, session) });
+  } else treeView = createVirtualTree(treeEl, options);
   if (state.searchQuery && state.matchCount > 0) updateMatchNav(0);
   else {
     treeView.setCurrent(null);
@@ -328,18 +339,41 @@ function renderTree() {
 
 // A cancelled Worker may have discarded the document. Rebuild its snapshot
 // from the displayed source before retrying a window; never transfer the tree.
-async function requestTree(payload) {
-  const version = dataVersion;
-  if (state.snapshotId === null) {
-    const parsed = await runTask('parse', { text: currentText(), retainSnapshot: true, includeData: false });
-    if (parsed.cancelled || version !== dataVersion) return { ok: false, cancelled: true };
-    if (!parsed.ok) { showError(taskErrorMessage(parsed)); return parsed; }
-    state.snapshotId = parsed.result.snapshotId;
-    workerSearchReady = true;
+function isCurrentTreeSession(session, version) {
+  return session === treeSession && state.remote && session.source === state.dataSource
+    && version === dataVersion && formattingVersion === null;
+}
+
+async function recoverTreeSnapshot(session, version) {
+  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+  if (state.snapshotId !== null) return { ok: true };
+  // Concurrent row, toggle and search requests share the same recovery. Bind
+  // it to the displayed document, even when the input has since been edited.
+  if (!session.recovery || session.recovery.version !== version) {
+    const recovery = { version, promise: null };
+    recovery.promise = (async () => {
+      const parsed = await runTask('parse', { text: session.source, retainSnapshot: true, includeData: false });
+      if (parsed.cancelled || !isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+      if (!parsed.ok) { showError(taskErrorMessage(parsed)); return parsed; }
+      state.snapshotId = parsed.result.snapshotId;
+      workerSearchReady = true;
+      return parsed;
+    })().finally(() => {
+      if (session.recovery === recovery) session.recovery = null;
+    });
+    session.recovery = recovery;
   }
+  return session.recovery.promise;
+}
+
+async function requestTree(payload, session) {
+  const version = dataVersion;
+  const recovered = await recoverTreeSnapshot(session, version);
+  if (!recovered.ok) return recovered;
+  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
   const response = await runTask('tree', { ...payload, kind: 'document', snapshotId: state.snapshotId });
-  if (version !== dataVersion) return { ok: false, cancelled: true };
-  if (!response.ok && !response.cancelled) showError(taskErrorMessage(response));
+  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+  if (!response.ok && !response.cancelled && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
   return response;
 }
 
@@ -383,14 +417,16 @@ async function runSearch() {
   }
   const version = dataVersion;
   if (!workerSearchReady) {
-    const parsed = await runTask('parse', { text: currentText(), retainSnapshot: true, includeData: !state.remote });
+    const parsed = state.remote
+      ? await recoverTreeSnapshot(treeSession, version)
+      : await runTask('parse', { text: state.dataSource, retainSnapshot: true, includeData: true });
     if (parsed.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
     if (!parsed.ok) {
       showError(t('errSearchFailed') + taskErrorMessage(parsed));
       return;
     }
     workerSearchReady = true;
-    state.snapshotId = parsed.result.snapshotId ?? null;
+    if (!state.remote) state.snapshotId = parsed.result.snapshotId ?? null;
   }
   const res = await runTask('search', { text: q }, { key: 'search' });
   if (res.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;

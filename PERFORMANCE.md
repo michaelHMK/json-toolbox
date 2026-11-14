@@ -49,6 +49,14 @@ Chrome 测量使用本地 HTTP 页面和真实 Worker；不包含扩展安装、
 
 原始记录：[旧格式化](bench/results/format-before.jsonl)、[新格式化](bench/results/format-after.jsonl)、[浏览器基准](bench/results/browser-performance.json)、[50 MiB 文件导入](bench/results/file-import-50MiB.json)。
 
+## 2026-11-15 审查回归修复
+
+五项审查意见均已落实：旧树请求绑定其显示文档，格式化期间不能恢复旧快照覆盖新结果；日常树窗口、开合和导航只发送操作参数，完整配置仅在初始化、配置更新或 Worker 恢复时发送；textarea 与大文本预览双向切换时保持原有焦点；异步树响应保留后发生的指针选择并重新定位行号；ArrowRight 仅进入可见的直接子项，过滤后没有子项时留在原节点。
+
+密集差异基准使用两侧各 1,140,001 个字符、5000 处差异、20 层嵌套和 105001 项筛选索引。修复前每次滚动消息都复制完整索引，10 次消息同步发送耗时 44.7–65.7 ms，最长主线程任务 68 ms；修复后消息发送最多 0.1 ms，滚动和普通开合/导航期间均未观察到超过 50 ms 的任务。每次返回至多 256 行，每侧可见 DOM 约 39 行，Worker 取消重建后仍保留过滤与手动开合状态且不显示内部恢复错误。
+
+该预算针对滚动和普通交互；此密集样本的首次结果构建仍观察到最高 117 ms 的主线程任务，未混入滚动指标。完整前后记录见 [密集差异回归](bench/results/remote-state-review-fixes.json)。真实 Chrome 另验证了格式化、压缩和对比两侧共 8 个粘贴/拖放场景，双向焦点切换后的 16 次 Ctrl+Enter 均处理完整输入，并保留其他控件的焦点。
+
 ## 取舍与边界
 
 - 直接排版的收益不等于所有 JSON 都同样加速。需要 key 排序、重复 key 去重或特殊转义规范化的输入仍可能回退；这些语义通过对拍保留。
@@ -78,6 +86,8 @@ node bench/performance.mjs
 node bench/tree-view.mjs
 node bench/text-view.mjs
 node bench/remote-pages.mjs
+node bench/remote-state.mjs
+node bench/input-focus.mjs
 node bench/worker-transfer.mjs
 node bench/accessibility.mjs .
 node bench/browser.mjs . --verify
@@ -86,4 +96,6 @@ BENCH_SCENARIOS=regular,invalid BENCH_REPEATS=1 BENCH_MAX_LONG_TASK_MS=50 node b
 
 性能基准允许通过 `TREE_TOGGLE_BUDGET_MS`、`PERF_INPUT_BUDGET_MS`、`PERF_FRAME_BUDGET_MS` 调整机器预算；默认分别为 16、50、35 ms。浏览器基准始终断言结果正确、DOM 有界、窗口无嵌套对象图。合成 paste/drop 验证的是应用事件处理路径，不代表系统剪贴板自身的耗时。
 
-本次最终检查：256 项 JavaScript 测试、5 项 Python 发布测试、发布清单校验、默认 Node 基准、25 MiB 比例预算，以及树/文本/无障碍/页面/远程页面/深层传输/输入性能浏览器检查均通过。CI 工作流已配置，尚未在远端触发。
+2026-11-14 初次实施检查：256 项 JavaScript 测试、5 项 Python 发布测试、发布清单校验、默认 Node 基准、25 MiB 比例预算，以及树/文本/无障碍/页面/远程页面/深层传输/输入性能浏览器检查均通过。CI 工作流运行单测、发布校验和 25 MiB 比例预算。
+
+2026-11-15 审查修复后检查：283 项 JavaScript 测试、5 项 Python 发布测试及发布清单校验通过；真实 Chrome 的输入焦点、密集差异、Worker 恢复、延迟远程页面导航和无障碍检查通过。新增回归包含旧树与新格式化交错、格式化取消/失败后继续使用旧树、并发恢复、指针与键盘交错以及筛选后 ArrowRight 的边界。
