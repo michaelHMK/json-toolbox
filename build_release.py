@@ -19,9 +19,9 @@ RUNTIME_FILES = (
     'src/shared/page.js', 'src/shared/navigation.js', 'src/shared/i18n.js', 'src/shared/theme.js',
     'src/shared/worker-client.js', 'src/shared/worker-protocol.js', 'src/shared/feedback.js',
     'src/shared/file-import.js', 'src/shared/text-input.js', 'src/shared/clipboard.js', 'src/shared/json-tree.js',
-    'src/shared/virtual-tree.js', 'src/shared/virtual-text.js',
-    'src/worker/index.js', 'src/worker/tasks.js',
-    'src/core/json.js', 'src/core/json-path.js', 'src/core/parse-error.js',
+    'src/shared/virtual-tree.js', 'src/shared/remote-tree.js', 'src/shared/virtual-text.js',
+    'src/worker/index.js', 'src/worker/tasks.js', 'src/worker/tree-tasks.js',
+    'src/core/json.js', 'src/core/json-path.js', 'src/core/parse-error.js', 'src/core/tree-model.js',
     'src/core/escape.js', 'src/core/search.js',
     'src/core/structural-diff.js', 'src/core/text-diff.js', 'src/core/text-lines.js',
 )

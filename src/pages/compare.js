@@ -3,7 +3,10 @@ import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createChildPathIndex } from '../shared/json-tree.js';
+import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
+import { createFileImport } from '../shared/file-import.js';
+import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
 initializePage();
@@ -13,6 +16,10 @@ const $ = (id) => document.getElementById(id);
 
 const inputLeft = $('input-left');
 const inputRight = $('input-right');
+const textInputs = {
+  left: createTextInput(inputLeft, $('input-view-left')),
+  right: createTextInput(inputRight, $('input-view-right')),
+};
 const errorEl = $('error');
 const statusEl = $('status');
 const busyEl = $('busy');
@@ -40,6 +47,7 @@ const state = {
   leftText: '',
   rightText: '',
   children: { left: new Map(), right: new Map() },
+  remote: false,
   leftData: undefined,
   rightData: undefined,
   leftNumberLiterals: null,
@@ -77,17 +85,32 @@ const runTask = createTaskRunner({
 /* ================= 状态展示 ================= */
 const { setStatus, showError, hideError, showParseError } = createFeedback({
   statusEl, errorEl,
-  selectInputPosition: (position, _line, side) => {
-    const input = side === 'right' ? inputRight : inputLeft;
-    input.focus();
-    input.setSelectionRange(position, position);
-  },
+  selectInputPosition: (position, line, side) => textInputs[side === 'right' ? 'right' : 'left'].selectPosition(position, line),
 });
+
+const fileImports = {};
+for (const side of ['left', 'right']) {
+  fileImports[side] = createFileImport({
+    dropZone: $('input-pane-' + side), fileInput: $('file-input-' + side),
+    triggerEl: $('btn-import-' + side), fileNameEl: $('file-name-' + side),
+    dropHint: $('file-drop-hint-' + side), onError: showError,
+    onImport: ({ text }) => {
+      const version = ++dataVersion;
+      runTask.cancel({ onlyIfBusy: true });
+      textInputs[side].setText(text);
+      if (textInputs.left.getText().trim() && textInputs.right.getText().trim()) {
+        // File decoding/preview and cloning both inputs must not share one
+        // long UI task. A later edit, clear or manual compare supersedes this.
+        setTimeout(() => { if (version === dataVersion) void doCompare(); }, 0);
+      }
+    },
+  });
+}
 
 /* ================= 对比主流程 ================= */
 async function doCompare() {
-  const lt = inputLeft.value;
-  const rt = inputRight.value;
+  const lt = textInputs.left.getText();
+  const rt = textInputs.right.getText();
   if (!lt.trim() || !rt.trim()) {
     showError(t('errNeedBothSides'));
     return;
@@ -103,9 +126,10 @@ async function doCompare() {
     .map((s) => s.trim())
     .filter(Boolean);
   const keyField = arrayModeSel.value === 'key' ? keyFieldInput.value.trim() : '';
+  const remote = Math.max(lt.length, rt.length) > LARGE_INPUT_THRESHOLD;
   const res = await runTask('diff', {
     text: lt, text2: rt, keyField, ignorePaths,
-    includeData: state.view === 'struct', retainSnapshot: true,
+    includeData: state.view === 'struct' && !remote, retainSnapshot: true,
   }, { key: 'diff' });
   if (comparingVersion === version) comparingVersion = null;
   if (res.cancelled || version !== dataVersion) return;
@@ -113,6 +137,7 @@ async function doCompare() {
     showParseError(res.side === 'right' ? rt : lt, res, 'errCompareFailed');
     return;
   }
+  state.remote = remote;
   state.result = res.result;
   state.leftText = lt;
   state.rightText = rt;
@@ -144,13 +169,13 @@ async function doCompare() {
 
 async function ensureComparisonData() {
   if (comparingVersion !== null) return false;
-  if (state.leftData !== undefined) return true;
+  if (state.leftData !== undefined || (state.remote && state.result?.snapshotId !== undefined)) return true;
   const comparison = state.result;
   if (!comparison) return false;
   const version = dataVersion;
   dataRequest ||= comparison.snapshotId !== undefined
-    ? runTask('comparisonData', { snapshotId: comparison.snapshotId })
-    : runTask('diff', { text: state.leftText, text2: state.rightText, retainSnapshot: true });
+    ? runTask('comparisonData', { snapshotId: comparison.snapshotId, includeData: !state.remote })
+    : runTask('diff', { text: state.leftText, text2: state.rightText, retainSnapshot: true, includeData: !state.remote });
   const res = await dataRequest;
   if (res.cancelled || version !== dataVersion || comparison !== state.result) return false;
   dataRequest = null;
@@ -251,14 +276,31 @@ function renderTrees() {
       onlyRequired: state.onlyDiff,
       decorations: state.diffMap[side],
       onToggle(path, open) {
-        suspendScrollSync();
         const other = side === 'left' ? 'right' : 'left';
-        treeViews[other]?.setOpen(pairedPath(side, path), open);
+        suspendScrollSync(treeViews[other]?.setOpen(pairedPath(side, path), open));
       },
     };
     if (treeViews[side]) treeViews[side].update(options);
-    else treeViews[side] = createVirtualTree(side === 'left' ? treeLeftEl : treeRightEl, options);
+    else {
+      const element = side === 'left' ? treeLeftEl : treeRightEl;
+      treeViews[side] = state.remote
+        ? createRemoteTree(element, { ...options, request: (payload) => requestTree(side, payload) })
+        : createVirtualTree(element, options);
+    }
   }
+}
+
+async function requestTree(side, payload) {
+  const version = dataVersion;
+  if (!await ensureComparisonData() || version !== dataVersion) return { ok: false, cancelled: true };
+  const pending = runTask('tree', {
+    ...payload, kind: 'comparison', side, snapshotId: state.result.snapshotId,
+  });
+  if (payload.operation !== 'rows') suspendScrollSync(pending);
+  const response = await pending;
+  if (version !== dataVersion) return { ok: false, cancelled: true };
+  if (!response.ok && !response.cancelled) showError(taskErrorMessage(response));
+  return response;
 }
 
 /* ================= 差异导航 ================= */
@@ -272,12 +314,13 @@ function goToDiff(i) {
   state.diffIndex = ((i % diffs.length) + diffs.length) % diffs.length;
   const diff = diffs[state.diffIndex];
   // 配对后的两侧行号可能相距很远；本次导航各自定位，避免 scroll 事件互相覆盖。
-  suspendScrollSync();
+  const pending = [];
   for (const side of ['left', 'right']) {
     const path = side === 'left' ? diff.leftPath : diff.rightPath;
-    if (path !== null) treeViews[side]?.reveal(path);
+    if (path !== null) pending.push(treeViews[side]?.reveal(path));
     treeViews[side]?.setCurrent(path);
   }
+  suspendScrollSync(Promise.allSettled(pending));
   updateDiffInfo();
 }
 
@@ -302,6 +345,7 @@ async function loadTextDiff() {
         ? { text: state.leftText, text2: state.rightText }
         : { snapshotId: comparison.snapshotId }),
       indent: '2',
+      includeTextIndex: true,
     });
     const res = await textRequest;
     if (res.cancelled || version !== dataVersion || comparison !== state.result) return false;
@@ -343,9 +387,11 @@ async function setCompareView(view) {
 function doSwap() {
   dataVersion++;
   runTask.cancel({ onlyIfBusy: true });
-  const t2 = inputLeft.value;
-  inputLeft.value = inputRight.value;
-  inputRight.value = t2;
+  const t2 = textInputs.left.getText();
+  textInputs.left.setText(textInputs.right.getText());
+  textInputs.right.setText(t2);
+  fileImports.left.reset();
+  fileImports.right.reset();
   if (state.result) doCompare();
 }
 
@@ -359,11 +405,14 @@ function doClear() {
   state.leftText = '';
   state.rightText = '';
   clearIndexes();
-  inputLeft.value = '';
-  inputRight.value = '';
+  textInputs.left.clear();
+  textInputs.right.clear();
+  fileImports.left.reset();
+  fileImports.right.reset();
   state.result = null;
   state.treesDirty = true;
   state.textResult = null;
+  state.remote = false;
   state.leftData = undefined;
   state.rightData = undefined;
   state.leftNumberLiterals = null;
@@ -380,39 +429,43 @@ function doClear() {
 }
 
 function fillSample() {
-  inputLeft.value = JSON.stringify({
+  fileImports.left.reset();
+  fileImports.right.reset();
+  textInputs.left.setText(JSON.stringify({
     version: 1,
     users: [
       { id: 1, name: '甲', role: 'admin' },
       { id: 2, name: '乙', role: 'user' },
     ],
     updatedAt: '2026-08-01',
-  }, null, 2);
-  inputRight.value = JSON.stringify({
+  }, null, 2));
+  textInputs.right.setText(JSON.stringify({
     version: 2,
     users: [
       { id: 2, name: '乙', role: 'admin' },
       { id: 3, name: '丙', role: 'user' },
     ],
     updatedAt: '2026-08-24',
-  }, null, 2);
+  }, null, 2));
   hideError();
   doCompare();
 }
 
 /* ================= 滚动同步 ================= */
 let scrollSyncing = false;
-let scrollSyncToken = 0;
+let scrollSyncHolds = 0;
 const copiedScroll = new WeakMap();
 const nextScrollFrame = globalThis.requestAnimationFrame || ((callback) => setTimeout(callback, 0));
 
-function suspendScrollSync() {
+function suspendScrollSync(pending) {
   scrollSyncing = true;
-  const token = ++scrollSyncToken;
-  // 两帧包含两个视口的异步 scroll；旧导航回调不能提前解锁新导航。
-  nextScrollFrame(() => nextScrollFrame(() => {
-    if (token === scrollSyncToken) scrollSyncing = false;
+  scrollSyncHolds++;
+  // Remote navigation can take longer than two frames. Keep both positions
+  // independent until every operation settles and its scroll events paint.
+  const release = () => nextScrollFrame(() => nextScrollFrame(() => {
+    if (--scrollSyncHolds === 0) scrollSyncing = false;
   }));
+  Promise.resolve(pending).then(release, release);
 }
 
 function syncScroll(from, to) {
@@ -448,14 +501,31 @@ arrayModeSel.addEventListener('change', () => {
 onlyDiffChk.addEventListener('change', () => {
   state.onlyDiff = onlyDiffChk.checked;
   state.treesDirty = true;
-  if (state.result && state.view === 'struct' && comparingVersion === null && state.leftData !== undefined) refreshTrees();
+  if (state.result && state.view === 'struct' && comparingVersion === null && (state.remote || state.leftData !== undefined)) refreshTrees();
 });
 
-for (const el of [inputLeft, inputRight]) {
-  el.addEventListener('input', () => {
+for (const side of ['left', 'right']) {
+  const el = side === 'left' ? inputLeft : inputRight;
+  const changed = () => {
+    fileImports[side].reset();
     dataVersion++;
     runTask.cancel({ onlyIfBusy: true });
-  });
+  };
+  el.addEventListener('input', changed);
+  for (const target of [el, $('input-view-' + side)]) {
+    for (const type of ['paste', 'drop']) target.addEventListener(type, (event) => {
+      if (textInputs[side].acceptTransfer(event)) changed();
+    });
+    target.addEventListener('dragover', (event) => {
+      if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
+    });
+    if (target !== el) target.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+        event.preventDefault();
+        void doCompare();
+      }
+    });
+  }
   el.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();

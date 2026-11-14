@@ -45,7 +45,12 @@ if (action === 'minify') {
     onImport: ({ text }) => {
       resetDocument();
       textInput.setText(text);
-      void runTransform();
+      if (textInput.isLarge()) {
+        const version = dataVersion;
+        setTimeout(() => { if (version === dataVersion) void runTransform(); }, 0);
+      } else {
+        void runTransform();
+      }
     },
     onError: showError,
   });
@@ -60,7 +65,7 @@ async function runTransform() {
   hideError();
   runTask.cancel({ onlyIfBusy: true });
   const version = ++dataVersion;
-  const res = await runTask(action, { text, retainSearch: false }, { key: 'transform' });
+  const res = await runTask(action, { text, retainSearch: false, includeTextIndex: true }, { key: 'transform' });
   if (res.cancelled) return;
   if (version !== dataVersion) return;
   if (!res.ok) {
@@ -71,7 +76,7 @@ async function runTransform() {
   }
   outputText = res.result.text;
   hasOutput = true;
-  outputView.setText(outputText);
+  outputView.setText(outputText, res.result.lineIndex);
   if (action === 'minify') {
     setStatus(t('statusMinified', [outputText.length.toLocaleString(), String(res.duration)]));
   } else {
@@ -132,12 +137,21 @@ inputEl.addEventListener('keydown', (e) => {
     runTransform();
   }
 });
-inputEl.addEventListener('input', () => {
+function inputChanged() {
   fileImport.reset();
   dataVersion++;
   runTask.cancel({ onlyIfBusy: true });
-});
+}
+inputEl.addEventListener('input', inputChanged);
 if (action === 'minify') {
+  for (const element of [inputEl, document.getElementById('input-view')]) {
+    for (const type of ['paste', 'drop']) element.addEventListener(type, (event) => {
+      if (textInput.acceptTransfer(event)) inputChanged();
+    });
+    element.addEventListener('dragover', (event) => {
+      if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
+    });
+  }
   document.getElementById('input-view').addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();

@@ -67,6 +67,29 @@ try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
   page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
   page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto(base + '/formatter.html');
+  const toggleBudget = await page.evaluate(async () => {
+    const { createTreeModel } = await import('/src/core/tree-model.js');
+    const data = Array.from({ length: 91_000 }, (_, id) => ({ id, price: 19.9, name: 'item' + id,
+      nested: { a: 1, b: 2 }, tags: ['a', 'b', 'c'] }));
+    const started = performance.now();
+    const model = createTreeModel({ data, expandLevel: Infinity });
+    const buildMs = performance.now() - started;
+    const samples = [];
+    for (let i = 0; i < 12; i++) {
+      let start = performance.now();
+      model.setOpen('/0', false);
+      samples.push(performance.now() - start);
+      start = performance.now();
+      model.setOpen('/0', true);
+      samples.push(performance.now() - start);
+    }
+    samples.sort((a, b) => a - b);
+    return { rowCount: model.rowCount, buildMs, p50Ms: samples[Math.floor(samples.length / 2)],
+      maxMs: samples[samples.length - 1] };
+  });
+  console.log(JSON.stringify({ case: 'fully-expanded-single-toggle', ...toggleBudget }));
+  assert.ok(toggleBudget.p50Ms <= Number(process.env.TREE_TOGGLE_BUDGET_MS || 16), 'single-node toggles must fit the configured frame budget');
   await page.goto(base + '/compare.html');
   await page.locator('#array-mode').selectOption('key');
   await page.locator('#key-field').fill('id');

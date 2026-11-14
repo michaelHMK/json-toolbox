@@ -12,7 +12,7 @@ See the `version` field in [`manifest.json`](manifest.json) for the current vers
 
 - **Responsive interactions**: Web Workers handle parsing, search, and comparison, reducing computation on the main thread.
 - **Lightweight browsing**: trees and long text render only around the visible area, avoiding a DOM node for every result while supporting tree search navigation and full copying.
-- **Large-input virtualization**: inputs above 2 MiB use a read-only virtual preview, avoiding full native textarea layout.
+- **Large-input virtualization**: inputs above 256 KiB use a read-only virtual preview, avoiding full native textarea layout.
 - **Less repeated work**: ordinary documents reuse parsed data and results; large text-only operations choose native or direct serialization for the data, fall back to iteration for deep nesting, and release unused Worker document caches.
 
 See [Performance Checks](#performance-checks) below for verification commands and large-output limitations.
@@ -35,7 +35,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 | **JSON Escape / Unescape** | Convert between plain text and escaped JSON string content, with one-click copying |
 | **JSON Compare** | Compare JSON structures for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
 
-Formatter and Minifier also accept one local UTF-8 `.json` file (up to 50 MiB) through a file picker or drag-and-drop. Importing loads the original text into the input pane and automatically runs the current operation. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
+Formatter, Minifier, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation; Compare runs once both inputs are present. Large pastes and plain-text drops also use the virtual preview. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
 
 Use the sidebar to switch between tools. The interface includes 13 locale catalogs in `_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), and Arabic (`ar`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
@@ -73,7 +73,7 @@ styles/app.css         # Shared styles for all five pages
 icons/                 # Extension icons referenced by the manifest
 _locales/              # Translations
 tests/                 # Algorithm and messaging contracts, release validation
-bench/                 # Search/diff benchmarks and optional browser checks
+bench/                 # Formatting/search/diff benchmarks and optional browser checks
 package.json           # Native ES modules and test commands; no third-party dependencies
 gen_icons.py           # Regenerate PNG files in icons/ (optional)
 build_release.py       # Release validation and allowlist packaging using Python's standard library
@@ -89,7 +89,7 @@ Page logic uses native browser ES modules. No dependency installation or build s
 | `pages → shared` | Pages own their state; shared modules handle browser interactions. The formatter and comparison trees retain their own expansion, search, and difference logic. |
 | `pages/shared → core` | Views use JSON Pointer encoding and line-offset indexes. JSON parsing, search, and comparison run in the Worker. |
 | `shared/worker-client → worker/index` | Requests match by id and busy lasts until all finish. Pages enable a serial queue that coalesces unsent work by key; clear discards queued work, whose responses carry `cancelled: true`. |
-| `worker/tasks → core` | Each Worker caches its current document/comparison. `retainSnapshot`/`snapshotId` reuse parsing; `includeData: false` defers object transfer until tree view is needed. Clear invalidates snapshots, and the minify page does not retain unused search data. |
+| `worker/tasks → core` | Each Worker caches its current document/comparison. `retainSnapshot`/`snapshotId` reuse parsing; `includeData: false` omits object transfer. Large documents keep their tree model in the Worker and return windows of at most 256 rows; small documents use synchronous trees. Clear invalidates snapshots, and the minify page does not retain unused search data. |
 | `core` | Algorithms do not depend on the DOM, Chrome APIs, or Worker globals. Invalid input throws an exception, which the task layer converts to an error response. Scanning and restoring original number literals is centralized in `json.js`. |
 
 Shared virtual renderers own viewport indexing and DOM lifecycles; pages retain their distinct search, pairing, filtering, and navigation behavior. To add a task, place its algorithm in `core/` and connect it through `worker/tasks.js`. Add any new runtime files to the allowlist in `build_release.py` as well.
@@ -107,7 +107,7 @@ Tests cover number literals and special keys, cached search data and result limi
 
 ### Performance Checks
 
-Run `npm run bench` for search and diff benchmarks. Compare runs sequentially in the same environment.
+Run `npm run bench` for deterministic formatting, minifying, search, and diff benchmarks. Compare runs sequentially in the same environment. `npm run bench:budget` checks median formatting/minifying time against native parse/stringify on 25 MiB fixtures. See [PERFORMANCE.md](PERFORMANCE.md) for the implementation decisions, measured limits, and reproduction commands.
 
 Optional browser checks require an existing Playwright installation and Chromium:
 
@@ -121,6 +121,8 @@ node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
+node bench/performance.mjs
+node bench/remote-pages.mjs
 node bench/theme.mjs
 ```
 
