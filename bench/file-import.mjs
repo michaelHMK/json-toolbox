@@ -3,6 +3,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
+import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
 
 function numberOption(name, fallback, minimum = 0, integer = false) {
   const value = Number(process.env[name] ?? fallback);
@@ -91,7 +92,7 @@ async function measureImport(page, action) {
     const terminal = new MutationObserver(() => {
       const status = document.querySelector('#status').textContent;
       const failed = !document.querySelector('#error').hidden;
-      if (!failed && status !== (action === 'format' ? 'statusFormatted' : 'statusMinified')) return;
+      if (!failed && !status.trim()) return;
       terminal.disconnect();
       // The status mutation precedes layout/paint. Two frames include the first
       // opportunity to display the completed output (or the error state).
@@ -176,7 +177,7 @@ async function verifyImport(page, action) {
         exactOutput: null,
         selectedErrorPosition,
         errorSelectionMatches,
-        errorLocationMatches: !!error && (error.includes(`position ${position}`) || error.includes(`line 1 column ${position + 1}`)),
+        errorLocationMatches: !!error && (error.toLowerCase().includes(`position ${position}`) || error.toLowerCase().includes(`line 1 column ${position + 1}`)),
       };
     }
     if (error) return { completeInputCopy, exactOutput: false, errorLocationMatches: null };
@@ -223,18 +224,35 @@ try {
     executablePath: process.env.CHROMIUM_EXECUTABLE,
     args: ['--enable-precise-memory-info'],
   });
+  const catalog = JSON.parse(await readFile(resolve(root, '_locales/en/messages.json'), 'utf8'));
   for (const scenario of scenarios) {
     for (const action of actions) {
       for (let iteration = 1; iteration <= repeats; iteration++) {
         const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
         try {
+          // Exercise localized parse locations under HTTP, just as the
+          // extension does. Bare message keys have no line/column substitutions.
+          await page.addInitScript((catalog) => {
+            globalThis.chrome = { ...globalThis.chrome, i18n: {
+              getUILanguage: () => 'en',
+              getMessage(key, substitutions = []) {
+                if (key === '@@bidi_dir') return 'ltr';
+                const entry = catalog[key];
+                if (!entry) return '';
+                const values = Array.isArray(substitutions) ? substitutions : [substitutions];
+                return entry.message.replace(/\$([a-z_]+)\$/gi, (_, name) =>
+                  (entry.placeholders?.[name.toLowerCase()]?.content || '')
+                    .replace(/\$(\d+)/g, (_, index) => values[Number(index) - 1] || ''));
+              },
+            } };
+          }, catalog);
           const runtimeErrors = [];
           page.on('pageerror', (error) => runtimeErrors.push(error.message));
           await page.goto(base + (action === 'format' ? '/formatter.html' : '/minify.html'));
           await prepareFile(page, scenario);
           const measurement = await measureImport(page, action);
           const checks = await verifyImport(page, action);
-          const large = measurement.inputBytes > 2 * 1024 * 1024;
+          const large = measurement.inputBytes > LARGE_INPUT_THRESHOLD;
           const validationErrors = [...runtimeErrors];
           if (scenario === 'invalid' ? !measurement.error : measurement.error !== null) validationErrors.push('Unexpected success/error state');
           if (measurement.textareaHidden !== large || measurement.previewVisible !== large) validationErrors.push('Unexpected input preview state');

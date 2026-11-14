@@ -3,8 +3,9 @@ import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
-import { createTextInput } from '../shared/text-input.js';
+import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
 import { copyText } from '../shared/clipboard.js';
+import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
@@ -32,10 +33,12 @@ const levelSelect = $('level-select');
 const state = {
   view: 'text',        // 'text' | 'tree'
   outputText: '',      // 最近一次操作产出的文本
-  data: undefined,     // 最近一次解析出的对象（树视图/搜索用）
+  outputLineIndex: null,
+  remote: false,      // 大文档只在 Worker 保存对象图，页面持有行窗口
+  data: undefined,     // 小文档的解析对象；大文档对象图只保存在 Worker
   numberLiterals: null, // 数字在原文中的字面量（path → 文本）
   dataSource: '',      // data 对应的原始文本，用于判断是否需要重新解析
-  snapshotId: null,    // Worker 保存的同一份解析结果，切换树视图时按需取回
+  snapshotId: null,    // Worker 快照标识；大文档按需获取树行窗口
   expanded: new Set(), // 用户手动展开的路径
   collapsed: new Set(), // 用户折叠优先于层级展开
   expandLevel: 1,      // 按需判断可见节点，不预先遍历整棵树
@@ -52,12 +55,14 @@ let formattingVersion = null;
 let pendingView = null;
 let viewRequestVersion = 0;
 let treeView = null;
+let treeSession = null;
 let workerSearchReady = false;
 
 const runTask = createTaskRunner({
   serialize: true,
   onReset: () => {
     state.snapshotId = null;
+    if (treeSession) treeSession.recovery = null;
     workerSearchReady = false;
     formattingVersion = null;
     invalidateViewRequest();
@@ -85,8 +90,11 @@ const fileImport = createFileImport({
     if (textInput.isLarge()) {
       state.view = 'text';
       updateViewButtons();
+      const version = dataVersion;
+      setTimeout(() => { if (version === dataVersion) void doFormat(); }, 0);
+    } else {
+      void doFormat();
     }
-    void doFormat();
   },
   onError: showError,
 });
@@ -112,7 +120,7 @@ function updateViewButtons() {
 function showText(text) {
   state.view = 'text';
   updateViewButtons();
-  outputView.setText(text);
+  outputView.setText(text, state.outputLineIndex);
 }
 
 function showTree() {
@@ -134,17 +142,19 @@ async function ensureTreeData() {
     showError(t('errNothingToParse'));
     return false;
   }
-  if (state.data !== undefined && state.dataSource === text) return true;
+  if ((state.remote || state.data !== undefined) && state.dataSource === text) return true;
+  const remote = text.length > LARGE_INPUT_THRESHOLD;
   hideError();
   const version = dataVersion;
   const res = state.snapshotId !== null && text === state.outputText
-    ? await runTask('parseSnapshot', { snapshotId: state.snapshotId })
-    : await runTask('parse', { text, retainSnapshot: true });
+    ? await runTask('parseSnapshot', { snapshotId: state.snapshotId, includeData: !remote })
+    : await runTask('parse', { text, retainSnapshot: true, includeData: !remote });
   if (res.cancelled || version !== dataVersion || text !== currentText()) return false;
   if (!res.ok) {
     showParseError(text, res);
     return false;
   }
+  state.remote = remote;
   state.data = res.result.data;
   workerSearchReady = true;
   state.numberLiterals = res.result.numberLiterals || null;
@@ -187,9 +197,12 @@ async function doFormat() {
   runTask.cancel({ onlyIfBusy: true });
   const version = ++dataVersion;
   formattingVersion = version;
-  const retainDocument = state.view === 'tree' || !textInput.isLarge();
+  const large = text.length > LARGE_INPUT_THRESHOLD;
+  const retainDocument = state.view === 'tree' || !large;
   const res = await runTask('format', {
-    text, indent: indentSel.value, includeData: state.view === 'tree',
+    text, indent: indentSel.value, includeData: state.view === 'tree' && !large,
+    includeNumberLiterals: state.view === 'tree',
+    includeTextIndex: true,
     retainSnapshot: retainDocument, retainSearch: retainDocument,
   }, { key: 'format' });
   if (formattingVersion === version) formattingVersion = null;
@@ -203,15 +216,18 @@ async function doFormat() {
   invalidateViewRequest();
   treeView?.destroy();
   treeView = null;
+  treeSession = null;
   outputView.clear();
   state.outputText = res.result.text;
+  state.outputLineIndex = res.result.lineIndex ?? null;
   state.snapshotId = res.result.snapshotId ?? null;
   workerSearchReady = retainDocument;
   state.data = res.result.data;
   state.numberLiterals = res.result.numberLiterals || null;
-  state.dataSource = state.data === undefined ? '' : state.outputText;
+  state.remote = large && state.snapshotId !== null;
+  state.dataSource = state.data === undefined && !state.remote ? '' : state.outputText;
   state.matchIndex = -1;
-  if (nextView === 'tree' && state.data !== undefined) {
+  if (nextView === 'tree' && (state.remote || state.data !== undefined)) {
     showTree();
   } else {
     // A lazy tree still needs a snapshot transfer. Keep the available text
@@ -245,8 +261,11 @@ function resetDocument() {
   void runTask('clear', {}, { discardQueued: true });
   treeView?.destroy();
   treeView = null;
+  treeSession = null;
   textInput.clear();
   state.outputText = '';
+  state.outputLineIndex = null;
+  state.remote = false;
   state.data = undefined;
   state.numberLiterals = null;
   state.dataSource = '';
@@ -300,8 +319,17 @@ function renderTree() {
     forceExpand: state.searchForce,
     highlights: state.highlights,
   };
+  if (treeView && (Boolean(treeSession) !== state.remote || (treeSession && treeSession.source !== state.dataSource))) {
+    treeView.destroy();
+    treeView = null;
+    treeSession = null;
+  }
   if (treeView) treeView.update(options);
-  else treeView = createVirtualTree(treeEl, options);
+  else if (state.remote) {
+    const session = { source: state.dataSource, recovery: null };
+    treeSession = session;
+    treeView = createRemoteTree(treeEl, { ...options, request: (payload) => requestTree(payload, session) });
+  } else treeView = createVirtualTree(treeEl, options);
   if (state.searchQuery && state.matchCount > 0) updateMatchNav(0);
   else {
     treeView.setCurrent(null);
@@ -309,9 +337,49 @@ function renderTree() {
   }
 }
 
+// A cancelled Worker may have discarded the document. Rebuild its snapshot
+// from the displayed source before retrying a window; never transfer the tree.
+function isCurrentTreeSession(session, version) {
+  return session === treeSession && state.remote && session.source === state.dataSource
+    && version === dataVersion && formattingVersion === null;
+}
+
+async function recoverTreeSnapshot(session, version) {
+  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+  if (state.snapshotId !== null) return { ok: true };
+  // Concurrent row, toggle and search requests share the same recovery. Bind
+  // it to the displayed document, even when the input has since been edited.
+  if (!session.recovery || session.recovery.version !== version) {
+    const recovery = { version, promise: null };
+    recovery.promise = (async () => {
+      const parsed = await runTask('parse', { text: session.source, retainSnapshot: true, includeData: false });
+      if (parsed.cancelled || !isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+      if (!parsed.ok) { showError(taskErrorMessage(parsed)); return parsed; }
+      state.snapshotId = parsed.result.snapshotId;
+      workerSearchReady = true;
+      return parsed;
+    })().finally(() => {
+      if (session.recovery === recovery) session.recovery = null;
+    });
+    session.recovery = recovery;
+  }
+  return session.recovery.promise;
+}
+
+async function requestTree(payload, session) {
+  const version = dataVersion;
+  const recovered = await recoverTreeSnapshot(session, version);
+  if (!recovered.ok) return recovered;
+  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+  const response = await runTask('tree', { ...payload, kind: 'document', snapshotId: state.snapshotId });
+  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
+  if (!response.ok && !response.cancelled && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
+  return response;
+}
+
 /* ================= 层级展开 ================= */
 function applyLevel(value) {
-  if (state.data === undefined || !value) return;
+  if ((!state.remote && state.data === undefined) || !value) return;
   const level = value === 'all' ? Infinity : Number(value);
   state.expandLevel = level;
   state.expanded.clear();
@@ -335,7 +403,7 @@ async function runSearch() {
   // A queued parse of the displayed old document would overwrite the new
   // format's Worker cache. doFormat searches the current query once it settles.
   if (formattingVersion !== null) return;
-  if (state.data === undefined) {
+  if (!state.remote && state.data === undefined) {
     updateMatchInfo();
     return;
   }
@@ -349,14 +417,16 @@ async function runSearch() {
   }
   const version = dataVersion;
   if (!workerSearchReady) {
-    const parsed = await runTask('parse', { text: currentText(), retainSnapshot: true });
+    const parsed = state.remote
+      ? await recoverTreeSnapshot(treeSession, version)
+      : await runTask('parse', { text: state.dataSource, retainSnapshot: true, includeData: true });
     if (parsed.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
     if (!parsed.ok) {
       showError(t('errSearchFailed') + taskErrorMessage(parsed));
       return;
     }
     workerSearchReady = true;
-    state.snapshotId = parsed.result.snapshotId ?? null;
+    if (!state.remote) state.snapshotId = parsed.result.snapshotId ?? null;
   }
   const res = await runTask('search', { text: q }, { key: 'search' });
   if (res.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
@@ -435,12 +505,25 @@ $('input-view').addEventListener('keydown', (e) => {
   }
 });
 
-inputEl.addEventListener('input', () => {
+function inputChanged() {
   fileImport.reset();
   dataVersion++;
   invalidateViewRequest();
   runTask.cancel({ onlyIfBusy: true });
-});
-inputEl.addEventListener('paste', () => {
-  if (autoFormatChk.checked) setTimeout(doFormat, 0);
-});
+}
+inputEl.addEventListener('input', inputChanged);
+for (const element of [inputEl, $('input-view')]) {
+  element.addEventListener('paste', (event) => {
+    if (textInput.acceptTransfer(event)) inputChanged();
+    if (autoFormatChk.checked) setTimeout(doFormat, 0);
+  });
+  element.addEventListener('dragover', (event) => {
+    if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
+  });
+  element.addEventListener('drop', (event) => {
+    if (textInput.acceptTransfer(event)) {
+      inputChanged();
+      if (autoFormatChk.checked) void doFormat();
+    }
+  });
+}

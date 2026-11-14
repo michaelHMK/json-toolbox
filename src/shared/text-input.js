@@ -1,6 +1,6 @@
 import { createVirtualTextView } from './virtual-text.js';
 
-export const LARGE_INPUT_THRESHOLD = 2 * 1024 * 1024;
+export const LARGE_INPUT_THRESHOLD = 256 * 1024;
 
 export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THRESHOLD } = {}) {
   const view = preview ? createVirtualTextView(preview) : null;
@@ -8,6 +8,8 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
   let large = false;
 
   function setText(text) {
+    const previousInput = large ? preview : textarea;
+    const hadFocus = (textarea.ownerDocument || document).activeElement === previousInput;
     large = view !== null && text.length > threshold;
     if (large) {
       source = text;
@@ -15,17 +17,40 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
       textarea.value = '';
       preview.hidden = false;
       view.setText(text);
-      return;
+    } else {
+      source = '';
+      if (preview) preview.hidden = true;
+      view?.clear();
+      textarea.hidden = false;
+      textarea.value = text;
     }
-    source = '';
-    if (preview) preview.hidden = true;
-    view?.clear();
-    textarea.hidden = false;
-    textarea.value = text;
+    // Keep keyboard shortcuts on the replacement input without taking focus
+    // from another control during an import, swap or programmatic update.
+    const currentInput = large ? preview : textarea;
+    if (hadFocus && currentInput !== previousInput) currentInput.focus({ preventScroll: true });
+  }
+
+  // Intercept before the browser lays out a multi-megabyte textarea value.
+  // Native paste keeps its selection semantics until it crosses the limit;
+  // pasting into the read-only preview replaces that document.
+  function acceptTransfer(event) {
+    if (!view) return false;
+    const transfer = event.clipboardData || event.dataTransfer;
+    if (!transfer || Array.from(transfer.types || []).includes('Files')) return false;
+    const text = transfer.getData('text/plain');
+    if (!text) return false;
+    const previous = large ? '' : textarea.value;
+    const start = large ? 0 : (textarea.selectionStart ?? previous.length);
+    const end = large ? 0 : (textarea.selectionEnd ?? start);
+    if (!large && previous.length - (end - start) + text.length <= threshold) return false;
+    event.preventDefault();
+    setText(previous.slice(0, start) + text + previous.slice(end));
+    return true;
   }
 
   return {
     setText,
+    acceptTransfer,
     getText() { return large ? source : textarea.value; },
     clear() { setText(''); },
     isLarge() { return large; },

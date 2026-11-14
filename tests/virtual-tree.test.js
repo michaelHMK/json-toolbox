@@ -298,3 +298,64 @@ test('pointer activation preserves value text nodes and native selections after 
   assert.equal(container.scrollTop, 1200, 'clicking a visible row must not jump back to the old active row');
   tree.destroy();
 }));
+
+test('incremental toggles retain untouched sibling descriptors and skip decorative rebuilds', () => {
+  const model = createTreeModel({ data: { first: { value: 1 }, second: { value: 2 } }, expandLevel: Infinity });
+  const second = model.rowAt(model.indexOf('/second'));
+  model.setOpen('/first', false);
+  assert.equal(model.rowAt(model.indexOf('/second')), second);
+  model.setOpen('/first', true);
+  assert.equal(model.rowAt(model.indexOf('/second')), second);
+  model.update({ highlights: new Set(['/first']) });
+  assert.equal(model.rowAt(model.indexOf('/second')), second);
+});
+
+test('incremental rows match full rebuilds after random toggles and reveals', () => {
+  const data = JSON.parse('{"": [{"a/b":{"~":1,"":2}}, [3, {"nested":[4,5]}]], "2":{"x":[{"y":6},7]}, "__proto__":{"z":8}, "last":[[],{}]}');
+  const all = createTreeModel({ data, expandLevel: Infinity });
+  const paths = entryPaths(all);
+  const forced = new Set(['/2', '/2/x']);
+  const requiredChildren = createChildPathIndex(paths.filter((_, i) => i % 2));
+  let randomState = 0x12345678;
+  const random = () => { randomState ^= randomState << 13; randomState ^= randomState >>> 17; randomState ^= randomState << 5; return randomState >>> 0; };
+  for (const expandLevel of [0, 1, 2, Infinity]) for (const onlyRequired of [false, true]) {
+    const expanded = new Set();
+    const collapsed = new Set();
+    const options = { data, expandLevel, onlyRequired, forceExpand: forced, requiredChildren };
+    const incremental = createTreeModel(options);
+    for (let step = 0; step < 300; step++) {
+      const path = paths[random() % paths.length];
+      if (random() % 4 === 0) {
+        const before = createTreeModel({ ...options, expanded: new Set(expanded), collapsed: new Set(collapsed) });
+        if (before.indexOf(path) < 0) {
+          let ancestor = path;
+          while (ancestor !== '') {
+            ancestor = ancestor.slice(0, ancestor.lastIndexOf('/'));
+            expanded.add(ancestor);
+            collapsed.delete(ancestor);
+          }
+        }
+        incremental.reveal(path);
+      } else {
+        const open = !!(random() % 2);
+        incremental.setOpen(path, open);
+        if (open) { expanded.add(path); collapsed.delete(path); }
+        else { expanded.delete(path); collapsed.add(path); }
+      }
+      const rebuilt = createTreeModel({ ...options, expanded: new Set(expanded), collapsed: new Set(collapsed) });
+      assert.equal(incremental.rowCount, rebuilt.rowCount, `row count at level ${expandLevel}, filtered ${onlyRequired}, step ${step}`);
+      assert.deepEqual(rows(incremental), rows(rebuilt));
+      for (const candidate of paths) assert.equal(incremental.indexOf(candidate), rebuilt.indexOf(candidate), candidate);
+    }
+  }
+});
+
+test('reopening a large subtree does not exceed the function argument limit', () => {
+  const model = createTreeModel({ data: Array.from({ length: 50_000 }, (_, value) => ({ value })), expandLevel: Infinity });
+  const count = model.rowCount;
+  model.setOpen('', false);
+  assert.equal(model.rowCount, 1);
+  model.setOpen('', true);
+  assert.equal(model.rowCount, count);
+  assert.equal(model.rowAt(model.indexOf('/49999/value')).value, 49_999);
+});

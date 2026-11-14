@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTextLines, createPlainTextRows, createDiffTextRows, safeTextWindow } from '../src/core/text-lines.js';
+import { createTextLineIndex, createTextLines, createPlainTextRows, createDiffTextRows, safeTextWindow } from '../src/core/text-lines.js';
 
 const textOf = (row) => row.prefix + row.text.slice(row.start, row.end);
 
@@ -128,4 +128,83 @@ test('switching between virtual and native output preserves its named focusable 
   assert.equal(element.getAttribute('aria-readonly'), null);
   assert.equal(element.getAttribute('aria-multiline'), null);
   view.destroy();
+});
+
+
+test('cloned line indexes attach readers without rescanning CRLF, Unicode or empty lines', (t) => {
+  for (const text of ['', 'single', '😀\r\n中文\rfinal\n', '\r\r\n']) {
+    const index = structuredClone(createTextLineIndex(text));
+    const expected = createTextLines(text);
+    const originalIndexOf = String.prototype.indexOf;
+    const originalIncludes = String.prototype.includes;
+    const rejectScan = (original) => function (...args) {
+      if (String(this) === text) throw new Error('A supplied index must not rescan its source');
+      return original.apply(this, args);
+    };
+    const indexOf = t.mock.method(String.prototype, 'indexOf', rejectScan(originalIndexOf));
+    const includes = t.mock.method(String.prototype, 'includes', rejectScan(originalIncludes));
+    const actual = createTextLines(text, index);
+    const rows = createPlainTextRows(text, index);
+    indexOf.mock.restore();
+    includes.mock.restore();
+    assert.equal(actual.starts, index.starts, 'readers reuse the received typed array');
+    assert.equal(rows.copyText(), text);
+    assert.equal(rows.count, expected.count);
+    for (let i = 0; i < expected.count; i++) {
+      assert.deepEqual(actual.bounds(i), expected.bounds(i));
+      assert.deepEqual(rows.getRow(i), expected.bounds(i));
+    }
+  }
+});
+
+test('diff rows reuse Worker indexes and preserve context, changes and copied text', (t) => {
+  const aText = 'before\n' + 'same\n'.repeat(20) + 'tail';
+  const bText = 'after\n' + 'same\n'.repeat(20) + 'tail';
+  const result = { aText, bText, ops: [
+    { type: 'del', aStart: 0, count: 1 },
+    { type: 'add', bStart: 0, count: 1 },
+    { type: 'same', aStart: 1, bStart: 1, count: 21 },
+  ] };
+  const expected = createDiffTextRows(result);
+  const indexed = structuredClone({ ...result,
+    aLineIndex: createTextLineIndex(aText), bLineIndex: createTextLineIndex(bText) });
+  const original = String.prototype.indexOf;
+  const method = t.mock.method(String.prototype, 'indexOf', function (...args) {
+    if (String(this) === aText || String(this) === bText) throw new Error('Diff source must not be rescanned');
+    return original.apply(this, args);
+  });
+  const actual = createDiffTextRows(indexed);
+  method.mock.restore();
+  assert.equal(actual.count, expected.count);
+  assert.equal(actual.copyText(), expected.copyText());
+});
+
+test('the text view consumes a supplied large-output index and reaches its final line', async (t) => {
+  const { loadPage } = await import('./helpers/page-dom.js');
+  const page = loadPage('formatter', { expose: '{ outputView }' });
+  const element = page.get('output-text');
+  const source = 'ordinary\n'.repeat(60000) + 'FINAL';
+  const index = structuredClone(createTextLineIndex(source));
+  const original = String.prototype.indexOf;
+  const method = t.mock.method(String.prototype, 'indexOf', function (...args) {
+    if (String(this) === source) throw new Error('Displaying indexed text must not scan the source');
+    return original.apply(this, args);
+  });
+  page.outputView.setText(source, index);
+  method.mock.restore();
+  assert.ok(element.querySelectorAll('.virtual-text-row').length < 60);
+  element.events.keydown({ key: 'End', ctrlKey: true, preventDefault() {} });
+  assert.match(element.textContent, /FINAL/);
+  page.outputView.destroy();
+});
+
+test('long-line width metadata stays conservative for tabs, Unicode and control characters', () => {
+  const ascii = 'x'.repeat(9000) + '\r\nend';
+  const index = structuredClone(createTextLineIndex(ascii));
+  assert.equal(index.ascii, true);
+  assert.equal(createPlainTextRows(ascii, index).getRow(0).ascii, true);
+  for (const suffix of ['\t', '中', '😀', '\u0001', 'a\u0301']) {
+    const text = 'x'.repeat(9000) + suffix;
+    assert.equal(createTextLineIndex(text).ascii, false);
+  }
 });

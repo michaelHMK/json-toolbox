@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { appendJsonPath, PATH_SEP } from '../../src/core/json-path.js';
+import { createTreeModel } from '../../src/core/tree-model.js';
+import { appendJsonPath, PATH_SEP, createChildPathIndex } from '../../src/core/json-path.js';
 import { createPlainTextRows, createDiffTextRows, safeTextWindow } from '../../src/core/text-lines.js';
 
 // Minimal DOM for exercising real page handlers and lazy rendering in Node.
@@ -122,7 +123,7 @@ export function loadPage(name, {
     createTaskRunner: createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) })),
     createFileImport,
     t: translate,
-    appendJsonPath,
+    appendJsonPath, createChildPathIndex, createTreeModel,
     PATH_SEP,
     createPlainTextRows, createDiffTextRows, safeTextWindow,
     getComputedStyle: () => ({ lineHeight: '21px', fontSize: '13px', font: '13px monospace', fontFamily: 'monospace', paddingTop: '0', paddingBottom: '0', paddingLeft: '0', paddingRight: '0' }),
@@ -134,19 +135,22 @@ export function loadPage(name, {
     clearTimeout,
   });
   const treeSource = readFileSync(new URL('../../src/shared/json-tree.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(treeSource, context);
   const virtualTreeSource = readFileSync(new URL('../../src/shared/virtual-tree.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(virtualTreeSource, context);
-  const virtualTextSource = readFileSync(new URL('../../src/shared/virtual-text.js', import.meta.url), 'utf8')
+  const remoteTreeSource = readFileSync(new URL('../../src/shared/remote-tree.js', import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+  vm.runInContext('(function () {' + remoteTreeSource + '\nglobalThis.createRemoteTree = createRemoteTree; })()', context);
+  const virtualTextSource = readFileSync(new URL('../../src/shared/virtual-text.js', import.meta.url), 'utf8')
+    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(virtualTextSource, context);
   const textInputSource = readFileSync(new URL('../../src/shared/text-input.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(textInputSource, context);
   const feedbackSource = readFileSync(new URL('../../src/shared/feedback.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(feedbackSource, context);
   const source = readFileSync(new URL(`../../src/pages/${name}.js`, import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '');

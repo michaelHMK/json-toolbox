@@ -1,0 +1,122 @@
+{
+  "browser": "156.0.8078.47",
+  "root": "/home/michael/cc-projects/json-formatter-extension",
+  "verify": true,
+  "measureMemory": false,
+  "budgets": {
+    "medianTotalMs": null,
+    "medianMaxLongTaskMs": 50
+  },
+  "summaries": [
+    {
+      "scenario": "regular",
+      "action": "format",
+      "repeats": 1,
+      "medianTotalMs": 749.28,
+      "medianMaxLongTaskMs": 0,
+      "budgetErrors": []
+    },
+    {
+      "scenario": "regular",
+      "action": "minify",
+      "repeats": 1,
+      "medianTotalMs": 604.07,
+      "medianMaxLongTaskMs": 0,
+      "budgetErrors": []
+    },
+    {
+      "scenario": "invalid",
+      "action": "format",
+      "repeats": 1,
+      "medianTotalMs": 359.1,
+      "medianMaxLongTaskMs": 0,
+      "budgetErrors": []
+    },
+    {
+      "scenario": "invalid",
+      "action": "minify",
+      "repeats": 1,
+      "medianTotalMs": 330.8,
+      "medianMaxLongTaskMs": 0,
+      "budgetErrors": []
+    }
+  ],
+  "results": [
+    {
+      "scenario": "regular",
+      "action": "format",
+      "iteration": 1,
+      "inputBytes": 52428800,
+      "totalMs": 749.28,
+      "maxLongTaskMs": 0,
+      "longTaskCount": 0,
+      "pageHeapMiB": 230.39,
+      "agentMemoryMiB": null,
+      "error": null,
+      "textareaHidden": true,
+      "previewVisible": true,
+      "completeInputCopy": true,
+      "exactOutput": true,
+      "errorLocationMatches": null,
+      "validationErrors": []
+    },
+    {
+      "scenario": "regular",
+      "action": "minify",
+      "iteration": 1,
+      "inputBytes": 52428800,
+      "totalMs": 604.07,
+      "maxLongTaskMs": 0,
+      "longTaskCount": 0,
+      "pageHeapMiB": 201.79,
+      "agentMemoryMiB": null,
+      "error": null,
+      "textareaHidden": true,
+      "previewVisible": true,
+      "completeInputCopy": true,
+      "exactOutput": true,
+      "errorLocationMatches": null,
+      "validationErrors": []
+    },
+    {
+      "scenario": "invalid",
+      "action": "format",
+      "iteration": 1,
+      "inputBytes": 52428800,
+      "totalMs": 359.1,
+      "maxLongTaskMs": 0,
+      "longTaskCount": 0,
+      "pageHeapMiB": 101.69,
+      "agentMemoryMiB": null,
+      "error": "Parse failed: Line 1 column 52428799: Invalid JSON syntax.",
+      "textareaHidden": true,
+      "previewVisible": true,
+      "completeInputCopy": true,
+      "exactOutput": null,
+      "selectedErrorPosition": 52428798,
+      "errorSelectionMatches": true,
+      "errorLocationMatches": true,
+      "validationErrors": []
+    },
+    {
+      "scenario": "invalid",
+      "action": "minify",
+      "iteration": 1,
+      "inputBytes": 52428800,
+      "totalMs": 330.8,
+      "maxLongTaskMs": 0,
+      "longTaskCount": 0,
+      "pageHeapMiB": 101.61,
+      "agentMemoryMiB": null,
+      "error": "Parse failed: Line 1 column 52428799: Invalid JSON syntax.",
+      "textareaHidden": true,
+      "previewVisible": true,
+      "completeInputCopy": true,
+      "exactOutput": null,
+      "selectedErrorPosition": 52428798,
+      "errorSelectionMatches": true,
+      "errorLocationMatches": true,
+      "validationErrors": []
+    }
+  ]
+}

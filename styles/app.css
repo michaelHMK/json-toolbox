@@ -412,7 +412,7 @@ button.primary:hover { background: var(--accent-hover); border-color: var(--acce
   pointer-events: none;
 }
 .input-pane.is-dragging { border-color: var(--accent); }
-#output-text, #input-view {
+#output-text, #input-view, .input-preview {
   flex: 1;
   min-height: 0;
   margin: 0;
@@ -565,7 +565,7 @@ button.primary:hover { background: var(--accent-hover); border-color: var(--acce
 }
 
 /* Large text: the scroll surface represents the complete indexed text. */
-#output-text.virtual-text, #input-view.virtual-text, #text-view.virtual-text {
+#output-text.virtual-text, #input-view.virtual-text, .input-preview.virtual-text, #text-view.virtual-text {
   position: relative;
   padding: 0;
   overflow-anchor: none;

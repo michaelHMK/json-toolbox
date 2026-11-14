@@ -210,3 +210,39 @@ test('worker failure settles serialized active and queued work without sending m
   assert.ok((await Promise.all(jobs)).every((result) => result.error === 'failed'));
   assert.equal(requests.length, 1);
 });
+
+test('partial tree batches keep serialized tasks pending until the final response', async () => {
+  const { run, worker, busy, requests } = setup({ serialize: true });
+  const first = run('parse');
+  const second = run('search');
+  const id = requests[0].id;
+  worker.onmessage({ data: { id, treeChunk: [[-1, '', 2], [0, 'data', 2]] } });
+  assert.equal(requests.length, 1);
+  assert.equal(busy.at(-1), true);
+  worker.onmessage({ data: { id, treeChunk: [[1, 'answer', 0, 42]] } });
+  assert.equal(requests.length, 1);
+  worker.onmessage({ data: { id, ok: true, result: { streamedData: true, snapshotId: 10 } } });
+  assert.deepEqual((await first).result, { data: { answer: 42 }, snapshotId: 10 });
+  assert.equal(requests.length, 2);
+  worker.onmessage({ data: { id: requests[1].id, ok: true, result: {} } });
+  await second;
+  assert.equal(busy.at(-1), false);
+});
+
+test('interleaved tree batches belong to their own requests and cancellation drops partial data', async () => {
+  const { run, worker, workers, requests } = setup();
+  const first = run('parse');
+  const second = run('parse');
+  const [one, two] = requests.map((request) => request.id);
+  worker.onmessage({ data: { id: one, treeChunk: [[-1, '', 2], [0, 'data', 0, 1]] } });
+  worker.onmessage({ data: { id: two, treeChunk: [[-1, '', 2], [0, 'data', 0, 2]] } });
+  worker.onmessage({ data: { id: two, ok: true, result: { streamedData: true } } });
+  assert.equal((await second).result.data, 2);
+  run.cancel();
+  assert.equal((await first).cancelled, true);
+  const next = run('parse');
+  const id = requests.at(-1).id;
+  worker.onmessage({ data: { id, ok: true, result: { streamedData: true } } });
+  workers[1].onmessage({ data: { id, ok: true, result: { streamedData: true } } });
+  assert.equal((await next).ok, false, 'new connections must not reuse partial data');
+});

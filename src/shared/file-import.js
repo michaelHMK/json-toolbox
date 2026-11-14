@@ -96,6 +96,9 @@ export function createFileImport({
       }
       return;
     }
+    // Decoding a large file and laying out its preview must not occupy the
+    // same UI task. Recheck the version after yielding so clear/new drops win.
+    if (file.size >= 1024 * 1024) await new Promise((resolve) => setTimeout(resolve, 0));
     if (version !== sequence) return;
     showFile(result);
     try {
