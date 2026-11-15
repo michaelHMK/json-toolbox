@@ -1,0 +1,40 @@
+Tên
+JSON Toolbox
+
+Mô tả ngắn
+JSON Toolbox hiệu suất cao: định dạng, rút gọn, escape và so sánh cục bộ. Không quảng cáo, theo dõi hay thu thập dữ liệu.
+
+Mô tả chi tiết
+JSON Toolbox giúp bạn định dạng, duyệt và so sánh JSON trong một thẻ trình duyệt riêng. Công cụ hoạt động hoàn toàn ngoại tuyến, không cần tài khoản hay quyền bổ sung.
+
+Định dạng và duyệt
+- Định dạng JSON với thụt lề 2 dấu cách, 4 dấu cách hoặc Tab.
+- Xem lỗi cú pháp cùng vị trí dòng/cột và chuyển đến lỗi, có cơ chế dự phòng cục bộ khi trình duyệt không cung cấp vị trí.
+- Duyệt cây có thể thu gọn với cuộn ảo, mở rộng theo cấp, tìm khóa/giá trị và chuyển giữa các kết quả tìm kiếm.
+- Sao chép toàn bộ kết quả chỉ bằng một lần nhấp.
+
+Nhập tệp cục bộ
+- Trên trang Định dạng JSON và Rút gọn JSON, chọn tệp hoặc kéo tệp vào khung đầu vào.
+- Nhập mỗi lần một tệp .json mã hóa UTF-8, tối đa 50 MiB. Việc định dạng hoặc rút gọn tự động bắt đầu sau khi nhập.
+- Đầu vào dài hơn khoảng hai triệu ký tự sử dụng bản xem trước ảo chỉ đọc. Toàn bộ nội dung vẫn được dùng để xử lý và sao chép kết quả.
+
+Rút gọn, thêm escape và bỏ escape
+- Chuyển giữa các công cụ chuyên biệt bằng thanh bên.
+- Xóa khoảng trắng không cần thiết để đưa JSON về một dòng. JSON không hợp lệ sẽ được báo lỗi, kèm vị trí lỗi nếu có.
+- Thêm escape vào văn bản để dùng trong chuỗi JSON hoặc khôi phục nội dung chuỗi có escape về văn bản gốc, sau đó sao chép kết quả.
+
+So sánh JSON
+- Xem khác biệt về cấu trúc theo đường dẫn: phần thêm, xóa, thay đổi giá trị và thay đổi kiểu dữ liệu.
+- So sánh mảng theo chỉ số hoặc ghép các phần tử theo trường khóa như id.
+- Bỏ qua các đường dẫn đã chọn, chẳng hạn trường dấu thời gian.
+- Duyệt toàn bộ cây với các khác biệt được tô nổi hoặc chỉ hiển thị phần khác biệt, kèm điều hướng giữa các khác biệt.
+- Chuyển sang so sánh văn bản từng dòng của JSON đã định dạng.
+
+Giao diện
+- Chọn Thông thường, Dịu mắt hoặc Tối từ thanh bên với hình xem trước thu nhỏ. Thông thường là chế độ mặc định.
+- Lựa chọn giao diện được ghi nhớ cục bộ giữa các công cụ và sau khi mở lại. Nội dung đầu vào và kết quả không được lưu.
+
+Quyền riêng tư
+Mọi xử lý đều diễn ra trong trình duyệt của bạn. Không thu thập hay tải dữ liệu lên, không gửi yêu cầu mạng, không có mã từ xa, quảng cáo hay theo dõi. Lịch sử đầu vào không được lưu. Kết quả chỉ được ghi vào bộ nhớ tạm của hệ thống khi bạn sao chép.
+
+Đầu vào và kết quả lớn được giữ trong bộ nhớ; hiệu suất phụ thuộc vào thiết bị và cấu trúc dữ liệu của bạn. Chế độ xem ảo chỉ hiển thị một phần nội dung tại mỗi thời điểm, nên tính năng Tìm của trình duyệt chỉ tìm trong phần đã hiển thị. Hãy dùng tìm kiếm trong cây hoặc sao chép toàn bộ kết quả khi cần. Với các khác biệt văn bản lớn, những phần không khớp có thể được hiển thị thành khối nguyên vẹn.

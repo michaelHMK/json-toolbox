@@ -123,6 +123,13 @@ Large inputs and results use virtual rendering, so native browser Find covers on
 | 日本語 | [store-assets/ja/](store-assets/ja/) | [listing.txt](store-assets/ja/listing.txt)：日语详情页 |
 | 한국어 | [store-assets/ko/](store-assets/ko/) | [listing.txt](store-assets/ko/listing.txt)：韩语详情页 |
 | Español | [store-assets/es/](store-assets/es/) | [listing.txt](store-assets/es/listing.txt)：西班牙语详情页 |
+| Español (Latinoamérica) | [store-assets/es_419/](store-assets/es_419/) | [listing.txt](store-assets/es_419/listing.txt)：拉美西语详情页，适用于墨西哥等拉美地区 |
+| Bahasa Indonesia | [store-assets/id/](store-assets/id/) | [listing.txt](store-assets/id/listing.txt)：印度尼西亚语详情页 |
+| Tiếng Việt | [store-assets/vi/](store-assets/vi/) | [listing.txt](store-assets/vi/listing.txt)：越南语详情页 |
+| Italiano | [store-assets/it/](store-assets/it/) | [listing.txt](store-assets/it/listing.txt)：意大利语详情页 |
+| Română | [store-assets/ro/](store-assets/ro/) | [listing.txt](store-assets/ro/listing.txt)：罗马尼亚语详情页 |
+| Türkçe | [store-assets/tr/](store-assets/tr/) | [listing.txt](store-assets/tr/listing.txt)：土耳其语详情页 |
+| Polski | [store-assets/pl/](store-assets/pl/) | [listing.txt](store-assets/pl/listing.txt)：波兰语详情页 |
 | Português (Brasil) | [store-assets/pt_BR/](store-assets/pt_BR/) | [listing.txt](store-assets/pt_BR/listing.txt)：巴西葡萄牙语详情页 |
 | Português (Portugal) | [store-assets/pt_PT/](store-assets/pt_PT/) | [listing.txt](store-assets/pt_PT/listing.txt)：葡萄牙葡萄牙语详情页 |
 | Русский | [store-assets/ru/](store-assets/ru/) | [listing.txt](store-assets/ru/listing.txt)：俄语详情页 |
@@ -155,7 +162,7 @@ CHROMIUM_EXECUTABLE=/path/to/full/chromium \
 node scripts/store-assets/generate.mjs
 ```
 
-若 Playwright 可直接导入且已安装其完整 Chromium，可省略对应环境变量。脚本从 `src/` 加载扩展，将全部 13 种语言的截图与宣传图写入 `store-assets/`。仅更新部分语言时，可用逗号分隔的 `STORE_LOCALES` 筛选：
+若 Playwright 可直接导入且已安装其完整 Chromium，可省略对应环境变量。脚本从 `src/` 加载扩展，将全部 20 个语言及地区版本的截图与宣传图写入 `store-assets/`。仅更新部分语言时，可用逗号分隔的 `STORE_LOCALES` 筛选：
 
 ```bash
 STORE_LOCALES=en,zh_CN node scripts/store-assets/generate.mjs

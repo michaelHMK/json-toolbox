@@ -1,0 +1,512 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "Hızlı JSON araçları: yerel biçimlendirme, küçültme, kaçış ve karşılaştırma. Reklam, izleme veya veri toplama yok."
+  },
+  "actionTitle": {
+    "message": "JSON Toolbox uygulamasını aç"
+  },
+  "titleFormatter": {
+    "message": "JSON Biçimlendirme - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "JSON Küçültme - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "JSON Kaçış Ekleme - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "JSON Kaçış Kaldırma - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "JSON Karşılaştırma - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "ARAÇLAR"
+  },
+  "navFormat": {
+    "message": "JSON Biçimlendir"
+  },
+  "navMinify": {
+    "message": "JSON Küçült"
+  },
+  "navEscape": {
+    "message": "JSON Kaçış Ekle"
+  },
+  "navUnescape": {
+    "message": "JSON Kaçış Kaldır"
+  },
+  "navCompare": {
+    "message": "JSON Karşılaştır"
+  },
+  "localOnly": {
+    "message": "Tüm veriler cihazınızda kalır"
+  },
+  "themeLabel": {
+    "message": "Görünüm"
+  },
+  "themeNormal": {
+    "message": "Normal"
+  },
+  "themeComfort": {
+    "message": "Göz konforu"
+  },
+  "themeDark": {
+    "message": "Koyu"
+  },
+  "descFormat": {
+    "message": "JSON verilerini biçimlendirin; ağaçta gezinin, düzeyleri açın ve arama yapın."
+  },
+  "descMinify": {
+    "message": "Gereksiz boşlukları kaldırıp JSON verilerini tek satıra indirin."
+  },
+  "descEscape": {
+    "message": "JSON veya herhangi bir metni JSON dizesinde kullanılacak içeriğe dönüştürün."
+  },
+  "descUnescape": {
+    "message": "Kaçış uygulanmış dize içeriğini özgün metnine döndürün."
+  },
+  "descCompare": {
+    "message": "İki JSON belgesi arasındaki eklemeleri, silmeleri ve değişiklikleri görün."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "Küçültülecek JSON verisini yapıştırın veya buraya bir .json dosyası bırakın… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "Kaçış eklenecek metni yapıştırın… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "Kaçış uygulanmış dize içeriğini yapıştırın… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "İşleniyor…"
+  },
+  "btnFormat": {
+    "message": "Biçimlendir"
+  },
+  "btnFormatTitle": {
+    "message": "Kısayol: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "Küçült"
+  },
+  "btnMinifyTitle": {
+    "message": "Boşlukları kaldırıp tek satıra indir"
+  },
+  "btnEscape": {
+    "message": "Kaçış ekle"
+  },
+  "btnEscapeTitle": {
+    "message": "JSON metnini kaçış uygulanmış bir dizeye dönüştür"
+  },
+  "btnUnescape": {
+    "message": "Kaçışı kaldır"
+  },
+  "btnUnescapeTitle": {
+    "message": "Kaçış uygulanmış dizeyi JSON metnine döndür"
+  },
+  "labelIndent": {
+    "message": "Girinti"
+  },
+  "optSpaces2": {
+    "message": "2 boşluk"
+  },
+  "optSpaces4": {
+    "message": "4 boşluk"
+  },
+  "labelAutoFormat": {
+    "message": "Yapıştırınca biçimlendir"
+  },
+  "labelAutoFormatTitle": {
+    "message": "Yapıştırdıktan hemen sonra biçimlendir"
+  },
+  "viewRaw": {
+    "message": "Ham"
+  },
+  "viewTree": {
+    "message": "Ağaç"
+  },
+  "levelTitle": {
+    "message": "Ağacı seçilen düzeye kadar aç"
+  },
+  "levelPlaceholder": {
+    "message": "Düzeyleri aç…"
+  },
+  "level1": {
+    "message": "Düzey 1"
+  },
+  "level2": {
+    "message": "Düzey 2"
+  },
+  "level3": {
+    "message": "Düzey 3"
+  },
+  "level4": {
+    "message": "Düzey 4"
+  },
+  "level5": {
+    "message": "Düzey 5"
+  },
+  "level8": {
+    "message": "Düzey 8"
+  },
+  "levelAll": {
+    "message": "Tümü"
+  },
+  "searchPlaceholder": {
+    "message": "Anahtar veya değer ara…"
+  },
+  "matchPrevTitle": {
+    "message": "Önceki (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "Sonraki (Enter)"
+  },
+  "btnSample": {
+    "message": "Örnek"
+  },
+  "btnCopy": {
+    "message": "Sonucu kopyala"
+  },
+  "btnClear": {
+    "message": "Temizle"
+  },
+  "linkCompare": {
+    "message": "JSON Karşılaştır →"
+  },
+  "linkCompareTitle": {
+    "message": "JSON karşılaştırma sayfasını aç"
+  },
+  "paneInput": {
+    "message": "Girdi"
+  },
+  "paneResult": {
+    "message": "Sonuç"
+  },
+  "inputPlaceholder": {
+    "message": "JSON yapıştırın veya buraya bir .json dosyası bırakın… (Biçimlendirmek için Cmd/Ctrl + Enter)"
+  },
+  "largeInputTitle": {
+    "message": "Salt okunur büyük dosya önizlemesi"
+  },
+  "btnImportFile": {
+    "message": "Dosya içe aktar"
+  },
+  "btnImportFileTitle": {
+    "message": "Yerel bir .json dosyası seçin veya girdi paneline bırakın"
+  },
+  "fileReading": {
+    "message": "Okunuyor…"
+  },
+  "fileDropHint": {
+    "message": "JSON dosyasını içe aktarmak için bırakın"
+  },
+  "errFileMultiple": {
+    "message": "Aynı anda yalnızca bir JSON dosyası içe aktarın"
+  },
+  "errFileType": {
+    "message": "Yalnızca .json dosyaları desteklenir"
+  },
+  "errFileTooLarge": {
+    "message": "Dosya boyutu $limit$ sınırını aşmamalıdır",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "Dosya boş veya yalnızca boşluk içeriyor"
+  },
+  "errFileEncoding": {
+    "message": "Dosya geçerli UTF-8 metni olmalıdır"
+  },
+  "errFileRead": {
+    "message": "\"$name$\" okunamadı: $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "Önce JSON içeriği girin"
+  },
+  "errNeedContent": {
+    "message": "Önce içerik girin"
+  },
+  "errNothingToParse": {
+    "message": "Ayrıştırılacak içerik yok — önce JSON girin"
+  },
+  "errNothingToCopy": {
+    "message": "Kopyalanacak içerik yok"
+  },
+  "errParseFailed": {
+    "message": "Ayrıştırma başarısız: "
+  },
+  "errLineCol": {
+    "message": "Satır $line$, sütun $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "Kaçış kaldırılamadı: "
+  },
+  "errSearchFailed": {
+    "message": "Arama başarısız: "
+  },
+  "statusFormatted": {
+    "message": "Biçimlendirildi · $count$ karakter · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "Küçültüldü · $count$ karakter · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "Kaçış eklendi · $count$ karakter",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "Kaçış kaldırıldı · $count$ karakter",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "Panoya $count$ karakter kopyalandı",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ öğe ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ anahtar ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (toplam $count$ karakter, kısaltıldı)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "Tüm düzeyler açıldı"
+  },
+  "expandedLevel": {
+    "message": "$level$. düzeye kadar açıldı",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "Eşleşme yok"
+  },
+  "btnCompare": {
+    "message": "Karşılaştır"
+  },
+  "btnCompareTitle": {
+    "message": "Kısayol: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ Yer değiştir"
+  },
+  "btnSwapTitle": {
+    "message": "Sol ve sağ tarafı değiştir"
+  },
+  "labelArrayMode": {
+    "message": "Diziler"
+  },
+  "optArrayIndex": {
+    "message": "İndekse göre"
+  },
+  "optArrayKey": {
+    "message": "Anahtarla eşleştir"
+  },
+  "labelKeyField": {
+    "message": "Anahtar"
+  },
+  "keyFieldPlaceholder": {
+    "message": "ör. id"
+  },
+  "labelIgnorePaths": {
+    "message": "Yolları yoksay"
+  },
+  "ignorePathsTitle": {
+    "message": "Tam yollar; * tek bir parçayla eşleşir, virgülle ayırın"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "ör. list[*].updatedAt, virgülle ayırın"
+  },
+  "viewStruct": {
+    "message": "Yapısal"
+  },
+  "viewTextDiff": {
+    "message": "Metin farkı"
+  },
+  "viewTextDiffTitle": {
+    "message": "Biçimlendirme sonrası satır satır; yol yoksayma ve dizi stratejisi uygulanmaz"
+  },
+  "onlyDiffLabel": {
+    "message": "Yalnızca farklar"
+  },
+  "onlyDiffTitle": {
+    "message": "Fark içermeyen dalları gizle"
+  },
+  "diffPrevTitle": {
+    "message": "Önceki fark"
+  },
+  "diffNextTitle": {
+    "message": "Sonraki fark"
+  },
+  "linkFormatter": {
+    "message": "← Biçimlendirmeye dön"
+  },
+  "paneOld": {
+    "message": "Eski (sol)"
+  },
+  "paneNew": {
+    "message": "Yeni (sağ)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "Eski JSON verisini yapıştırın…"
+  },
+  "inputRightPlaceholder": {
+    "message": "Yeni JSON verisini yapıştırın… (Karşılaştırmak için Cmd/Ctrl + Enter)"
+  },
+  "paneCompareResult": {
+    "message": "Sonuç"
+  },
+  "colOld": {
+    "message": "Eski"
+  },
+  "colNew": {
+    "message": "Yeni"
+  },
+  "errNeedBothSides": {
+    "message": "Her iki tarafa da JSON girin"
+  },
+  "errCompareFailed": {
+    "message": "Karşılaştırma başarısız: "
+  },
+  "errTextDiffFailed": {
+    "message": "Metin karşılaştırması başarısız: "
+  },
+  "diffStats": {
+    "message": "$total$ fark: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (ayrıntılar ilk $count$ farkla sınırlıdır)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; bazı dizi anahtarları eksik, desteklenmiyor veya yineleniyor — indekse göre karşılaştırıldı"
+  },
+  "diffIdenticalNote": {
+    "message": " — içerikler aynı"
+  },
+  "textDiffBlockyNote": {
+    "message": "Fark bölgesi çok büyük — bütün bloklar halinde gösteriliyor (yapısal görünüm etkilenmez)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ aynı satır ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "btnCancel": {
+    "message": "İptal"
+  },
+  "statusCancelled": {
+    "message": "İptal edildi"
+  },
+  "errInvalidJson": {
+    "message": "Geçersiz JSON sözdizimi."
+  },
+  "errInvalidEscape": {
+    "message": "Geçersiz kaçış uygulanmış dize."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Saklanan sonuç artık kullanılamıyor. İşlemi yeniden çalıştırın."
+  },
+  "errTaskFailed": {
+    "message": "İşlem başarısız oldu. Lütfen yeniden deneyin."
+  },
+  "errWorkerFailed": {
+    "message": "Arka plan işçisi beklenmedik şekilde durdu. Lütfen yeniden deneyin."
+  }
+}

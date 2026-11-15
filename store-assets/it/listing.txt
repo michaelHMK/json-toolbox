@@ -1,0 +1,40 @@
+Nome
+JSON Toolbox
+
+Descrizione breve
+JSON veloce: formatta, minifica, applica escape e confronta in locale. Niente annunci, tracciamento o raccolta dati.
+
+Descrizione dettagliata
+JSON Toolbox permette di formattare, esplorare e confrontare JSON in una scheda dedicata del browser. Funziona interamente offline, senza account né autorizzazioni aggiuntive.
+
+Formattare ed esplorare
+- Formatta JSON con rientri di 2 spazi, 4 spazi o tabulazioni.
+- Visualizza gli errori di sintassi con riga, colonna e navigazione alla posizione; un controllo locale individua la posizione quando il browser non la fornisce.
+- Esplora un albero comprimibile con scorrimento virtuale, espansione per livello, ricerca di chiavi o valori e navigazione tra le corrispondenze.
+- Copia il risultato completo con un clic.
+
+Importare file locali
+- Nelle pagine Formatta JSON e Minifica JSON, scegli un file o trascinalo nel riquadro di input.
+- Importa un file .json UTF-8 alla volta, fino a 50 MiB. La formattazione o la minificazione parte automaticamente dopo l’importazione.
+- Gli input con più di circa due milioni di caratteri usano un’anteprima virtuale in sola lettura. L’elaborazione e la copia dei risultati continuano a usare il contenuto completo.
+
+Minificare, applicare e rimuovere escape
+- Passa da uno strumento all’altro tramite la barra laterale.
+- Rimuovi gli spazi superflui per ottenere JSON su una sola riga. Gli errori JSON vengono segnalati con la posizione, quando disponibile.
+- Applica escape al testo per inserirlo in una stringa JSON o ripristina il testo originale di una stringa con escape, quindi copia il risultato.
+
+Confrontare JSON
+- Visualizza le differenze strutturali per percorso: aggiunte, rimozioni, cambiamenti di valore e di tipo.
+- Confronta gli array per indice o abbina gli elementi tramite un campo chiave, come id.
+- Ignora i percorsi selezionati, ad esempio i campi data e ora.
+- Esplora l’intero albero con le differenze evidenziate oppure mostra solo le differenze e naviga tra di esse.
+- Passa al confronto testuale riga per riga del JSON formattato.
+
+Aspetto
+- Scegli Normale, Riposo visivo o Scuro dalla barra laterale, con anteprime in miniatura. Normale è l’opzione predefinita.
+- La scelta del tema viene memorizzata localmente tra gli strumenti e alla riapertura. Input e risultati non vengono salvati.
+
+Privacy
+Tutta l’elaborazione avviene nel browser. Nessuna raccolta o caricamento di dati, richiesta di rete, codice remoto, pubblicità o tracciamento. La cronologia degli input non viene salvata. I risultati vengono scritti negli appunti di sistema solo quando li copi.
+
+Gli input e i risultati completi restano in memoria; le prestazioni dipendono dal dispositivo e dalla struttura dei dati. Le viste virtuali mostrano solo una parte del contenuto alla volta, quindi la ricerca integrata del browser copre solo la parte visualizzata. Usa la ricerca nell’albero o copia il risultato completo quando necessario. In caso di differenze testuali estese, le sezioni non corrispondenti possono essere mostrate come blocchi interi.

@@ -1,0 +1,512 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "Instrumente JSON rapide: formatare, minificare, escape și comparare locală. Fără reclame, urmărire sau colectare de date."
+  },
+  "actionTitle": {
+    "message": "Deschide JSON Toolbox"
+  },
+  "titleFormatter": {
+    "message": "Formatare JSON - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "Minificare JSON - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "Escape JSON - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "Eliminare escape JSON - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "Comparare JSON - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "INSTRUMENTE"
+  },
+  "navFormat": {
+    "message": "Formatare JSON"
+  },
+  "navMinify": {
+    "message": "Minificare JSON"
+  },
+  "navEscape": {
+    "message": "Escape JSON"
+  },
+  "navUnescape": {
+    "message": "Elimină escape"
+  },
+  "navCompare": {
+    "message": "Comparare JSON"
+  },
+  "localOnly": {
+    "message": "Datele rămân pe dispozitivul tău"
+  },
+  "themeLabel": {
+    "message": "Aspect"
+  },
+  "themeNormal": {
+    "message": "Normal"
+  },
+  "themeComfort": {
+    "message": "Confort vizual"
+  },
+  "themeDark": {
+    "message": "Întunecat"
+  },
+  "descFormat": {
+    "message": "Formatează JSON cu vizualizare arborescentă, extindere pe niveluri și căutare."
+  },
+  "descMinify": {
+    "message": "Elimină spațiile inutile și transformă JSON într-o singură linie."
+  },
+  "descEscape": {
+    "message": "Pregătește JSON sau orice text pentru includerea într-un șir JSON."
+  },
+  "descUnescape": {
+    "message": "Restabilește textul original al unui șir cu secvențe escape."
+  },
+  "descCompare": {
+    "message": "Vezi adăugările, eliminările și modificările dintre două documente JSON."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "Lipește JSON pentru minificare sau trage aici un fișier .json… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "Lipește textul pentru adăugarea secvențelor escape… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "Lipește conținutul unui șir cu secvențe escape… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "Se procesează…"
+  },
+  "btnFormat": {
+    "message": "Formatează"
+  },
+  "btnFormatTitle": {
+    "message": "Scurtătură: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "Minifică"
+  },
+  "btnMinifyTitle": {
+    "message": "Elimină spațiile și păstrează o singură linie"
+  },
+  "btnEscape": {
+    "message": "Adaugă escape"
+  },
+  "btnEscapeTitle": {
+    "message": "Transformă textul JSON într-un șir cu secvențe escape"
+  },
+  "btnUnescape": {
+    "message": "Elimină escape"
+  },
+  "btnUnescapeTitle": {
+    "message": "Restabilește textul JSON dintr-un șir cu secvențe escape"
+  },
+  "labelIndent": {
+    "message": "Indentare"
+  },
+  "optSpaces2": {
+    "message": "2 spații"
+  },
+  "optSpaces4": {
+    "message": "4 spații"
+  },
+  "labelAutoFormat": {
+    "message": "Formatează la lipire"
+  },
+  "labelAutoFormatTitle": {
+    "message": "Formatează imediat după lipire"
+  },
+  "viewRaw": {
+    "message": "Text"
+  },
+  "viewTree": {
+    "message": "Arbore"
+  },
+  "levelTitle": {
+    "message": "Extinde arborele până la nivelul ales"
+  },
+  "levelPlaceholder": {
+    "message": "Extinde…"
+  },
+  "level1": {
+    "message": "Nivelul 1"
+  },
+  "level2": {
+    "message": "Nivelul 2"
+  },
+  "level3": {
+    "message": "Nivelul 3"
+  },
+  "level4": {
+    "message": "Nivelul 4"
+  },
+  "level5": {
+    "message": "Nivelul 5"
+  },
+  "level8": {
+    "message": "Nivelul 8"
+  },
+  "levelAll": {
+    "message": "Toate"
+  },
+  "searchPlaceholder": {
+    "message": "Caută cheie sau valoare…"
+  },
+  "matchPrevTitle": {
+    "message": "Anterior (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "Următor (Enter)"
+  },
+  "btnSample": {
+    "message": "Exemplu"
+  },
+  "btnCopy": {
+    "message": "Copiază rezultatul"
+  },
+  "btnClear": {
+    "message": "Șterge"
+  },
+  "linkCompare": {
+    "message": "Comparare JSON →"
+  },
+  "linkCompareTitle": {
+    "message": "Deschide pagina de comparare JSON"
+  },
+  "paneInput": {
+    "message": "Intrare"
+  },
+  "paneResult": {
+    "message": "Rezultat"
+  },
+  "inputPlaceholder": {
+    "message": "Lipește JSON sau trage aici un fișier .json… (Cmd/Ctrl + Enter pentru formatare)"
+  },
+  "largeInputTitle": {
+    "message": "Previzualizare doar în citire pentru fișiere mari"
+  },
+  "btnImportFile": {
+    "message": "Importă fișier"
+  },
+  "btnImportFileTitle": {
+    "message": "Alege un fișier .json local sau trage-l în panoul de intrare"
+  },
+  "fileReading": {
+    "message": "Se citește…"
+  },
+  "fileDropHint": {
+    "message": "Eliberează pentru a importa un fișier JSON"
+  },
+  "errFileMultiple": {
+    "message": "Importă un singur fișier JSON odată"
+  },
+  "errFileType": {
+    "message": "Sunt acceptate doar fișiere .json"
+  },
+  "errFileTooLarge": {
+    "message": "Dimensiunea fișierului nu trebuie să depășească $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "Fișierul este gol sau conține doar spații"
+  },
+  "errFileEncoding": {
+    "message": "Fișierul trebuie să conțină text UTF-8 valid"
+  },
+  "errFileRead": {
+    "message": "Nu s-a putut citi \"$name$\": $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "Introdu mai întâi conținut JSON"
+  },
+  "errNeedContent": {
+    "message": "Introdu mai întâi conținut"
+  },
+  "errNothingToParse": {
+    "message": "Nu există conținut de analizat — introdu mai întâi JSON"
+  },
+  "errNothingToCopy": {
+    "message": "Nu există conținut de copiat"
+  },
+  "errParseFailed": {
+    "message": "Analizarea a eșuat: "
+  },
+  "errLineCol": {
+    "message": "Linia $line$, coloana $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "Eliminarea secvențelor escape a eșuat: "
+  },
+  "errSearchFailed": {
+    "message": "Căutarea a eșuat: "
+  },
+  "statusFormatted": {
+    "message": "Formatat · $count$ caractere · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "Minificat · $count$ caractere · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "Escape adăugat · $count$ caractere",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "Escape eliminat · $count$ caractere",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "S-au copiat $count$ caractere în clipboard",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ elemente ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ chei ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … ($count$ caractere în total, text trunchiat)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "Toate nivelurile sunt extinse"
+  },
+  "expandedLevel": {
+    "message": "Extins până la nivelul $level$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "Nicio potrivire"
+  },
+  "btnCompare": {
+    "message": "Compară"
+  },
+  "btnCompareTitle": {
+    "message": "Scurtătură: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ Inversează"
+  },
+  "btnSwapTitle": {
+    "message": "Inversează stânga și dreapta"
+  },
+  "labelArrayMode": {
+    "message": "Tablouri"
+  },
+  "optArrayIndex": {
+    "message": "După index"
+  },
+  "optArrayKey": {
+    "message": "Potrivire după cheie"
+  },
+  "labelKeyField": {
+    "message": "Cheie"
+  },
+  "keyFieldPlaceholder": {
+    "message": "de ex. id"
+  },
+  "labelIgnorePaths": {
+    "message": "Ignoră căi"
+  },
+  "ignorePathsTitle": {
+    "message": "Căi exacte separate prin virgulă; * corespunde unui segment"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "de ex. list[*].updatedAt, separate prin virgulă"
+  },
+  "viewStruct": {
+    "message": "Structură"
+  },
+  "viewTextDiff": {
+    "message": "Diferențe text"
+  },
+  "viewTextDiffTitle": {
+    "message": "Linie cu linie după formatare; căile ignorate și strategia pentru tablouri nu se aplică"
+  },
+  "onlyDiffLabel": {
+    "message": "Doar diferențe"
+  },
+  "onlyDiffTitle": {
+    "message": "Ascunde ramurile fără diferențe"
+  },
+  "diffPrevTitle": {
+    "message": "Diferența anterioară"
+  },
+  "diffNextTitle": {
+    "message": "Diferența următoare"
+  },
+  "linkFormatter": {
+    "message": "← Înapoi la formatare"
+  },
+  "paneOld": {
+    "message": "Vechi (stânga)"
+  },
+  "paneNew": {
+    "message": "Nou (dreapta)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "Lipește JSON vechi…"
+  },
+  "inputRightPlaceholder": {
+    "message": "Lipește JSON nou… (Cmd/Ctrl + Enter pentru comparare)"
+  },
+  "paneCompareResult": {
+    "message": "Rezultat"
+  },
+  "colOld": {
+    "message": "Vechi"
+  },
+  "colNew": {
+    "message": "Nou"
+  },
+  "errNeedBothSides": {
+    "message": "Introdu JSON în ambele panouri"
+  },
+  "errCompareFailed": {
+    "message": "Compararea a eșuat: "
+  },
+  "errTextDiffFailed": {
+    "message": "Compararea textului a eșuat: "
+  },
+  "diffStats": {
+    "message": "$total$ diferențe: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (detalii limitate la primele $count$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; unele chei din tablouri lipsesc, nu sunt acceptate sau sunt duplicate — comparare după index"
+  },
+  "diffIdenticalNote": {
+    "message": " — conținuturile sunt identice"
+  },
+  "textDiffBlockyNote": {
+    "message": "Zona diferențelor este prea mare — afișată în blocuri întregi (vizualizarea structurală nu este afectată)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ linii identice ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "btnCancel": {
+    "message": "Anulează"
+  },
+  "statusCancelled": {
+    "message": "Anulat"
+  },
+  "errInvalidJson": {
+    "message": "Sintaxă JSON nevalidă."
+  },
+  "errInvalidEscape": {
+    "message": "Șir cu secvențe escape nevalid."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Rezultatul salvat nu mai este disponibil. Execută din nou operația."
+  },
+  "errTaskFailed": {
+    "message": "Operația a eșuat. Încearcă din nou."
+  },
+  "errWorkerFailed": {
+    "message": "Procesul de lucru s-a oprit neașteptat. Încearcă din nou."
+  }
+}

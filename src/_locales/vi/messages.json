@@ -1,0 +1,512 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "JSON Toolbox hiệu suất cao: định dạng, rút gọn, escape và so sánh cục bộ. Không quảng cáo, theo dõi hay thu thập dữ liệu."
+  },
+  "actionTitle": {
+    "message": "Mở JSON Toolbox"
+  },
+  "titleFormatter": {
+    "message": "Định dạng JSON - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "Rút gọn JSON - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "Thêm escape JSON - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "Bỏ escape JSON - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "So sánh JSON - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "CÔNG CỤ"
+  },
+  "navFormat": {
+    "message": "Định dạng JSON"
+  },
+  "navMinify": {
+    "message": "Rút gọn JSON"
+  },
+  "navEscape": {
+    "message": "Thêm escape JSON"
+  },
+  "navUnescape": {
+    "message": "Bỏ escape JSON"
+  },
+  "navCompare": {
+    "message": "So sánh JSON"
+  },
+  "localOnly": {
+    "message": "Mọi dữ liệu đều ở trên thiết bị của bạn"
+  },
+  "themeLabel": {
+    "message": "Giao diện"
+  },
+  "themeNormal": {
+    "message": "Thông thường"
+  },
+  "themeComfort": {
+    "message": "Dịu mắt"
+  },
+  "themeDark": {
+    "message": "Tối"
+  },
+  "descFormat": {
+    "message": "Định dạng JSON với chế độ cây, mở rộng theo cấp và tìm kiếm."
+  },
+  "descMinify": {
+    "message": "Xóa khoảng trắng không cần thiết để đưa JSON về một dòng."
+  },
+  "descEscape": {
+    "message": "Chuyển JSON hoặc văn bản bất kỳ thành nội dung dùng được trong chuỗi JSON."
+  },
+  "descUnescape": {
+    "message": "Khôi phục nội dung chuỗi có escape về văn bản gốc."
+  },
+  "descCompare": {
+    "message": "Xem phần thêm, xóa và thay đổi giữa hai tài liệu JSON."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "Dán JSON cần rút gọn hoặc thả tệp .json vào đây… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "Dán văn bản cần thêm escape… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "Dán nội dung chuỗi có escape… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "Đang xử lý…"
+  },
+  "btnFormat": {
+    "message": "Định dạng"
+  },
+  "btnFormatTitle": {
+    "message": "Phím tắt: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "Rút gọn"
+  },
+  "btnMinifyTitle": {
+    "message": "Xóa khoảng trắng để đưa về một dòng"
+  },
+  "btnEscape": {
+    "message": "Thêm escape"
+  },
+  "btnEscapeTitle": {
+    "message": "Chuyển văn bản JSON thành chuỗi có escape"
+  },
+  "btnUnescape": {
+    "message": "Bỏ escape"
+  },
+  "btnUnescapeTitle": {
+    "message": "Khôi phục chuỗi có escape thành văn bản JSON"
+  },
+  "labelIndent": {
+    "message": "Thụt lề"
+  },
+  "optSpaces2": {
+    "message": "2 dấu cách"
+  },
+  "optSpaces4": {
+    "message": "4 dấu cách"
+  },
+  "labelAutoFormat": {
+    "message": "Định dạng khi dán"
+  },
+  "labelAutoFormatTitle": {
+    "message": "Định dạng ngay sau khi dán"
+  },
+  "viewRaw": {
+    "message": "Văn bản"
+  },
+  "viewTree": {
+    "message": "Cây"
+  },
+  "levelTitle": {
+    "message": "Mở rộng cây đến cấp đã chọn"
+  },
+  "levelPlaceholder": {
+    "message": "Mở rộng cấp…"
+  },
+  "level1": {
+    "message": "Cấp 1"
+  },
+  "level2": {
+    "message": "Cấp 2"
+  },
+  "level3": {
+    "message": "Cấp 3"
+  },
+  "level4": {
+    "message": "Cấp 4"
+  },
+  "level5": {
+    "message": "Cấp 5"
+  },
+  "level8": {
+    "message": "Cấp 8"
+  },
+  "levelAll": {
+    "message": "Tất cả"
+  },
+  "searchPlaceholder": {
+    "message": "Tìm khóa hoặc giá trị…"
+  },
+  "matchPrevTitle": {
+    "message": "Trước (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "Sau (Enter)"
+  },
+  "btnSample": {
+    "message": "Mẫu"
+  },
+  "btnCopy": {
+    "message": "Sao chép kết quả"
+  },
+  "btnClear": {
+    "message": "Xóa"
+  },
+  "linkCompare": {
+    "message": "So sánh JSON →"
+  },
+  "linkCompareTitle": {
+    "message": "Mở trang so sánh JSON"
+  },
+  "paneInput": {
+    "message": "Đầu vào"
+  },
+  "paneResult": {
+    "message": "Kết quả"
+  },
+  "inputPlaceholder": {
+    "message": "Dán JSON hoặc thả tệp .json vào đây… (Cmd/Ctrl + Enter để định dạng)"
+  },
+  "largeInputTitle": {
+    "message": "Bản xem trước chỉ đọc cho tệp lớn"
+  },
+  "btnImportFile": {
+    "message": "Nhập tệp"
+  },
+  "btnImportFileTitle": {
+    "message": "Chọn tệp .json cục bộ hoặc thả tệp vào khung đầu vào"
+  },
+  "fileReading": {
+    "message": "Đang đọc…"
+  },
+  "fileDropHint": {
+    "message": "Thả để nhập tệp JSON"
+  },
+  "errFileMultiple": {
+    "message": "Chỉ nhập một tệp JSON mỗi lần"
+  },
+  "errFileType": {
+    "message": "Chỉ hỗ trợ tệp .json"
+  },
+  "errFileTooLarge": {
+    "message": "Kích thước tệp không được vượt quá $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "Tệp trống hoặc chỉ chứa khoảng trắng"
+  },
+  "errFileEncoding": {
+    "message": "Tệp phải là văn bản UTF-8 hợp lệ"
+  },
+  "errFileRead": {
+    "message": "Không đọc được \"$name$\": $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "Vui lòng nhập nội dung JSON trước"
+  },
+  "errNeedContent": {
+    "message": "Vui lòng nhập nội dung trước"
+  },
+  "errNothingToParse": {
+    "message": "Không có gì để phân tích — hãy nhập JSON trước"
+  },
+  "errNothingToCopy": {
+    "message": "Không có gì để sao chép"
+  },
+  "errParseFailed": {
+    "message": "Phân tích thất bại: "
+  },
+  "errLineCol": {
+    "message": "Dòng $line$ cột $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "Bỏ escape thất bại: "
+  },
+  "errSearchFailed": {
+    "message": "Tìm kiếm thất bại: "
+  },
+  "statusFormatted": {
+    "message": "Đã định dạng · $count$ ký tự · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "Đã rút gọn · $count$ ký tự · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "Đã thêm escape · $count$ ký tự",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "Đã bỏ escape · $count$ ký tự",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "Đã sao chép $count$ ký tự vào bộ nhớ tạm",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ mục ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ khóa ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (tổng $count$ ký tự, đã cắt bớt)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "Đã mở rộng tất cả các cấp"
+  },
+  "expandedLevel": {
+    "message": "Đã mở rộng đến cấp $level$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "Không có kết quả"
+  },
+  "btnCompare": {
+    "message": "So sánh"
+  },
+  "btnCompareTitle": {
+    "message": "Phím tắt: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ Đổi bên"
+  },
+  "btnSwapTitle": {
+    "message": "Hoán đổi bên trái và bên phải"
+  },
+  "labelArrayMode": {
+    "message": "Mảng"
+  },
+  "optArrayIndex": {
+    "message": "Theo chỉ số"
+  },
+  "optArrayKey": {
+    "message": "Ghép theo khóa"
+  },
+  "labelKeyField": {
+    "message": "Khóa"
+  },
+  "keyFieldPlaceholder": {
+    "message": "ví dụ: id"
+  },
+  "labelIgnorePaths": {
+    "message": "Bỏ qua đường dẫn"
+  },
+  "ignorePathsTitle": {
+    "message": "Đường dẫn chính xác, * khớp một đoạn, phân cách bằng dấu phẩy"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "ví dụ: list[*].updatedAt, phân cách bằng dấu phẩy"
+  },
+  "viewStruct": {
+    "message": "Cấu trúc"
+  },
+  "viewTextDiff": {
+    "message": "Khác biệt văn bản"
+  },
+  "viewTextDiffTitle": {
+    "message": "So sánh từng dòng sau khi định dạng; không áp dụng đường dẫn bỏ qua/cách so sánh mảng"
+  },
+  "onlyDiffLabel": {
+    "message": "Chỉ phần khác biệt"
+  },
+  "onlyDiffTitle": {
+    "message": "Ẩn các nhánh không có khác biệt"
+  },
+  "diffPrevTitle": {
+    "message": "Khác biệt trước"
+  },
+  "diffNextTitle": {
+    "message": "Khác biệt tiếp theo"
+  },
+  "linkFormatter": {
+    "message": "← Về Định dạng"
+  },
+  "paneOld": {
+    "message": "Cũ (trái)"
+  },
+  "paneNew": {
+    "message": "Mới (phải)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "Dán JSON cũ…"
+  },
+  "inputRightPlaceholder": {
+    "message": "Dán JSON mới… (Cmd/Ctrl + Enter để so sánh)"
+  },
+  "paneCompareResult": {
+    "message": "Kết quả"
+  },
+  "colOld": {
+    "message": "Cũ"
+  },
+  "colNew": {
+    "message": "Mới"
+  },
+  "errNeedBothSides": {
+    "message": "Vui lòng nhập JSON ở cả hai bên"
+  },
+  "errCompareFailed": {
+    "message": "So sánh thất bại: "
+  },
+  "errTextDiffFailed": {
+    "message": "So sánh văn bản thất bại: "
+  },
+  "diffStats": {
+    "message": "$total$ khác biệt: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (chỉ hiển thị chi tiết $count$ khác biệt đầu tiên)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; một số khóa mảng bị thiếu, không được hỗ trợ hoặc bị trùng — đã so sánh theo chỉ số"
+  },
+  "diffIdenticalNote": {
+    "message": " — nội dung giống nhau"
+  },
+  "textDiffBlockyNote": {
+    "message": "Vùng khác biệt quá lớn — hiển thị thành khối nguyên vẹn (không ảnh hưởng đến chế độ cấu trúc)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ dòng giống nhau ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "btnCancel": {
+    "message": "Hủy"
+  },
+  "statusCancelled": {
+    "message": "Đã hủy"
+  },
+  "errInvalidJson": {
+    "message": "Cú pháp JSON không hợp lệ."
+  },
+  "errInvalidEscape": {
+    "message": "Chuỗi có escape không hợp lệ."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Kết quả đã lưu không còn khả dụng. Hãy thực hiện lại thao tác."
+  },
+  "errTaskFailed": {
+    "message": "Thao tác thất bại. Vui lòng thử lại."
+  },
+  "errWorkerFailed": {
+    "message": "Tiến trình nền đã dừng đột ngột. Vui lòng thử lại."
+  }
+}
