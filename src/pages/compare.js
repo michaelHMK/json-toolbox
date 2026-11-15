@@ -1,6 +1,6 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
-import { createTaskRunner } from '../shared/worker-client.js';
+import { createComparisonSession } from '../shared/comparison-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createChildPathIndex } from '../shared/json-tree.js';
 import { createRemoteTree } from '../shared/remote-tree.js';
@@ -44,8 +44,6 @@ const state = {
   textResult: null,    // 文本 diff 结果（每次对比后失效重算）
   treesDirty: true,
   indexesReady: false,
-  leftText: '',
-  rightText: '',
   children: { left: new Map(), right: new Map() },
   remote: false,
   leftData: undefined,
@@ -63,22 +61,12 @@ const state = {
 };
 
 const treeViews = { left: null, right: null };
-let dataVersion = 0;
-let comparingVersion = null;
-let textRequest = null;
-let dataRequest = null;
+let comparison = null;
 
-const runTask = createTaskRunner({
-  serialize: true,
-  onReset: () => {
-    if (state.result) delete state.result.snapshotId;
-    textRequest = null;
-    dataRequest = null;
-    comparingVersion = null;
-  },
+const session = createComparisonSession({
   onBusyChange: createBusyFeedback({
     busyEl, cancelEl: $('btn-cancel'),
-    onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
+    onCancel: () => { session.cancel(); setStatus(t('statusCancelled')); },
   }),
 });
 
@@ -95,13 +83,12 @@ for (const side of ['left', 'right']) {
     triggerEl: $('btn-import-' + side), fileNameEl: $('file-name-' + side),
     dropHint: $('file-drop-hint-' + side), onError: showError,
     onImport: ({ text }) => {
-      const version = ++dataVersion;
-      runTask.cancel({ onlyIfBusy: true });
+      session.cancel({ onlyIfBusy: true });
       textInputs[side].setText(text);
       if (textInputs.left.getText().trim() && textInputs.right.getText().trim()) {
         // File decoding/preview and cloning both inputs must not share one
         // long UI task. A later edit, clear or manual compare supersedes this.
-        setTimeout(() => { if (version === dataVersion) void doCompare(); }, 0);
+        session.defer(() => { void doCompare(); });
       }
     },
   });
@@ -116,81 +103,66 @@ async function doCompare() {
     return;
   }
   hideError();
-  runTask.cancel({ onlyIfBusy: true });
-  const version = ++dataVersion;
-  comparingVersion = version;
-  textRequest = null;
-  dataRequest = null;
   const ignorePaths = ignoreInput.value
     .split(/[,，\n]/)
     .map((s) => s.trim())
     .filter(Boolean);
   const keyField = arrayModeSel.value === 'key' ? keyFieldInput.value.trim() : '';
   const remote = Math.max(lt.length, rt.length) > LARGE_INPUT_THRESHOLD;
-  const res = await runTask('diff', {
-    text: lt, text2: rt, keyField, ignorePaths,
-    includeData: state.view === 'struct' && !remote, retainSnapshot: true,
-  }, { key: 'diff' });
-  if (comparingVersion === version) comparingVersion = null;
-  if (res.cancelled || version !== dataVersion) return;
-  if (!res.ok) {
-    showParseError(res.side === 'right' ? rt : lt, res, 'errCompareFailed');
-    return;
-  }
-  state.remote = remote;
-  state.result = res.result;
-  state.leftText = lt;
-  state.rightText = rt;
-  textRequest = null;
-  state.textResult = null; // 输入变了，文本 diff 需重算
-  state.treesDirty = true;
-  // 文本模式也释放上一轮结构视图，避免隐藏 DOM 的闭包保留旧数据。
-  treeLeftEl.innerHTML = '';
-  treeRightEl.innerHTML = '';
-  textRenderer.clear();
-  destroyTrees();
-  clearIndexes();
-  state.leftData = res.result.leftData;
-  state.rightData = res.result.rightData;
-  state.leftNumberLiterals = res.result.leftNumberLiterals || null;
-  state.rightNumberLiterals = res.result.rightNumberLiterals || null;
-  state.diffIndex = -1;
-  resultEl.hidden = false;
-  if (state.view === 'text') {
-    if (!(await loadTextDiff())) return;
-    if (version !== dataVersion) return;
-  } else {
-    if (!(await ensureComparisonData())) return;
-    if (version !== dataVersion) return;
-    refreshTrees();
-  }
-  updateStatus();
+  let applied = false;
+  const res = await session.compare({
+    text: lt, text2: rt, keyField, ignorePaths, remote,
+    includeData: state.view === 'struct' && !remote,
+  }, (response) => {
+    applied = true;
+    if (!response.ok) {
+      showParseError(response.side === 'right' ? rt : lt, response, 'errCompareFailed');
+      return;
+    }
+    comparison = response.comparison;
+    state.remote = remote;
+    state.result = response.result;
+    state.textResult = null;
+    state.treesDirty = true;
+    // 文本模式也释放上一轮结构视图，避免隐藏 DOM 的闭包保留旧数据。
+    treeLeftEl.innerHTML = '';
+    treeRightEl.innerHTML = '';
+    textRenderer.clear();
+    destroyTrees();
+    clearIndexes();
+    state.leftData = response.result.leftData;
+    state.rightData = response.result.rightData;
+    state.leftNumberLiterals = response.result.leftNumberLiterals || null;
+    state.rightNumberLiterals = response.result.rightNumberLiterals || null;
+    state.diffIndex = -1;
+    resultEl.hidden = false;
+  });
+  if (!applied || !res.ok) return;
+  let followup;
+  const started = session.apply(res, () => {
+    followup = state.view === 'text'
+      ? loadTextDiff(res.comparison)
+      : ensureComparisonData(res.comparison, refreshTrees);
+  });
+  if (!started || !(await followup)) return;
+  session.apply(res, updateStatus);
 }
 
-async function ensureComparisonData() {
-  if (comparingVersion !== null) return false;
-  if (state.leftData !== undefined || (state.remote && state.result?.snapshotId !== undefined)) return true;
-  const comparison = state.result;
-  if (!comparison) return false;
-  const version = dataVersion;
-  dataRequest ||= comparison.snapshotId !== undefined
-    ? runTask('comparisonData', { snapshotId: comparison.snapshotId, includeData: !state.remote })
-    : runTask('diff', { text: state.leftText, text2: state.rightText, retainSnapshot: true, includeData: !state.remote });
-  const res = await dataRequest;
-  if (res.cancelled || version !== dataVersion || comparison !== state.result) return false;
-  dataRequest = null;
-  if (!res.ok) {
-    showError(t('errCompareFailed') + taskErrorMessage(res));
-    return false;
-  }
-  for (const key of ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals', 'snapshotId']) {
-    if (res.result[key] !== undefined) comparison[key] = res.result[key];
-  }
-  state.leftData = res.result.leftData;
-  state.rightData = res.result.rightData;
-  state.leftNumberLiterals = res.result.leftNumberLiterals;
-  state.rightNumberLiterals = res.result.rightNumberLiterals;
-  return true;
+async function ensureComparisonData(displayed = comparison, onReady = () => {}) {
+  if (!displayed) return false;
+  const res = await displayed.ensureData();
+  const applied = session.apply(res, () => {
+    if (!res.ok) {
+      showError(t('errCompareFailed') + taskErrorMessage(res));
+      return;
+    }
+    state.leftData = res.result.leftData;
+    state.rightData = res.result.rightData;
+    state.leftNumberLiterals = res.result.leftNumberLiterals || null;
+    state.rightNumberLiterals = res.result.rightNumberLiterals || null;
+    onReady();
+  });
+  return applied && res.ok;
 }
 
 function clearIndexes() {
@@ -263,6 +235,7 @@ function pairedPath(side, path) {
 }
 
 function renderTrees() {
+  const displayed = comparison;
   if (!state.indexesReady) buildIndexes();
   state.treesDirty = false;
   for (const side of ['left', 'right']) {
@@ -284,23 +257,20 @@ function renderTrees() {
     else {
       const element = side === 'left' ? treeLeftEl : treeRightEl;
       treeViews[side] = state.remote
-        ? createRemoteTree(element, { ...options, request: (payload) => requestTree(side, payload) })
+        ? createRemoteTree(element, { ...options, request: (payload) => requestTree(displayed, side, payload) })
         : createVirtualTree(element, options);
     }
   }
 }
 
-async function requestTree(side, payload) {
-  const version = dataVersion;
-  if (!await ensureComparisonData() || version !== dataVersion) return { ok: false, cancelled: true };
-  const pending = runTask('tree', {
-    ...payload, kind: 'comparison', side, snapshotId: state.result.snapshotId,
-  });
+async function requestTree(displayed, side, payload) {
+  const pending = displayed.requestTree(side, payload);
   if (payload.operation !== 'rows') suspendScrollSync(pending);
   const response = await pending;
-  if (version !== dataVersion) return { ok: false, cancelled: true };
-  if (!response.ok && !response.cancelled && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
-  return response;
+  const applied = session.apply(response, () => {
+    if (!response.ok && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
+  });
+  return applied ? response : { ok: false, cancelled: true };
 }
 
 /* ================= 差异导航 ================= */
@@ -335,29 +305,18 @@ function updateDiffInfo() {
 }
 
 /* ================= 文本 diff 视图 ================= */
-async function loadTextDiff() {
-  if (comparingVersion !== null) return false;
-  const version = dataVersion;
-  const comparison = state.result;
-  if (!state.textResult) {
-    textRequest ||= runTask('textDiff', {
-      ...(comparison.snapshotId === undefined
-        ? { text: state.leftText, text2: state.rightText }
-        : { snapshotId: comparison.snapshotId }),
-      indent: '2',
-      includeTextIndex: true,
-    });
-    const res = await textRequest;
-    if (res.cancelled || version !== dataVersion || comparison !== state.result) return false;
-    textRequest = null;
+async function loadTextDiff(displayed = comparison) {
+  if (!displayed) return false;
+  const res = await displayed.textDiff();
+  const applied = session.apply(res, () => {
     if (!res.ok) {
       showError(t('errTextDiffFailed') + taskErrorMessage(res));
-      return false;
+      return;
     }
     state.textResult = res.result;
-  }
-  renderTextDiff();
-  return true;
+    renderTextDiff();
+  });
+  return applied && res.ok;
 }
 
 function renderTextDiff() {
@@ -374,9 +333,11 @@ async function setCompareView(view) {
   structView.hidden = view !== 'struct';
   textView.hidden = view !== 'text';
   diffNavEl.style.visibility = view === 'struct' ? '' : 'hidden';
-  if (!state.result || comparingVersion !== null) return;
+  if (!state.result || session.pending) return;
   if (view === 'text') await loadTextDiff();
-  else if (state.treesDirty && await ensureComparisonData() && state.view === 'struct') refreshTrees();
+  else if (state.treesDirty) await ensureComparisonData(comparison, () => {
+    if (state.view === 'struct') refreshTrees();
+  });
   else if (state.view === 'struct') {
     treeViews.left?.refresh();
     treeViews.right?.refresh();
@@ -385,8 +346,7 @@ async function setCompareView(view) {
 
 /* ================= 其他操作 ================= */
 function doSwap() {
-  dataVersion++;
-  runTask.cancel({ onlyIfBusy: true });
+  session.cancel({ onlyIfBusy: true });
   const t2 = textInputs.left.getText();
   textInputs.left.setText(textInputs.right.getText());
   textInputs.right.setText(t2);
@@ -396,14 +356,9 @@ function doSwap() {
 }
 
 function doClear() {
-  dataVersion++;
-  comparingVersion = null;
-  textRequest = null;
-  dataRequest = null;
-  void runTask('clear', {}, { discardQueued: true });
+  session.clear();
+  comparison = null;
   destroyTrees();
-  state.leftText = '';
-  state.rightText = '';
   clearIndexes();
   textInputs.left.clear();
   textInputs.right.clear();
@@ -501,15 +456,14 @@ arrayModeSel.addEventListener('change', () => {
 onlyDiffChk.addEventListener('change', () => {
   state.onlyDiff = onlyDiffChk.checked;
   state.treesDirty = true;
-  if (state.result && state.view === 'struct' && comparingVersion === null && (state.remote || state.leftData !== undefined)) refreshTrees();
+  if (state.result && state.view === 'struct' && !session.pending && (state.remote || state.leftData !== undefined)) refreshTrees();
 });
 
 for (const side of ['left', 'right']) {
   const el = side === 'left' ? inputLeft : inputRight;
   const changed = () => {
     fileImports[side].reset();
-    dataVersion++;
-    runTask.cancel({ onlyIfBusy: true });
+    session.cancel({ onlyIfBusy: true });
   };
   el.addEventListener('input', changed);
   for (const target of [el, $('input-view-' + side)]) {

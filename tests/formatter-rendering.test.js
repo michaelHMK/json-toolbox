@@ -114,10 +114,11 @@ test('clear invalidates pending parsing and search results', async () => {
     let finishTask;
     const page = loadFormatter((requested) => requested === action
       ? new Promise((resolve) => { finishTask = resolve; })
-      : Promise.resolve({ ok: true, result: {} }));
+      : Promise.resolve({ ok: true, result: requested === 'parse'
+        ? { data: { old: 1 }, numberLiterals: {} } : {} }));
     page.get('input').value = '{"old":1}';
     page.get('search').value = 'old';
-    if (action === 'search') page.state.data = { old: 1 };
+    if (action === 'search') await page.ensureTreeData();
     const pending = action === 'parse' ? page.ensureTreeData() : page.runSearch();
     // A restarted Worker first restores the document before searching it.
     await new Promise(setImmediate);

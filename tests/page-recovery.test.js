@@ -83,7 +83,7 @@ test('formatter restores search data after cancellation and can format after a w
   page.get('btn-cancel').click();
   await pending;
   assert.equal(workers[0].terminated, true);
-  assert.equal(page.state.snapshotId, null);
+  assert.equal(page.get('busy').hidden, true);
   assert.equal(page.get('status').textContent, 'Cancelled');
   hold(null);
   await page.runSearch();

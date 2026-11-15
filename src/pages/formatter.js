@@ -1,6 +1,6 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
-import { createTaskRunner } from '../shared/worker-client.js';
+import { createDocumentSession } from '../shared/document-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
@@ -37,8 +37,6 @@ const state = {
   remote: false,      // 大文档只在 Worker 保存对象图，页面持有行窗口
   data: undefined,     // 小文档的解析对象；大文档对象图只保存在 Worker
   numberLiterals: null, // 数字在原文中的字面量（path → 文本）
-  dataSource: '',      // data 对应的原始文本，用于判断是否需要重新解析
-  snapshotId: null,    // Worker 快照标识；大文档按需获取树行窗口
   expanded: new Set(), // 用户手动展开的路径
   collapsed: new Set(), // 用户折叠优先于层级展开
   expandLevel: 1,      // 按需判断可见节点，不预先遍历整棵树
@@ -50,26 +48,17 @@ const state = {
   searchQuery: '',
 };
 
-let dataVersion = 0;
-let formattingVersion = null;
 let pendingView = null;
 let viewRequestVersion = 0;
 let treeView = null;
-let treeSession = null;
-let workerSearchReady = false;
+let displayedDocument = null;
+let treeDocument = null;
 
-const runTask = createTaskRunner({
-  serialize: true,
-  onReset: () => {
-    state.snapshotId = null;
-    if (treeSession) treeSession.recovery = null;
-    workerSearchReady = false;
-    formattingVersion = null;
-    invalidateViewRequest();
-  },
+const session = createDocumentSession({
+  onReset: invalidateViewRequest,
   onBusyChange: createBusyFeedback({
     busyEl, cancelEl: $('btn-cancel'),
-    onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
+    onCancel: () => { session.cancel(); invalidateViewRequest(); setStatus(t('statusCancelled')); },
   }),
 });
 
@@ -90,8 +79,7 @@ const fileImport = createFileImport({
     if (textInput.isLarge()) {
       state.view = 'text';
       updateViewButtons();
-      const version = dataVersion;
-      setTimeout(() => { if (version === dataVersion) void doFormat(); }, 0);
+      session.defer(() => { void doFormat(); });
     } else {
       void doFormat();
     }
@@ -136,31 +124,27 @@ function currentText() {
 
 // 树视图需要解析后的数据；若源文本没变则复用
 async function ensureTreeData() {
-  if (formattingVersion !== null) return false;
+  if (session.pending) return false;
   const text = currentText();
   if (!text.trim()) {
     showError(t('errNothingToParse'));
     return false;
   }
-  if ((state.remote || state.data !== undefined) && state.dataSource === text) return true;
   const remote = text.length > LARGE_INPUT_THRESHOLD;
   hideError();
-  const version = dataVersion;
-  const res = state.snapshotId !== null && text === state.outputText
-    ? await runTask('parseSnapshot', { snapshotId: state.snapshotId, includeData: !remote })
-    : await runTask('parse', { text, retainSnapshot: true, includeData: !remote });
-  if (res.cancelled || version !== dataVersion || text !== currentText()) return false;
-  if (!res.ok) {
-    showParseError(text, res);
-    return false;
-  }
-  state.remote = remote;
-  state.data = res.result.data;
-  workerSearchReady = true;
-  state.numberLiterals = res.result.numberLiterals || null;
-  state.dataSource = text;
-  if (res.result.snapshotId !== undefined) state.snapshotId = res.result.snapshotId;
-  return true;
+  let applied = false;
+  const res = await session.parse(text, { remote }, (res) => {
+    applied = true;
+    if (!res.ok) {
+      showParseError(text, res);
+      return;
+    }
+    displayedDocument = res.document;
+    state.remote = displayedDocument.remote;
+    state.data = displayedDocument.data;
+    state.numberLiterals = displayedDocument.numberLiterals;
+  });
+  return applied && res.ok;
 }
 
 async function setView(view) {
@@ -168,7 +152,7 @@ async function setView(view) {
   pendingView = view;
   // Keep the rendered view visible until its replacement is ready. A pending
   // choice is not a completed tree, and cancellation must leave it retryable.
-  if (formattingVersion !== null) return false;
+  if (session.pending) return false;
   if (view === state.view && (view !== 'tree' || treeView)) {
     pendingView = null;
     return true;
@@ -194,51 +178,40 @@ async function doFormat() {
     return;
   }
   hideError();
-  runTask.cancel({ onlyIfBusy: true });
-  const version = ++dataVersion;
-  formattingVersion = version;
   const large = text.length > LARGE_INPUT_THRESHOLD;
-  const retainDocument = state.view === 'tree' || !large;
-  const res = await runTask('format', {
-    text, indent: indentSel.value, includeData: state.view === 'tree' && !large,
-    includeNumberLiterals: state.view === 'tree',
-    includeTextIndex: true,
-    retainSnapshot: retainDocument, retainSearch: retainDocument,
-  }, { key: 'format' });
-  if (formattingVersion === version) formattingVersion = null;
-  if (res.cancelled || version !== dataVersion) return;
-  if (!res.ok) {
-    invalidateViewRequest();
-    showParseError(text, res);
-    return;
-  }
-  const nextView = pendingView ?? state.view;
-  invalidateViewRequest();
-  treeView?.destroy();
-  treeView = null;
-  treeSession = null;
-  outputView.clear();
-  state.outputText = res.result.text;
-  state.outputLineIndex = res.result.lineIndex ?? null;
-  state.snapshotId = res.result.snapshotId ?? null;
-  workerSearchReady = retainDocument;
-  state.data = res.result.data;
-  state.numberLiterals = res.result.numberLiterals || null;
-  state.remote = large && state.snapshotId !== null;
-  state.dataSource = state.data === undefined && !state.remote ? '' : state.outputText;
-  state.matchIndex = -1;
-  if (nextView === 'tree' && (state.remote || state.data !== undefined)) {
-    showTree();
-  } else {
-    // A lazy tree still needs a snapshot transfer. Keep the available text
-    // usable if that follow-up is cancelled or fails.
-    showText(state.outputText);
-    if (nextView === 'tree') {
-      if (!(await setView('tree'))) return;
-      if (version !== dataVersion) return;
+  let applied = false;
+  let followup;
+  const res = await session.format(text, { indent: indentSel.value, remote: large, tree: state.view === 'tree' }, (res) => {
+    applied = true;
+    if (!res.ok) {
+      invalidateViewRequest();
+      showParseError(text, res);
+      return;
     }
-  }
-  setStatus(t('statusFormatted', [state.outputText.length.toLocaleString(), String(res.duration)]));
+    const nextView = pendingView ?? state.view;
+    invalidateViewRequest();
+    treeView?.destroy();
+    treeView = null;
+    treeDocument = null;
+    outputView.clear();
+    state.outputText = res.result.text;
+    state.outputLineIndex = res.result.lineIndex ?? null;
+    displayedDocument = res.document;
+    state.data = displayedDocument.data;
+    state.numberLiterals = displayedDocument.numberLiterals;
+    state.remote = displayedDocument.remote && displayedDocument.ready;
+    state.matchIndex = -1;
+    if (nextView === 'tree' && displayedDocument.ready) {
+      showTree();
+    } else {
+      // A lazy tree still needs a snapshot transfer. Keep the available text
+      // usable if that follow-up is cancelled or fails.
+      showText(state.outputText);
+      if (nextView === 'tree') followup = setView('tree');
+    }
+  });
+  if (!applied || !res.ok || (followup && !(await followup))) return;
+  session.apply(res, () => setStatus(t('statusFormatted', [state.outputText.length.toLocaleString(), String(res.duration)])));
 }
 
 async function doCopy() {
@@ -253,23 +226,20 @@ async function doCopy() {
 }
 
 function resetDocument() {
-  dataVersion++;
-  formattingVersion = null;
   invalidateViewRequest();
   clearTimeout(searchTimer);
   searchTimer = 0;
-  void runTask('clear', {}, { discardQueued: true });
+  session.clear();
   treeView?.destroy();
   treeView = null;
-  treeSession = null;
+  treeDocument = null;
+  displayedDocument = null;
   textInput.clear();
   state.outputText = '';
   state.outputLineIndex = null;
   state.remote = false;
   state.data = undefined;
   state.numberLiterals = null;
-  state.dataSource = '';
-  state.snapshotId = null;
   state.expanded.clear();
   state.collapsed.clear();
   state.expandLevel = 1;
@@ -319,62 +289,28 @@ function renderTree() {
     forceExpand: state.searchForce,
     highlights: state.highlights,
   };
-  if (treeView && (Boolean(treeSession) !== state.remote || (treeSession && treeSession.source !== state.dataSource))) {
+  if (treeView && (Boolean(treeDocument) !== state.remote || (treeDocument && treeDocument !== displayedDocument))) {
     treeView.destroy();
     treeView = null;
-    treeSession = null;
+    treeDocument = null;
   }
   if (treeView) treeView.update(options);
   else if (state.remote) {
-    const session = { source: state.dataSource, recovery: null };
-    treeSession = session;
-    treeView = createRemoteTree(treeEl, { ...options, request: (payload) => requestTree(payload, session) });
+    treeDocument = displayedDocument;
+    const document = treeDocument;
+    treeView = createRemoteTree(treeEl, { ...options, request: async (payload) => {
+      const response = await document.requestTree(payload);
+      const applied = session.apply(response, () => {
+        if (!response.ok && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
+      });
+      return applied ? response : { ok: false, cancelled: true };
+    } });
   } else treeView = createVirtualTree(treeEl, options);
   if (state.searchQuery && state.matchCount > 0) updateMatchNav(0);
   else {
     treeView.setCurrent(null);
     updateMatchInfo();
   }
-}
-
-// A cancelled Worker may have discarded the document. Rebuild its snapshot
-// from the displayed source before retrying a window; never transfer the tree.
-function isCurrentTreeSession(session, version) {
-  return session === treeSession && state.remote && session.source === state.dataSource
-    && version === dataVersion && formattingVersion === null;
-}
-
-async function recoverTreeSnapshot(session, version) {
-  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
-  if (state.snapshotId !== null) return { ok: true };
-  // Concurrent row, toggle and search requests share the same recovery. Bind
-  // it to the displayed document, even when the input has since been edited.
-  if (!session.recovery || session.recovery.version !== version) {
-    const recovery = { version, promise: null };
-    recovery.promise = (async () => {
-      const parsed = await runTask('parse', { text: session.source, retainSnapshot: true, includeData: false });
-      if (parsed.cancelled || !isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
-      if (!parsed.ok) { showError(taskErrorMessage(parsed)); return parsed; }
-      state.snapshotId = parsed.result.snapshotId;
-      workerSearchReady = true;
-      return parsed;
-    })().finally(() => {
-      if (session.recovery === recovery) session.recovery = null;
-    });
-    session.recovery = recovery;
-  }
-  return session.recovery.promise;
-}
-
-async function requestTree(payload, session) {
-  const version = dataVersion;
-  const recovered = await recoverTreeSnapshot(session, version);
-  if (!recovered.ok) return recovered;
-  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
-  const response = await runTask('tree', { ...payload, kind: 'document', snapshotId: state.snapshotId });
-  if (!isCurrentTreeSession(session, version)) return { ok: false, cancelled: true };
-  if (!response.ok && !response.cancelled && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
-  return response;
 }
 
 /* ================= 层级展开 ================= */
@@ -392,6 +328,7 @@ function applyLevel(value) {
 let searchTimer = 0;
 
 function scheduleSearch() {
+  session.invalidateSearch();
   clearTimeout(searchTimer);
   searchTimer = setTimeout(runSearch, 300);
 }
@@ -402,12 +339,13 @@ async function runSearch() {
   state.matchIndex = -1;
   // A queued parse of the displayed old document would overwrite the new
   // format's Worker cache. doFormat searches the current query once it settles.
-  if (formattingVersion !== null) return;
+  if (session.pending) return;
   if (!state.remote && state.data === undefined) {
     updateMatchInfo();
     return;
   }
   if (!q) {
+    session.invalidateSearch();
     state.highlights = new Set();
     state.searchForce = new Set();
     state.matchCount = 0;
@@ -415,30 +353,18 @@ async function runSearch() {
     renderTree();
     return;
   }
-  const version = dataVersion;
-  if (!workerSearchReady) {
-    const parsed = state.remote
-      ? await recoverTreeSnapshot(treeSession, version)
-      : await runTask('parse', { text: state.dataSource, retainSnapshot: true, includeData: true });
-    if (parsed.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
-    if (!parsed.ok) {
-      showError(t('errSearchFailed') + taskErrorMessage(parsed));
+  const res = await displayedDocument.search(q);
+  session.apply(res, () => {
+    if (!res.ok) {
+      showError(t('errSearchFailed') + taskErrorMessage(res));
       return;
     }
-    workerSearchReady = true;
-    if (!state.remote) state.snapshotId = parsed.result.snapshotId ?? null;
-  }
-  const res = await runTask('search', { text: q }, { key: 'search' });
-  if (res.cancelled || version !== dataVersion || searchInput.value.trim() !== q) return;
-  if (!res.ok) {
-    showError(t('errSearchFailed') + taskErrorMessage(res));
-    return;
-  }
-  state.highlights = new Set(res.result.highlights);
-  state.searchForce = new Set(res.result.forceExpand);
-  state.matchCount = res.result.matchCount;
-  state.matchTruncated = res.result.truncated;
-  renderTree();
+    state.highlights = new Set(res.result.highlights);
+    state.searchForce = new Set(res.result.forceExpand);
+    state.matchCount = res.result.matchCount;
+    state.matchTruncated = res.result.truncated;
+    renderTree();
+  });
 }
 
 function updateMatchNav(index) {
@@ -507,9 +433,8 @@ $('input-view').addEventListener('keydown', (e) => {
 
 function inputChanged() {
   fileImport.reset();
-  dataVersion++;
   invalidateViewRequest();
-  runTask.cancel({ onlyIfBusy: true });
+  session.cancel({ onlyIfBusy: true });
 }
 inputEl.addEventListener('input', inputChanged);
 for (const element of [inputEl, $('input-view')]) {

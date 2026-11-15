@@ -68,7 +68,7 @@ test('large formatter retains no UI object graph and restores windows and search
   await settle();
   page.get('btn-cancel').click();
   await settle();
-  assert.equal(page.state.snapshotId, null);
+  assert.equal(workers[0].terminated, true);
   hold(null);
   page.getTree().refresh();
   await settle();
@@ -94,6 +94,41 @@ test('large formatter retains no UI object graph and restores windows and search
   assert.equal(page.state.remote, false);
   assert.equal(page.state.data.small, true);
   assert.equal(previous.rowCount, 0);
+  page.doClear();
+});
+
+test('a hidden leftover search does not parse a large text-only format before opening its tree', async () => {
+  const { page, workers } = setup('formatter');
+  page.textInput.setText('{"old":"needle"}');
+  await page.setView('tree');
+  await page.getTree().ready;
+  page.get('search').value = 'needle';
+  await page.runSearch();
+  await settle();
+  await page.setView('text');
+  page.textInput.setText(JSON.stringify({
+    nested: { value: 'needle' }, padding: 'x'.repeat(LARGE_INPUT_THRESHOLD),
+  }));
+  const previousRequests = workers.flatMap((worker) => worker.requests).length;
+  const currentRequests = () => workers.flatMap((worker) => worker.requests).slice(previousRequests);
+  await page.doFormat();
+  await page.runSearch();
+  assert.equal(page.state.view, 'text');
+  assert.equal(page.state.remote, false, 'remote data is not ready until the tree is explicitly requested');
+  assert.equal(page.state.data, undefined);
+  assert.deepEqual(currentRequests().map((request) => request.action), ['format']);
+  assert.equal(currentRequests()[0].retainSnapshot, false);
+  assert.equal(currentRequests()[0].retainSearch, false);
+
+  await page.setView('tree');
+  await page.getTree().ready;
+  await settle();
+  assert.equal(currentRequests().filter((request) => request.action === 'parse').length, 1);
+  assert.equal(currentRequests().filter((request) => request.action === 'search').length, 1);
+  assert.equal(page.state.remote, true);
+  assert.equal(page.state.data, undefined);
+  assert.equal(page.state.matchCount, 1);
+  assert.equal(page.get('tree').querySelector('.entry.current').dataset.path, '/nested/value');
   page.doClear();
 });
 

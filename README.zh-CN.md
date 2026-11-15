@@ -64,7 +64,7 @@ src/                   # 完整扩展目录，在 Chrome 中加载此目录
     formatter.js
     compare.js
     transform.js       # 压缩、转义、去转义共用页面逻辑
-  shared/              # 导航、国际化、虚拟树/文本视图、复制与 Worker 协议
+  shared/              # 浏览器界面、文档/对比会话与 Worker 通信
   core/                # 纯算法：JSON 排版、路径、搜索、结构对比、文本对比等
   worker/
     index.js           # Web Worker 消息入口
@@ -89,10 +89,11 @@ dist/                  # 生成的扩展 ZIP 与校验文件，已加入 Git 忽
 
 | 边界 | 职责与约定 |
 | --- | --- |
-| `pages → shared` | 页面管理自己的状态；共享层负责浏览器交互。格式化树和对比树保留各自的展开、搜索及差异逻辑。 |
+| `pages → shared` | 页面管理交互和视图状态；共享层负责浏览器交互与虚拟渲染。格式化树和对比树保留各自的展开、搜索导航及差异展示逻辑。 |
+| `pages → document-session / comparison-session` | 格式化与对比页通过各自会话请求文档操作。会话管理 Worker 快照、取消与恢复，并丢弃过期响应；页面不直接处理快照 id，也不自行重建已丢失的 Worker 数据。 |
 | `pages/shared → core` | 视图使用 JSON Pointer 与文本行偏移索引；JSON 解析、搜索与对比通过 Worker 执行。 |
-| `shared/worker-client → worker/index` | 请求按 id 配对，全部完成才结束忙碌状态。页面启用串行队列，同类未发送任务只保留最新输入；清空取消排队任务，取消结果带 `cancelled: true`。 |
-| `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。页面通过 `retainSnapshot`/`snapshotId` 复用解析结果；`includeData: false` 省略对象传输。大文档树模型留在 Worker，仅返回最多 256 行的窗口；小文档仍使用同步树。清空使快照失效，压缩页不保留不需要的搜索数据。 |
+| `shared/worker-client → worker/index` | 通信层按 id 配对请求、管理串行队列并报告忙碌与重置事件。同类未发送任务只保留最新输入，被丢弃的请求带 `cancelled: true`。文档生命周期与恢复由会话管理。 |
+| `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。会话通过 `retainSnapshot`/`snapshotId` 复用解析结果；`includeData: false` 省略对象传输。大文档树模型留在 Worker，仅返回最多 256 行的窗口；小文档仍使用同步树。清空使快照失效，压缩页不保留不需要的搜索数据。 |
 | `core` | 不依赖 DOM、Chrome API 或 Worker 全局对象；无效输入抛出异常，由任务层转换为错误响应。数字原文字面量的扫描与恢复集中在 `json.js`。 |
 
 共享虚拟视图负责窗口索引和 DOM 生命周期；页面保留各自的搜索、配对、筛选和导航逻辑。新增任务时，先将算法放入 `src/core/`，再接入 `src/worker/tasks.js`；新增运行时文件还需加入 `scripts/build_release.py` 的白名单。
