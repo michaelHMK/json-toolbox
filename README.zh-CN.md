@@ -119,7 +119,9 @@ python3 scripts/build_release.py --check
 
 ### 性能验证
 
-运行 `npm run bench` 测量确定性数据集下的格式化、压缩、搜索与对比性能。比较结果时，应在相同环境下串行运行基准。`npm run bench:budget` 用 25 MiB 样本的中位数检查格式化/压缩相对原生 parse/stringify 的耗时预算。实现取舍、测量限制和复现命令见 [PERFORMANCE.md](PERFORMANCE.md)。
+运行 `npm run bench` 测量确定性数据集下的格式化、压缩、搜索与对比性能。比较结果时，应在相同环境下串行运行基准。`npm run bench:budget` 使用 25 MiB 数据集、取三次测量的中位数，要求格式化/压缩耗时不超过原生 parse/stringify 的 3 倍；CI 会运行此检查。
+
+格式化基准的每项操作在独立进程中运行。峰值 RSS 包含进程基线、样本生成和 V8 内存，不能视为应用保留内存，也不能据此推算整个页面的内存与输入大小之比。
 
 可选的浏览器验证覆盖大文本、虚拟树、导航和 Worker 数据传输，需要本地已有 Playwright 与 Chromium：
 
@@ -135,10 +137,16 @@ node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 node bench/performance.mjs
 node bench/remote-pages.mjs
+node bench/remote-state.mjs
+node bench/input-focus.mjs
 node bench/theme.mjs
 ```
 
 浏览器验证命令中的 `.` 等目录参数指向仓库，脚本会加载其中的 `src/` 扩展目录，也兼容旧版本将扩展放在仓库根目录的布局；还可以直接传入扩展目录。
+
+这些检查覆盖大文件导入、虚拟输入、大文本与树、导航、复制、焦点、视图切换、状态恢复及深层 Worker 数据传输。`performance.mjs` 使用本地 HTTP 页面和真实 Worker；计时不包含扩展安装、启动和系统剪贴板获取。paste/drop 事件通过合成方式触发，用于测量应用的事件处理路径。
+
+`TREE_TOGGLE_BUDGET_MS`、`PERF_INPUT_BUDGET_MS`、`PERF_FRAME_BUDGET_MS` 分别调整同步树开合 p50、输入处理及布局、滚动帧间隔 p95 的预算，默认值为 16、50、35 ms。`remote-state.mjs` 的密集差异检查对滚动阶段执行耗时预算断言，首次对比和 Worker 恢复单独记录。
 
 可访问性检查通过模拟扩展国际化 API 加载英文和阿拉伯语翻译，验证布局、键盘导航及 Chromium 无障碍树；它不能代替真实读屏软件测试。
 
@@ -157,7 +165,7 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 `BENCH_FILE_MIB` 调整常规和无效文件的大小，默认 `50`。`BENCH_VERIFY=0` 仍会记录正确性检查失败。可选的 `BENCH_MAX_MS` 和 `BENCH_MAX_LONG_TASK_MS` 分别约束总耗时中位数与最长任务中位数；考虑硬件与浏览器差异，默认不设耗时预算。比较基线和修改后版本时，请使用相同配置串行运行。
 
-大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。输入和结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
+大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。完整输入和结果文本仍由页面保存在内存中，大文档的解析对象图和树索引保留在 Worker；较大的文本差异采用整块替换展示。
 
 日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000 --directory src`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
 

@@ -119,7 +119,9 @@ Tests cover number literals and special keys, cached search data and result limi
 
 ### Performance Checks
 
-Run `npm run bench` for deterministic formatting, minifying, search, and diff benchmarks. Compare runs sequentially in the same environment. `npm run bench:budget` checks median formatting/minifying time against native parse/stringify on 25 MiB fixtures. See [PERFORMANCE.md](PERFORMANCE.md) for the implementation decisions, measured limits, and reproduction commands.
+Run `npm run bench` for deterministic formatting, minifying, search, and diff benchmarks. Compare runs sequentially in the same environment. `npm run bench:budget` uses the median of three samples on 25 MiB fixtures and requires formatting/minifying time to stay within 3 times native parse/stringify time; CI runs this check.
+
+The formatting benchmark runs each operation in a separate process. Peak RSS includes the process baseline, fixture generation, and V8 memory; it does not measure retained application memory or establish a whole-page memory-to-input ratio.
 
 Optional browser checks require an existing Playwright installation and Chromium:
 
@@ -135,12 +137,16 @@ node bench/tree-view.mjs
 node bench/worker-transfer.mjs
 node bench/performance.mjs
 node bench/remote-pages.mjs
+node bench/remote-state.mjs
+node bench/input-focus.mjs
 node bench/theme.mjs
 ```
 
 Browser check directory arguments such as `.` refer to a checkout; the scripts load its `src/` extension directory and also recognize the root layout of older checkouts. You can pass an extension directory directly.
 
-These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
+These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, focus, view switching, state recovery, and deeply nested Worker transfers. `performance.mjs` uses local HTTP pages and real Workers; its timings exclude extension installation, startup, and system clipboard access. Paste/drop events are synthesized to measure application event handling.
+
+`TREE_TOGGLE_BUDGET_MS`, `PERF_INPUT_BUDGET_MS`, and `PERF_FRAME_BUDGET_MS` adjust the synchronous tree-toggle p50, input-processing/layout, and scrolling-frame p95 budgets (defaults: 16, 50, and 35 ms). The dense-diff check in `remote-state.mjs` enforces a scrolling budget; initial comparison and Worker recovery are reported separately.
 
 The accessibility check uses the English and Arabic catalogs through a simulated extension i18n API to verify layout, keyboard navigation, and Chromium's accessibility tree. It does not replace manual screen-reader testing.
 
@@ -159,7 +165,7 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 `BENCH_FILE_MIB` changes the ordinary/invalid file size (default `50`). `BENCH_VERIFY=0` still records correctness failures. Optional `BENCH_MAX_MS` and `BENCH_MAX_LONG_TASK_MS` enforce budgets against the median total time and median longest task respectively; both are disabled by default because hardware and browser versions vary. Run baseline and updated checkouts sequentially with identical settings.
 
-Large inputs and outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
+Large inputs and outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete input and result text stays in page memory, while parsed object graphs and tree indexes for large documents stay in the Worker. Large text diffs use block replacement.
 
 For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000 --directory src` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
 
