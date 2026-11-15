@@ -292,18 +292,24 @@
     }
   },
   "statusEscaped": {
-    "message": "Escapado · $count$ caracteres",
+    "message": "Escapado · $count$ caracteres · $time$ ms",
     "placeholders": {
       "count": {
         "content": "$1"
+      },
+      "time": {
+        "content": "$2"
       }
     }
   },
   "statusUnescaped": {
-    "message": "Desescapado · $count$ caracteres",
+    "message": "Desescapado · $count$ caracteres · $time$ ms",
     "placeholders": {
       "count": {
         "content": "$1"
+      },
+      "time": {
+        "content": "$2"
       }
     }
   },

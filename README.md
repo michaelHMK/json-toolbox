@@ -35,7 +35,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 | **JSON Escape / Unescape** | Convert between plain text and escaped JSON string content, with one-click copying |
 | **JSON Compare** | Compare JSON structures for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
 
-Formatter, Minifier, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation; Compare runs once both inputs are present. Large pastes and plain-text drops also use the virtual preview. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
+Formatter, Minifier, Escape, Unescape, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation; Compare runs once both inputs are present. Large pastes and plain-text drops also use the virtual preview. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position. Pasting into the preview replaces the original text; small replacements return to an editable text box.
 
 Use the sidebar to switch between tools. The interface includes 20 locale catalogs in `src/_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`) and Latin American Spanish (`es_419`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), Arabic (`ar`), Indonesian (`id`), Vietnamese (`vi`), Italian (`it`), Romanian (`ro`), Turkish (`tr`), and Polish (`pl`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
@@ -141,12 +141,15 @@ node bench/performance.mjs
 node bench/remote-pages.mjs
 node bench/remote-state.mjs
 node bench/input-focus.mjs
+node bench/native-paste.mjs .
 node bench/theme.mjs
 ```
 
 Browser check directory arguments such as `.` refer to a checkout; the scripts load its `src/` extension directory and also recognize the root layout of older checkouts. You can pass an extension directory directly.
 
 These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, focus, view switching, state recovery, and deeply nested Worker transfers. `performance.mjs` uses local HTTP pages and real Workers; its timings exclude extension installation, startup, and system clipboard access. Paste/drop events are synthesized to measure application event handling.
+
+`native-paste.mjs` uses Chromium's clipboard and the real paste shortcut to verify large source previews and complete copying on Escape and Unescape. The default input is about 20 MiB, adjustable with `BENCH_PASTE_MIB`. Timing starts at the paste event and ends after two animation frames; fixture construction and clipboard writing are excluded. Set `BENCH_SCREENSHOT_DIR` to save screenshots, or use `BENCH_VERIFY=0` with an older checkout to record a baseline. It measures each page once; compare timings by running serially in the same environment.
 
 `TREE_TOGGLE_BUDGET_MS`, `PERF_INPUT_BUDGET_MS`, and `PERF_FRAME_BUDGET_MS` adjust the synchronous tree-toggle p50, input-processing/layout, and scrolling-frame p95 budgets (defaults: 16, 50, and 35 ms). The dense-diff check in `remote-state.mjs` enforces a scrolling budget; initial comparison and Worker recovery are reported separately.
 

@@ -280,27 +280,38 @@ test('a stale format response cannot overwrite an imported document', async () =
   assert.equal(page.get('input').value, '{"new":true}');
 });
 
-test('minify imports and runs once while other transform pages do not bind import', async () => {
-  const actions = [];
-  const { page, importText } = importPage('minify', async (action, payload) => {
-    actions.push({ action, payload });
-    if (action === 'minify') return { ok: true, result: { text: '{"a":1}' }, duration: 1 };
-    return { ok: true, result: {} };
+for (const { action, source, output } of [
+  { action: 'minify', source: '{ "a": 1 }', output: '{"a":1}' },
+  { action: 'escape', source: '{ "text": "中文" }', output: String.raw`{ \"text\": \"中文\" }` },
+  { action: 'unescape', source: '"line\\n中文"', output: 'line\n中文' },
+]) {
+  test(`${action} imports the original source and automatically runs once`, async () => {
+    const actions = [];
+    const { page, importText } = importPage(action, async (task, payload) => {
+      actions.push({ action: task, payload });
+      if (task === action) return { ok: true, result: { text: output }, duration: 1 };
+      return { ok: true, result: {} };
+    });
+    importText(source);
+    await flush();
+    assert.deepEqual(actions.map(({ action }) => action), ['clear', action]);
+    assert.equal(actions[1].payload.text, source);
+    assert.equal(page.textInput.getText(), source);
+    assert.equal(page.get('input').value, source);
+    assert.equal(page.getOutput(), output);
   });
-  importText('{ "a": 1 }');
-  await flush();
-  assert.deepEqual(actions.map(({ action }) => action), ['clear', 'minify']);
-  assert.equal(actions[1].payload.text, '{ "a": 1 }');
-  assert.equal(page.getOutput(), '{"a":1}');
 
-  let created = false;
-  loadPage('transform', {
-    bodyDataset: { action: 'escape' },
-    createFileImport() { created = true; return { reset() {} }; },
-    expose: '{}',
+  test(`${action} clear, sample and manual editing reset file import state`, async () => {
+    const imported = importPage(action, async (task) => task === action
+      ? { ok: true, result: { text: output }, duration: 0 }
+      : { ok: true, result: {} });
+    imported.page.doClear();
+    imported.page.get('btn-sample').click();
+    imported.page.get('input').events.input();
+    await flush();
+    assert.equal(imported.resets, 3);
   });
-  assert.equal(created, false);
-});
+}
 
 test('large formatter imports use virtual input and release document caches', async () => {
   const source = '{"payload":"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"}';
@@ -429,8 +440,8 @@ test('clearing or editing after file import supersedes the deferred automatic co
   }
 });
 
-test('clearing a deferred large file import prevents formatter and minifier from restarting', async () => {
-  for (const action of ['format', 'minify']) {
+test('clearing a deferred large file import prevents its page from restarting', async () => {
+  for (const action of ['format', 'minify', 'escape', 'unescape']) {
     const requests = [];
     const { page, importText } = importPage(action, async (name) => {
       requests.push(name);

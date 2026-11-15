@@ -131,15 +131,33 @@ try {
     assert.equal(await page.locator('#input').inputValue(), beforeInvalid);
     assert.match(await page.locator('#file-name').textContent(), /^drop\.json/);
 
-    await page.goto(base + '/minify.html');
-    await page.locator('#file-input').setInputFiles({
-      name: 'minify.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{ "a": 1, "b": [true, null] }'),
-    });
-    await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('{"a":1,"b":[true,null]}'));
-    assert.equal(await page.locator('#input').inputValue(), '{ "a": 1, "b": [true, null] }');
-    assert.match(await page.locator('#file-name').textContent(), /^minify\.json/);
+    for (const action of ['minify', 'escape', 'unescape']) {
+      await page.goto(`${base}/${action}.html`);
+      const original = '{ "a": 1, "b": [true, null] }';
+      const source = action === 'unescape' ? JSON.stringify(original).slice(1, -1) : original;
+      const expected = action === 'minify' ? '{"a":1,"b":[true,null]}'
+        : action === 'escape' ? JSON.stringify(original).slice(1, -1) : original;
+      await page.locator('#file-input').setInputFiles({
+        name: `${action}.json`, mimeType: 'application/json', buffer: Buffer.from('\uFEFF' + source),
+      });
+      await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, expected);
+      assert.equal(await page.locator('#input').inputValue(), source);
+      assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}.json`));
+
+      await page.locator('#btn-clear').click();
+      await page.evaluate(({ action, source }) => {
+        const transfer = new DataTransfer();
+        transfer.items.add(new File([source], `${action}-drop.json`, { type: 'application/json' }));
+        const pane = document.querySelector('#input-pane');
+        for (const type of ['dragenter', 'dragover', 'drop']) {
+          pane.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
+        }
+      }, { action, source });
+      await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, expected);
+      assert.equal(await page.locator('#input').inputValue(), source);
+      assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}-drop.json`));
+      assert.equal(await page.locator('#file-drop-hint').isHidden(), true);
+    }
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.version(), root: pathToFileURL(root).href, verify, results: rows }, null, 2));

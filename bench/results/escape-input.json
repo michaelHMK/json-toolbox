@@ -1,0 +1,138 @@
+{
+  "date": "2026-11-15",
+  "browser": "156.0.8078.47",
+  "baselineCommit": "24cc47074953eb515c010a8b0822e89d1dfa1c6e",
+  "method": {
+    "script": "bench/native-paste.mjs",
+    "sizeMiB": 20,
+    "samplesPerPage": 1,
+    "execution": "Headless Chromium, local HTTP pages, viewport 1440x1000; baseline then updated serially on the same host.",
+    "timing": "From capture-phase native paste event to two animation frames later. Excludes fixture construction, clipboard.writeText, and clipboard acquisition before the paste event; includes application clipboardData reads, native default insertion when not intercepted, and rendering.",
+    "baselineCommand": "BENCH_VERIFY=0 node bench/native-paste.mjs <baseline-checkout>",
+    "updatedCommand": "node bench/native-paste.mjs .",
+    "limits": "Single measurements, not medians or universal performance budgets. The baseline screenshot showed a blank input despite the complete textarea value. smallPasteReplacedDocument is not exercised without a preview."
+  },
+  "baseline": [
+    {
+      "action": "escape",
+      "sourceChars": 20971584,
+      "elapsedMs": 4506.8,
+      "prevented": false,
+      "textareaChars": 20971584,
+      "textareaHidden": false,
+      "previewVisible": false,
+      "renderedChars": 0,
+      "visibleSource": false,
+      "maxLongTaskMs": 2650,
+      "completeInputCopy": true,
+      "smallPasteReplacedDocument": false
+    },
+    {
+      "action": "unescape",
+      "sourceChars": 20971596,
+      "elapsedMs": 3830,
+      "prevented": false,
+      "textareaChars": 20971596,
+      "textareaHidden": false,
+      "previewVisible": false,
+      "renderedChars": 0,
+      "visibleSource": false,
+      "maxLongTaskMs": 2051,
+      "completeInputCopy": true,
+      "smallPasteReplacedDocument": false
+    }
+  ],
+  "updated": [
+    {
+      "action": "escape",
+      "sourceChars": 20971584,
+      "elapsedMs": 104.3,
+      "prevented": true,
+      "textareaChars": 0,
+      "textareaHidden": true,
+      "previewVisible": true,
+      "renderedChars": 85,
+      "visibleSource": true,
+      "maxLongTaskMs": 103,
+      "completeInputCopy": true,
+      "smallPasteReplacedDocument": true
+    },
+    {
+      "action": "unescape",
+      "sourceChars": 20971596,
+      "elapsedMs": 109.4,
+      "prevented": true,
+      "textareaChars": 0,
+      "textareaHidden": true,
+      "previewVisible": true,
+      "renderedChars": 85,
+      "visibleSource": true,
+      "maxLongTaskMs": 108,
+      "completeInputCopy": true,
+      "smallPasteReplacedDocument": true
+    }
+  ],
+  "syntheticInput": {
+    "script": "bench/performance.mjs",
+    "inputBudgetMs": 50,
+    "violations": [],
+    "results": [
+      {
+        "scenario": "escape-paste-10MiB-single",
+        "inputMiB": 10,
+        "dispatchLayoutMs": 7.3,
+        "longestTaskMs": 0,
+        "renderedRows": 1
+      },
+      {
+        "scenario": "escape-drop-10MiB-single",
+        "inputMiB": 10,
+        "dispatchLayoutMs": 18.4,
+        "longestTaskMs": 0,
+        "renderedRows": 1
+      },
+      {
+        "scenario": "escape-paste-10MiB-multiline",
+        "inputMiB": 10.000005722045898,
+        "dispatchLayoutMs": 6.3,
+        "longestTaskMs": 0,
+        "renderedRows": 54
+      },
+      {
+        "scenario": "escape-drop-10MiB-multiline",
+        "inputMiB": 10.000005722045898,
+        "dispatchLayoutMs": 6.9,
+        "longestTaskMs": 0,
+        "renderedRows": 54
+      },
+      {
+        "scenario": "unescape-paste-10MiB-single",
+        "inputMiB": 10,
+        "dispatchLayoutMs": 7.6,
+        "longestTaskMs": 0,
+        "renderedRows": 1
+      },
+      {
+        "scenario": "unescape-drop-10MiB-single",
+        "inputMiB": 10,
+        "dispatchLayoutMs": 7.5,
+        "longestTaskMs": 0,
+        "renderedRows": 1
+      },
+      {
+        "scenario": "unescape-paste-10MiB-multiline",
+        "inputMiB": 10.000005722045898,
+        "dispatchLayoutMs": 6.2,
+        "longestTaskMs": 0,
+        "renderedRows": 54
+      },
+      {
+        "scenario": "unescape-drop-10MiB-multiline",
+        "inputMiB": 10.000005722045898,
+        "dispatchLayoutMs": 7.4,
+        "longestTaskMs": 0,
+        "renderedRows": 54
+      }
+    ]
+  }
+}

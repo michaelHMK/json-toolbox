@@ -70,6 +70,8 @@ try {
   for (const { name, side, action } of [
     { name: 'formatter', side: '', action: 'format' },
     { name: 'minify', side: '', action: 'minify' },
+    { name: 'escape', side: '', action: 'escape' },
+    { name: 'unescape', side: '', action: 'unescape' },
     { name: 'compare', side: 'left', action: 'diff' },
     { name: 'compare', side: 'right', action: 'diff' },
   ]) {
@@ -81,14 +83,15 @@ try {
       const preview = '#input-view' + suffix;
       if (side) await page.locator('#input-' + (side === 'left' ? 'right' : 'left')).fill('[0]');
       await page.locator(input).fill('[0]');
-      await page.evaluate(async ({ input, side, moduleBase }) => {
+      await page.evaluate(async ({ input, side, action, moduleBase }) => {
         const { LARGE_INPUT_THRESHOLD } = await import(moduleBase + 'shared/text-input.js');
-        window.focusBenchLarge = '"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"';
+        const quote = action === 'unescape' ? '\\"' : '"';
+        window.focusBenchLarge = quote + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + quote;
         const expected = '[' + focusBenchLarge + ']';
         window.focusBenchExpected = side === 'left' ? { text: expected, text2: '[0]' }
           : side === 'right' ? { text: '[0]', text2: expected } : { text: expected };
         document.querySelector(input).setSelectionRange(1, 2);
-      }, { input, side, moduleBase });
+      }, { input, side, action, moduleBase });
       await page.locator(input).focus();
       const started = performance.now();
       const large = await sendTransfer(type, input, 'large');
@@ -99,7 +102,7 @@ try {
       await checkShortcut(action, 1);
       assert.equal(await activeId(), preview.slice(1));
 
-      const smallText = '{"small":true}';
+      const smallText = action === 'unescape' ? '{\\"small\\":true}' : '{"small":true}';
       await page.evaluate(({ side, text }) => {
         focusBenchExpected = side === 'left' ? { text, text2: '[0]' }
           : side === 'right' ? { text: '[0]', text2: text } : { text };

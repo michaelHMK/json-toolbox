@@ -29,11 +29,22 @@
       </div>
 
       <main class="workspace">
-        <section class="pane">
-          <div class="pane-title"><span data-i18n="paneInput">Input</span></div>
+        <section id="input-pane" class="pane input-pane">
+          <div class="pane-title">
+            <div class="pane-label">
+              <span data-i18n="paneInput">Input</span>
+              <span id="file-name" class="file-name" aria-live="polite" hidden></span>
+            </div>
+            <button id="btn-import" type="button" class="button-compact"
+              data-i18n="btnImportFile" data-i18n-title="btnImportFileTitle"
+              title="Choose a local .json file, or drop one into the input pane">Import file</button>
+            <input id="file-input" type="file" accept=".json" hidden>
+          </div>
           <textarea id="input" dir="ltr" data-i18n-aria-label="paneInput" aria-label="Input" spellcheck="false" wrap="off"
             data-i18n-placeholder="inputUnescapePlaceholder"
             placeholder="Paste escaped string content… (Cmd/Ctrl + Enter)"></textarea>
+          <pre role="region" tabindex="0" id="input-view" dir="ltr" data-i18n-aria-label="largeInputTitle" aria-label="Read-only large-file preview" data-i18n-title="largeInputTitle" title="Read-only large-file preview" hidden></pre>
+          <div id="file-drop-hint" class="file-drop-hint" data-i18n="fileDropHint" hidden>Release to import a JSON file</div>
         </section>
         <section class="pane">
           <div class="pane-title">

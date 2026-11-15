@@ -292,18 +292,24 @@
     }
   },
   "statusEscaped": {
-    "message": "Экранировано · символов: $count$",
+    "message": "Экранировано · символов: $count$ · $time$ мс",
     "placeholders": {
       "count": {
         "content": "$1"
+      },
+      "time": {
+        "content": "$2"
       }
     }
   },
   "statusUnescaped": {
-    "message": "Экранирование снято · символов: $count$",
+    "message": "Экранирование снято · символов: $count$ · $time$ мс",
     "placeholders": {
       "count": {
         "content": "$1"
+      },
+      "time": {
+        "content": "$2"
       }
     }
   },
