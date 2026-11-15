@@ -1,0 +1,40 @@
+Nume
+JSON Toolbox
+
+Descriere scurtă
+Instrumente JSON rapide: formatare, minificare, escape și comparare locală. Fără reclame, urmărire sau colectare de date.
+
+Descriere detaliată
+JSON Toolbox permite formatarea, explorarea și compararea documentelor JSON într-o filă dedicată a browserului. Funcționează complet offline, fără cont sau permisiuni suplimentare.
+
+Formatare și explorare
+- Formatează JSON cu indentare de 2 spații, 4 spații sau tabulatori.
+- Vezi erorile de sintaxă cu linie, coloană și navigare la poziția erorii; o verificare locală identifică poziția când browserul nu o furnizează.
+- Explorează un arbore pliabil cu derulare virtuală, extindere pe niveluri, căutare de chei sau valori și navigare între potriviri.
+- Copiază rezultatul complet cu un clic.
+
+Importul fișierelor locale
+- În paginile Formatare JSON și Minificare JSON, alege un fișier sau trage-l în panoul de intrare.
+- Importă câte un fișier .json UTF-8, de cel mult 50 MiB. Formatarea sau minificarea începe automat după import.
+- Intrările cu mai mult de aproximativ două milioane de caractere folosesc o previzualizare virtuală doar în citire. Procesarea și copierea rezultatelor folosesc în continuare conținutul complet.
+
+Minificare, adăugare și eliminare de secvențe escape
+- Comută între instrumente folosind bara laterală.
+- Elimină spațiile inutile pentru a obține JSON pe o singură linie. Erorile JSON sunt semnalate, cu poziția lor atunci când este disponibilă.
+- Adaugă secvențe escape pentru a include textul într-un șir JSON sau restabilește textul original al unui șir cu secvențe escape, apoi copiază rezultatul.
+
+Comparare JSON
+- Vezi diferențele structurale pe căi: adăugări, eliminări, schimbări de valoare și de tip.
+- Compară tablourile după index sau asociază elementele după un câmp cheie, precum id.
+- Ignoră căile selectate, cum ar fi câmpurile de dată și oră.
+- Explorează întregul arbore cu diferențele evidențiate sau afișează doar diferențele și navighează între ele.
+- Comută la compararea linie cu linie a textului JSON formatat.
+
+Aspect
+- Alege Normal, Confort vizual sau Întunecat din bara laterală, cu previzualizări în miniatură. Normal este opțiunea implicită.
+- Tema aleasă este reținută local între instrumente și după redeschidere. Intrările și rezultatele nu sunt salvate.
+
+Confidențialitate
+Toată procesarea are loc în browser. Fără colectare sau încărcare de date, solicitări de rețea, cod la distanță, reclame sau urmărire. Istoricul intrărilor nu este salvat. Rezultatele sunt scrise în clipboardul sistemului doar când le copiezi.
+
+Intrările și rezultatele complete rămân în memorie; performanța depinde de dispozitiv și de structura datelor. Vizualizările virtuale afișează doar o parte a conținutului odată, astfel încât funcția de căutare a browserului acoperă doar partea afișată. Folosește căutarea în arbore sau copiază rezultatul complet când este necesar. În cazul diferențelor textuale ample, secțiunile care nu corespund pot fi afișate ca blocuri întregi.

@@ -1,0 +1,40 @@
+Nazwa
+JSON Toolbox
+
+Krótki opis
+Szybkie narzędzia JSON: formatowanie, minifikacja, escapowanie i porównywanie lokalnie. Bez reklam, śledzenia i zbierania danych.
+
+Szczegółowy opis
+JSON Toolbox umożliwia formatowanie, przeglądanie i porównywanie danych JSON w osobnej karcie przeglądarki. Działa całkowicie offline, bez konta i dodatkowych uprawnień.
+
+Formatowanie i przeglądanie
+- Formatuj JSON z wcięciami o szerokości 2 lub 4 spacji albo za pomocą tabulatorów.
+- Zobacz błędy składni z numerem wiersza i kolumny oraz przejdź do miejsca błędu. Gdy przeglądarka nie podaje lokalizacji, uzupełnia ją lokalna kontrola.
+- Przeglądaj zwijane drzewo z wirtualnym przewijaniem, rozwijaniem według poziomu, wyszukiwaniem kluczy i wartości oraz przechodzeniem między dopasowaniami.
+- Kopiuj cały wynik jednym kliknięciem.
+
+Importowanie lokalnych plików
+- Na stronach Formatowanie JSON i Minifikacja JSON wybierz plik lub przeciągnij go do panelu danych wejściowych.
+- Importuj po jednym pliku .json w kodowaniu UTF-8 o rozmiarze do 50 MiB. Formatowanie lub minifikacja rozpocznie się automatycznie po imporcie.
+- Dane wejściowe dłuższe niż około dwa miliony znaków są wyświetlane w wirtualnym podglądzie tylko do odczytu. Przetwarzanie i kopiowanie wyników nadal obejmują całą zawartość.
+
+Minifikacja, escapowanie i cofanie escapowania
+- Przełączaj narzędzia za pomocą paska bocznego.
+- Usuń zbędne białe znaki, aby uzyskać JSON w jednym wierszu. Nieprawidłowy JSON jest zgłaszany wraz z lokalizacją błędu, jeśli jest dostępna.
+- Dodaj sekwencje ucieczki do tekstu przeznaczonego do ciągu znaków JSON lub przywróć z takiego ciągu pierwotny tekst, a następnie skopiuj wynik.
+
+Porównanie JSON
+- Zobacz różnice strukturalne według ścieżki: dodania, usunięcia, zmiany wartości i zmiany typów.
+- Porównuj tablice według indeksu lub dopasowuj elementy według pola klucza, na przykład id.
+- Ignoruj wybrane ścieżki, na przykład pola znaczników czasu.
+- Przeglądaj całe drzewo z wyróżnionymi różnicami lub wyświetlaj tylko różnice i przechodź między nimi.
+- Przełącz na porównywanie sformatowanego tekstu JSON wiersz po wierszu.
+
+Wygląd
+- Wybierz motyw Normalny, Komfort oczu lub Ciemny z paska bocznego, korzystając z miniatur podglądu. Domyślny motyw to Normalny.
+- Wybór motywu jest zapamiętywany lokalnie przy przełączaniu narzędzi i po ponownym otwarciu rozszerzenia. Dane wejściowe i wyniki nie są zapisywane.
+
+Prywatność
+Całe przetwarzanie odbywa się w przeglądarce. Bez zbierania ani przesyłania danych, żądań sieciowych, zdalnego kodu, reklam i śledzenia. Historia danych wejściowych nie jest zapisywana. Wyniki trafiają do schowka systemowego tylko wtedy, gdy je skopiujesz.
+
+Duże dane wejściowe i wyniki pozostają w pamięci; wydajność zależy od urządzenia i struktury danych. Widoki wirtualne renderują jednocześnie tylko część zawartości, dlatego wbudowane wyszukiwanie przeglądarki obejmuje wyłącznie wyrenderowaną część. W razie potrzeby użyj wyszukiwania w drzewie lub skopiuj cały wynik. Przy rozległych różnicach tekstowych niedopasowane fragmenty mogą być wyświetlane jako całe bloki.

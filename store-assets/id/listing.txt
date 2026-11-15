@@ -1,0 +1,40 @@
+Nama
+JSON Toolbox
+
+Deskripsi singkat
+JSON Toolbox cepat: format, minifikasi, escape, dan bandingkan secara lokal. Tanpa iklan, pelacakan, atau pengumpulan data.
+
+Deskripsi lengkap
+JSON Toolbox membantu Anda memformat, menelusuri, dan membandingkan JSON di tab browser tersendiri. Semua fitur bekerja sepenuhnya offline, tanpa akun atau izin tambahan.
+
+Format dan telusuri
+- Rapikan JSON dengan indentasi 2 spasi, 4 spasi, atau Tab.
+- Lihat kesalahan sintaks beserta baris/kolom dan navigasi ke lokasi kesalahan, dengan metode cadangan lokal jika browser tidak memberikan lokasinya.
+- Jelajahi pohon yang dapat diciutkan dengan pengguliran virtual, perluasan menurut tingkat, pencarian kunci/nilai, dan navigasi antarhasil pencarian.
+- Salin hasil lengkap dengan sekali klik.
+
+Impor file lokal
+- Pada halaman Pemformat JSON dan Minifikasi JSON, pilih file atau seret ke panel masukan.
+- Impor satu file .json UTF-8 dalam satu waktu, hingga 50 MiB. Pemformatan atau minifikasi dimulai otomatis setelah impor.
+- Masukan yang lebih panjang dari sekitar dua juta karakter menggunakan pratinjau virtual hanya-baca. Konten lengkap tetap digunakan untuk pemrosesan dan penyalinan hasil.
+
+Minifikasi, escape, dan hapus escape
+- Beralih antaralat melalui bilah samping.
+- Hapus spasi yang tidak diperlukan untuk menghasilkan JSON satu baris. JSON yang tidak valid akan dilaporkan, beserta lokasi kesalahan jika tersedia.
+- Terapkan escape pada teks untuk string JSON atau pulihkan konten string dengan escape ke teks aslinya, lalu salin hasilnya.
+
+Bandingkan JSON
+- Lihat perbedaan struktur berdasarkan jalur: penambahan, penghapusan, perubahan nilai, dan perubahan tipe.
+- Bandingkan array menurut indeks atau cocokkan item berdasarkan bidang kunci seperti id.
+- Abaikan jalur tertentu, seperti bidang stempel waktu.
+- Telusuri seluruh pohon dengan perbedaan yang disorot atau tampilkan hanya perbedaan, dengan navigasi antarperbedaan.
+- Beralih ke perbandingan teks baris demi baris pada JSON yang telah diformat.
+
+Tampilan
+- Pilih Normal, Nyaman di mata, atau Gelap dari bilah samping, dengan pratinjau mini. Normal adalah pilihan default.
+- Pilihan tema disimpan secara lokal untuk semua alat dan tetap berlaku setelah dibuka kembali. Masukan dan hasil tidak disimpan.
+
+Privasi
+Semua pemrosesan berlangsung di browser Anda. Tidak ada pengumpulan atau pengunggahan data, permintaan jaringan, kode jarak jauh, iklan, maupun pelacakan. Riwayat masukan tidak disimpan. Hasil hanya ditulis ke papan klip sistem saat Anda menyalinnya.
+
+Masukan dan hasil berukuran besar tetap berada di memori; kinerja bergantung pada perangkat dan struktur data Anda. Tampilan virtual hanya merender sebagian konten pada satu waktu, sehingga fitur Cari bawaan browser hanya mencakup bagian yang dirender. Gunakan pencarian pohon atau salin hasil lengkap bila diperlukan. Untuk perbedaan teks yang luas, bagian yang tidak cocok dapat ditampilkan sebagai blok utuh.

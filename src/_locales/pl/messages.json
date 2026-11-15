@@ -1,0 +1,512 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "Szybkie narzędzia JSON: formatowanie, minifikacja, escapowanie i porównywanie lokalnie. Bez reklam, śledzenia i zbierania danych."
+  },
+  "actionTitle": {
+    "message": "Otwórz JSON Toolbox"
+  },
+  "titleFormatter": {
+    "message": "Formatowanie JSON - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "Minifikacja JSON - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "Escapowanie JSON - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "Cofanie escapowania - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "Porównanie JSON - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "NARZĘDZIA"
+  },
+  "navFormat": {
+    "message": "Formatowanie JSON"
+  },
+  "navMinify": {
+    "message": "Minifikacja JSON"
+  },
+  "navEscape": {
+    "message": "Escapowanie JSON"
+  },
+  "navUnescape": {
+    "message": "Cofanie escapowania"
+  },
+  "navCompare": {
+    "message": "Porównanie JSON"
+  },
+  "localOnly": {
+    "message": "Dane zostają na urządzeniu"
+  },
+  "themeLabel": {
+    "message": "Wygląd"
+  },
+  "themeNormal": {
+    "message": "Normalny"
+  },
+  "themeComfort": {
+    "message": "Komfort oczu"
+  },
+  "themeDark": {
+    "message": "Ciemny"
+  },
+  "descFormat": {
+    "message": "Formatuj JSON, przeglądaj drzewo, rozwijaj poziomy i wyszukuj dane."
+  },
+  "descMinify": {
+    "message": "Usuń zbędne białe znaki i zapisz JSON w jednym wierszu."
+  },
+  "descEscape": {
+    "message": "Przygotuj JSON lub dowolny tekst do umieszczenia w ciągu znaków JSON."
+  },
+  "descUnescape": {
+    "message": "Przywróć pierwotny tekst z treści ciągu z sekwencjami ucieczki."
+  },
+  "descCompare": {
+    "message": "Zobacz elementy dodane, usunięte i zmienione między dwoma dokumentami JSON."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "Wklej JSON do minifikacji lub upuść tu plik .json… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "Wklej tekst do escapowania… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "Wklej treść ciągu z sekwencjami ucieczki… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "Przetwarzanie…"
+  },
+  "btnFormat": {
+    "message": "Formatuj"
+  },
+  "btnFormatTitle": {
+    "message": "Skrót: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "Minifikuj"
+  },
+  "btnMinifyTitle": {
+    "message": "Usuń białe znaki i zapisz w jednym wierszu"
+  },
+  "btnEscape": {
+    "message": "Escapuj"
+  },
+  "btnEscapeTitle": {
+    "message": "Zamień tekst JSON na ciąg z sekwencjami ucieczki"
+  },
+  "btnUnescape": {
+    "message": "Cofnij escapowanie"
+  },
+  "btnUnescapeTitle": {
+    "message": "Przywróć tekst JSON z ciągu z sekwencjami ucieczki"
+  },
+  "labelIndent": {
+    "message": "Wcięcie"
+  },
+  "optSpaces2": {
+    "message": "2 spacje"
+  },
+  "optSpaces4": {
+    "message": "4 spacje"
+  },
+  "labelAutoFormat": {
+    "message": "Formatuj po wklejeniu"
+  },
+  "labelAutoFormatTitle": {
+    "message": "Formatuj od razu po wklejeniu"
+  },
+  "viewRaw": {
+    "message": "Tekst"
+  },
+  "viewTree": {
+    "message": "Drzewo"
+  },
+  "levelTitle": {
+    "message": "Rozwiń drzewo do wybranego poziomu"
+  },
+  "levelPlaceholder": {
+    "message": "Rozwiń…"
+  },
+  "level1": {
+    "message": "Poziom 1"
+  },
+  "level2": {
+    "message": "Poziom 2"
+  },
+  "level3": {
+    "message": "Poziom 3"
+  },
+  "level4": {
+    "message": "Poziom 4"
+  },
+  "level5": {
+    "message": "Poziom 5"
+  },
+  "level8": {
+    "message": "Poziom 8"
+  },
+  "levelAll": {
+    "message": "Wszystkie"
+  },
+  "searchPlaceholder": {
+    "message": "Szukaj klucza lub wartości…"
+  },
+  "matchPrevTitle": {
+    "message": "Poprzednie (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "Następne (Enter)"
+  },
+  "btnSample": {
+    "message": "Przykład"
+  },
+  "btnCopy": {
+    "message": "Kopiuj wynik"
+  },
+  "btnClear": {
+    "message": "Wyczyść"
+  },
+  "linkCompare": {
+    "message": "Porównanie JSON →"
+  },
+  "linkCompareTitle": {
+    "message": "Otwórz stronę porównywania JSON"
+  },
+  "paneInput": {
+    "message": "Dane wejściowe"
+  },
+  "paneResult": {
+    "message": "Wynik"
+  },
+  "inputPlaceholder": {
+    "message": "Wklej JSON lub upuść tu plik .json… (Cmd/Ctrl + Enter, aby sformatować)"
+  },
+  "largeInputTitle": {
+    "message": "Podgląd dużego pliku tylko do odczytu"
+  },
+  "btnImportFile": {
+    "message": "Importuj plik"
+  },
+  "btnImportFileTitle": {
+    "message": "Wybierz lokalny plik .json lub upuść go w panelu danych wejściowych"
+  },
+  "fileReading": {
+    "message": "Odczytywanie…"
+  },
+  "fileDropHint": {
+    "message": "Upuść, aby zaimportować plik JSON"
+  },
+  "errFileMultiple": {
+    "message": "Importuj tylko jeden plik JSON naraz"
+  },
+  "errFileType": {
+    "message": "Obsługiwane są tylko pliki .json"
+  },
+  "errFileTooLarge": {
+    "message": "Rozmiar pliku nie może przekraczać $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "Plik jest pusty lub zawiera tylko białe znaki"
+  },
+  "errFileEncoding": {
+    "message": "Plik musi zawierać poprawny tekst w kodowaniu UTF-8"
+  },
+  "errFileRead": {
+    "message": "Nie udało się odczytać pliku „$name$”: $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "Najpierw wprowadź dane JSON"
+  },
+  "errNeedContent": {
+    "message": "Najpierw wprowadź treść"
+  },
+  "errNothingToParse": {
+    "message": "Brak danych do parsowania — najpierw wprowadź JSON"
+  },
+  "errNothingToCopy": {
+    "message": "Brak treści do skopiowania"
+  },
+  "errParseFailed": {
+    "message": "Błąd parsowania: "
+  },
+  "errLineCol": {
+    "message": "Wiersz $line$, kolumna $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "Błąd cofania escapowania: "
+  },
+  "errSearchFailed": {
+    "message": "Błąd wyszukiwania: "
+  },
+  "statusFormatted": {
+    "message": "Sformatowano · $count$ zn. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "Zminifikowano · $count$ zn. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "Dodano sekwencje ucieczki · $count$ zn.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "Cofnięto escapowanie · $count$ zn.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "Skopiowano do schowka: $count$ zn.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " elementy: $count$ ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " klucze: $count$ ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (łącznie $count$ zn., skrócono)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "Rozwinięto wszystkie poziomy"
+  },
+  "expandedLevel": {
+    "message": "Rozwinięto do poziomu $level$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "Brak dopasowań"
+  },
+  "btnCompare": {
+    "message": "Porównaj"
+  },
+  "btnCompareTitle": {
+    "message": "Skrót: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ Zamień"
+  },
+  "btnSwapTitle": {
+    "message": "Zamień lewą i prawą stronę"
+  },
+  "labelArrayMode": {
+    "message": "Tablice"
+  },
+  "optArrayIndex": {
+    "message": "Według indeksu"
+  },
+  "optArrayKey": {
+    "message": "Według klucza"
+  },
+  "labelKeyField": {
+    "message": "Klucz"
+  },
+  "keyFieldPlaceholder": {
+    "message": "np. id"
+  },
+  "labelIgnorePaths": {
+    "message": "Ignoruj ścieżki"
+  },
+  "ignorePathsTitle": {
+    "message": "Dokładne ścieżki oddzielone przecinkami; * zastępuje jeden segment"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "np. list[*].updatedAt, oddziel przecinkami"
+  },
+  "viewStruct": {
+    "message": "Struktura"
+  },
+  "viewTextDiff": {
+    "message": "Różnice tekstu"
+  },
+  "viewTextDiffTitle": {
+    "message": "Wiersz po wierszu po formatowaniu; ignorowanie ścieżek i tryb tablic nie mają zastosowania"
+  },
+  "onlyDiffLabel": {
+    "message": "Tylko różnice"
+  },
+  "onlyDiffTitle": {
+    "message": "Ukryj gałęzie bez różnic"
+  },
+  "diffPrevTitle": {
+    "message": "Poprzednia różnica"
+  },
+  "diffNextTitle": {
+    "message": "Następna różnica"
+  },
+  "linkFormatter": {
+    "message": "← Wróć do formatowania"
+  },
+  "paneOld": {
+    "message": "Stare (lewa)"
+  },
+  "paneNew": {
+    "message": "Nowe (prawa)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "Wklej stare dane JSON…"
+  },
+  "inputRightPlaceholder": {
+    "message": "Wklej nowe dane JSON… (Cmd/Ctrl + Enter, aby porównać)"
+  },
+  "paneCompareResult": {
+    "message": "Wynik"
+  },
+  "colOld": {
+    "message": "Stare"
+  },
+  "colNew": {
+    "message": "Nowe"
+  },
+  "errNeedBothSides": {
+    "message": "Wprowadź JSON po obu stronach"
+  },
+  "errCompareFailed": {
+    "message": "Błąd porównywania: "
+  },
+  "errTextDiffFailed": {
+    "message": "Błąd porównywania tekstu: "
+  },
+  "diffStats": {
+    "message": "Różnice: $total$: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (szczegóły ograniczone do pierwszych $count$ różnic)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; niektóre klucze tablic są brakujące, nieobsługiwane lub powielone — porównano według indeksu"
+  },
+  "diffIdenticalNote": {
+    "message": " — zawartość jest identyczna"
+  },
+  "textDiffBlockyNote": {
+    "message": "Obszar różnic jest zbyt duży — pokazano całe bloki (bez wpływu na widok struktury)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ identyczne wiersze: $count$ ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "btnCancel": {
+    "message": "Anuluj"
+  },
+  "statusCancelled": {
+    "message": "Anulowano"
+  },
+  "errInvalidJson": {
+    "message": "Nieprawidłowa składnia JSON."
+  },
+  "errInvalidEscape": {
+    "message": "Nieprawidłowy ciąg z sekwencjami ucieczki."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Zachowany wynik nie jest już dostępny. Uruchom operację ponownie."
+  },
+  "errTaskFailed": {
+    "message": "Operacja nie powiodła się. Spróbuj ponownie."
+  },
+  "errWorkerFailed": {
+    "message": "Proces roboczy nieoczekiwanie się zatrzymał. Spróbuj ponownie."
+  }
+}

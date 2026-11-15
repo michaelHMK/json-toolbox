@@ -1,0 +1,40 @@
+Ad
+JSON Toolbox
+
+Kısa açıklama
+Hızlı JSON araçları: yerel biçimlendirme, küçültme, kaçış ve karşılaştırma. Reklam, izleme veya veri toplama yok.
+
+Ayrıntılı açıklama
+JSON Toolbox, ayrı bir tarayıcı sekmesinde JSON verilerini biçimlendirmenizi, incelemenizi ve karşılaştırmanızı sağlar. Tamamen çevrimdışı çalışır; hesap veya ek izin gerektirmez.
+
+Biçimlendirme ve inceleme
+- JSON verilerini 2 boşluk, 4 boşluk veya sekme girintisiyle biçimlendirin.
+- Sözdizimi hatalarını satır ve sütun bilgileriyle görün ve hata konumuna gidin. Tarayıcı konum bilgisi sağlamadığında yerel bir kontrol bu bilgiyi tamamlar.
+- Sanal kaydırma, düzeye göre açma, anahtar/değer arama ve eşleşmeler arasında gezinme özellikleriyle daraltılabilir bir ağacı inceleyin.
+- Sonucun tamamını tek tıklamayla kopyalayın.
+
+Yerel dosyaları içe aktarma
+- JSON Biçimlendir ve JSON Küçült sayfalarında bir dosya seçin veya girdi paneline sürükleyin.
+- Her seferinde en fazla 50 MiB boyutunda bir UTF-8 .json dosyası içe aktarın. İçe aktarma sonrasında biçimlendirme veya küçültme otomatik başlar.
+- Yaklaşık iki milyon karakterden uzun girdiler salt okunur sanal önizlemede gösterilir. İşleme ve sonuç kopyalama için içeriğin tamamı kullanılmaya devam eder.
+
+Küçültme, kaçış ekleme ve kaldırma
+- Kenar çubuğundan araçlar arasında geçiş yapın.
+- Gereksiz boşlukları kaldırarak tek satırlık JSON oluşturun. Geçersiz JSON bildirilir; varsa hata konumu da gösterilir.
+- Metne JSON dizesi için kaçış ekleyin veya kaçış uygulanmış dize içeriğini özgün metnine döndürün, ardından sonucu kopyalayın.
+
+JSON karşılaştırma
+- Yola göre yapısal farkları görün: eklemeler, silmeler, değer değişiklikleri ve tür değişiklikleri.
+- Dizileri indekse göre karşılaştırın veya öğeleri id gibi bir anahtar alanıyla eşleştirin.
+- Zaman damgası alanları gibi seçili yolları yoksayın.
+- Farklar vurgulanmış olarak tüm ağacı inceleyin veya yalnızca farkları gösterip aralarında gezinin.
+- Biçimlendirilmiş JSON verilerinin satır satır metin karşılaştırmasına geçin.
+
+Görünüm
+- Kenar çubuğundan küçük önizlemeleri kullanarak Normal, Göz konforu veya Koyu temasını seçin. Varsayılan tema Normal'dir.
+- Tema tercihiniz, araçlar arasında geçiş yaptığınızda ve uzantıyı yeniden açtığınızda kullanılmak üzere yerel olarak saklanır. Girdiler ve sonuçlar kaydedilmez.
+
+Gizlilik
+Tüm işlemler tarayıcınızda gerçekleşir. Veri toplama veya yükleme, ağ isteği, uzak kod, reklam ya da izleme yoktur. Girdi geçmişi kaydedilmez. Sonuçlar yalnızca siz kopyaladığınızda sistem panosuna yazılır.
+
+Büyük girdiler ve sonuçlar bellekte kalır; performans cihazınıza ve verinin yapısına bağlıdır. Sanal görünümler içeriğin yalnızca bir bölümünü aynı anda oluşturur; bu nedenle tarayıcının yerleşik bulma özelliği yalnızca görüntülenen bölümü kapsar. Gerektiğinde ağaç aramasını kullanın veya sonucun tamamını kopyalayın. Çok büyük metin farklarında eşleşmeyen bölümler bütün bloklar halinde gösterilebilir.

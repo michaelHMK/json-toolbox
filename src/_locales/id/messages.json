@@ -1,0 +1,512 @@
+{
+  "extName": {
+    "message": "JSON Toolbox"
+  },
+  "extDescription": {
+    "message": "JSON Toolbox cepat: format, minifikasi, escape, dan bandingkan secara lokal. Tanpa iklan, pelacakan, atau pengumpulan data."
+  },
+  "actionTitle": {
+    "message": "Buka JSON Toolbox"
+  },
+  "titleFormatter": {
+    "message": "Pemformat JSON - JSON Toolbox"
+  },
+  "titleMinify": {
+    "message": "Minifikasi JSON - JSON Toolbox"
+  },
+  "titleEscape": {
+    "message": "Escape JSON - JSON Toolbox"
+  },
+  "titleUnescape": {
+    "message": "Hapus Escape JSON - JSON Toolbox"
+  },
+  "titleCompare": {
+    "message": "Bandingkan JSON - JSON Toolbox"
+  },
+  "appName": {
+    "message": "JSON Toolbox"
+  },
+  "navTools": {
+    "message": "ALAT"
+  },
+  "navFormat": {
+    "message": "Pemformat JSON"
+  },
+  "navMinify": {
+    "message": "Minifikasi JSON"
+  },
+  "navEscape": {
+    "message": "Escape JSON"
+  },
+  "navUnescape": {
+    "message": "Hapus Escape JSON"
+  },
+  "navCompare": {
+    "message": "Bandingkan JSON"
+  },
+  "localOnly": {
+    "message": "Semua data tetap di perangkat Anda"
+  },
+  "themeLabel": {
+    "message": "Tampilan"
+  },
+  "themeNormal": {
+    "message": "Normal"
+  },
+  "themeComfort": {
+    "message": "Nyaman di mata"
+  },
+  "themeDark": {
+    "message": "Gelap"
+  },
+  "descFormat": {
+    "message": "Rapikan JSON dengan tampilan pohon, perluasan tingkat, dan pencarian."
+  },
+  "descMinify": {
+    "message": "Hapus spasi yang tidak diperlukan agar JSON menjadi satu baris."
+  },
+  "descEscape": {
+    "message": "Ubah JSON atau teks apa pun menjadi konten siap pakai untuk string JSON."
+  },
+  "descUnescape": {
+    "message": "Pulihkan konten string dengan escape ke teks aslinya."
+  },
+  "descCompare": {
+    "message": "Lihat penambahan, penghapusan, dan perubahan antara dua dokumen JSON."
+  },
+  "inputMinifyPlaceholder": {
+    "message": "Tempel JSON untuk diminifikasi atau letakkan file .json di sini… (Cmd/Ctrl + Enter)"
+  },
+  "inputEscapePlaceholder": {
+    "message": "Tempel teks untuk diberi escape… (Cmd/Ctrl + Enter)"
+  },
+  "inputUnescapePlaceholder": {
+    "message": "Tempel konten string dengan escape… (Cmd/Ctrl + Enter)"
+  },
+  "busyText": {
+    "message": "Memproses…"
+  },
+  "btnFormat": {
+    "message": "Format"
+  },
+  "btnFormatTitle": {
+    "message": "Pintasan: Cmd/Ctrl + Enter"
+  },
+  "btnMinify": {
+    "message": "Minifikasi"
+  },
+  "btnMinifyTitle": {
+    "message": "Hapus spasi agar menjadi satu baris"
+  },
+  "btnEscape": {
+    "message": "Escape"
+  },
+  "btnEscapeTitle": {
+    "message": "Ubah teks JSON menjadi string dengan escape"
+  },
+  "btnUnescape": {
+    "message": "Hapus escape"
+  },
+  "btnUnescapeTitle": {
+    "message": "Pulihkan string dengan escape menjadi teks JSON"
+  },
+  "labelIndent": {
+    "message": "Indentasi"
+  },
+  "optSpaces2": {
+    "message": "2 spasi"
+  },
+  "optSpaces4": {
+    "message": "4 spasi"
+  },
+  "labelAutoFormat": {
+    "message": "Format saat ditempel"
+  },
+  "labelAutoFormatTitle": {
+    "message": "Format segera setelah teks ditempel"
+  },
+  "viewRaw": {
+    "message": "Mentah"
+  },
+  "viewTree": {
+    "message": "Pohon"
+  },
+  "levelTitle": {
+    "message": "Perluas pohon hingga tingkat yang dipilih"
+  },
+  "levelPlaceholder": {
+    "message": "Perluas tingkat…"
+  },
+  "level1": {
+    "message": "Tingkat 1"
+  },
+  "level2": {
+    "message": "Tingkat 2"
+  },
+  "level3": {
+    "message": "Tingkat 3"
+  },
+  "level4": {
+    "message": "Tingkat 4"
+  },
+  "level5": {
+    "message": "Tingkat 5"
+  },
+  "level8": {
+    "message": "Tingkat 8"
+  },
+  "levelAll": {
+    "message": "Semua"
+  },
+  "searchPlaceholder": {
+    "message": "Cari kunci atau nilai…"
+  },
+  "matchPrevTitle": {
+    "message": "Sebelumnya (Shift+Enter)"
+  },
+  "matchNextTitle": {
+    "message": "Berikutnya (Enter)"
+  },
+  "btnSample": {
+    "message": "Contoh"
+  },
+  "btnCopy": {
+    "message": "Salin hasil"
+  },
+  "btnClear": {
+    "message": "Bersihkan"
+  },
+  "linkCompare": {
+    "message": "Bandingkan JSON →"
+  },
+  "linkCompareTitle": {
+    "message": "Buka halaman perbandingan JSON"
+  },
+  "paneInput": {
+    "message": "Masukan"
+  },
+  "paneResult": {
+    "message": "Hasil"
+  },
+  "inputPlaceholder": {
+    "message": "Tempel JSON atau letakkan file .json di sini… (Cmd/Ctrl + Enter untuk memformat)"
+  },
+  "largeInputTitle": {
+    "message": "Pratinjau file besar hanya-baca"
+  },
+  "btnImportFile": {
+    "message": "Impor file"
+  },
+  "btnImportFileTitle": {
+    "message": "Pilih file .json lokal, atau letakkan file di panel masukan"
+  },
+  "fileReading": {
+    "message": "Membaca…"
+  },
+  "fileDropHint": {
+    "message": "Lepaskan untuk mengimpor file JSON"
+  },
+  "errFileMultiple": {
+    "message": "Impor hanya satu file JSON dalam satu waktu"
+  },
+  "errFileType": {
+    "message": "Hanya file .json yang didukung"
+  },
+  "errFileTooLarge": {
+    "message": "Ukuran file tidak boleh melebihi $limit$",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "errFileEmpty": {
+    "message": "File kosong atau hanya berisi spasi"
+  },
+  "errFileEncoding": {
+    "message": "File harus berupa teks UTF-8 yang valid"
+  },
+  "errFileRead": {
+    "message": "Gagal membaca \"$name$\": $error$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "errNeedInput": {
+    "message": "Masukkan konten JSON terlebih dahulu"
+  },
+  "errNeedContent": {
+    "message": "Masukkan konten terlebih dahulu"
+  },
+  "errNothingToParse": {
+    "message": "Tidak ada yang dapat diurai — masukkan JSON terlebih dahulu"
+  },
+  "errNothingToCopy": {
+    "message": "Tidak ada yang dapat disalin"
+  },
+  "errParseFailed": {
+    "message": "Penguraian gagal: "
+  },
+  "errLineCol": {
+    "message": "Baris $line$ kolom $col$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "col": {
+        "content": "$2"
+      }
+    }
+  },
+  "errUnescapeFailed": {
+    "message": "Penghapusan escape gagal: "
+  },
+  "errSearchFailed": {
+    "message": "Pencarian gagal: "
+  },
+  "statusFormatted": {
+    "message": "Diformat · $count$ karakter · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusMinified": {
+    "message": "Diminifikasi · $count$ karakter · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusEscaped": {
+    "message": "Escape diterapkan · $count$ karakter",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusUnescaped": {
+    "message": "Escape dihapus · $count$ karakter",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusCopied": {
+    "message": "$count$ karakter disalin ke papan klip",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryItems": {
+    "message": " $count$ item ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "treeSummaryKeys": {
+    "message": " $count$ kunci ",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "strTruncated": {
+    "message": " … (total $count$ karakter, dipotong)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "expandedAll": {
+    "message": "Semua tingkat diperluas"
+  },
+  "expandedLevel": {
+    "message": "Diperluas hingga tingkat $level$",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "matchNone": {
+    "message": "Tidak ada kecocokan"
+  },
+  "btnCompare": {
+    "message": "Bandingkan"
+  },
+  "btnCompareTitle": {
+    "message": "Pintasan: Cmd/Ctrl + Enter"
+  },
+  "btnSwap": {
+    "message": "⇄ Tukar"
+  },
+  "btnSwapTitle": {
+    "message": "Tukar sisi kiri dan kanan"
+  },
+  "labelArrayMode": {
+    "message": "Array"
+  },
+  "optArrayIndex": {
+    "message": "Menurut indeks"
+  },
+  "optArrayKey": {
+    "message": "Cocokkan kunci"
+  },
+  "labelKeyField": {
+    "message": "Kunci"
+  },
+  "keyFieldPlaceholder": {
+    "message": "mis. id"
+  },
+  "labelIgnorePaths": {
+    "message": "Abaikan jalur"
+  },
+  "ignorePathsTitle": {
+    "message": "Jalur persis, * cocok dengan satu segmen, dipisahkan koma"
+  },
+  "ignorePathsPlaceholder": {
+    "message": "mis. list[*].updatedAt, dipisahkan koma"
+  },
+  "viewStruct": {
+    "message": "Struktur"
+  },
+  "viewTextDiff": {
+    "message": "Perbedaan teks"
+  },
+  "viewTextDiffTitle": {
+    "message": "Baris demi baris setelah pemformatan; pengabaian jalur/strategi array tidak berlaku"
+  },
+  "onlyDiffLabel": {
+    "message": "Hanya perbedaan"
+  },
+  "onlyDiffTitle": {
+    "message": "Sembunyikan cabang tanpa perbedaan"
+  },
+  "diffPrevTitle": {
+    "message": "Perbedaan sebelumnya"
+  },
+  "diffNextTitle": {
+    "message": "Perbedaan berikutnya"
+  },
+  "linkFormatter": {
+    "message": "← Kembali ke Pemformat"
+  },
+  "paneOld": {
+    "message": "Lama (kiri)"
+  },
+  "paneNew": {
+    "message": "Baru (kanan)"
+  },
+  "inputLeftPlaceholder": {
+    "message": "Tempel JSON lama…"
+  },
+  "inputRightPlaceholder": {
+    "message": "Tempel JSON baru… (Cmd/Ctrl + Enter untuk membandingkan)"
+  },
+  "paneCompareResult": {
+    "message": "Hasil"
+  },
+  "colOld": {
+    "message": "Lama"
+  },
+  "colNew": {
+    "message": "Baru"
+  },
+  "errNeedBothSides": {
+    "message": "Isi JSON di kedua sisi"
+  },
+  "errCompareFailed": {
+    "message": "Perbandingan gagal: "
+  },
+  "errTextDiffFailed": {
+    "message": "Perbandingan teks gagal: "
+  },
+  "diffStats": {
+    "message": "$total$ perbedaan: +$added$ −$removed$ ~$changed$ ⇄$typechanged$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "added": {
+        "content": "$2"
+      },
+      "removed": {
+        "content": "$3"
+      },
+      "changed": {
+        "content": "$4"
+      },
+      "typechanged": {
+        "content": "$5"
+      }
+    }
+  },
+  "diffStatsTruncated": {
+    "message": " (detail dibatasi hingga $count$ pertama)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "diffKeyFallback": {
+    "message": "; beberapa kunci array tidak ada, tidak didukung, atau duplikat — dibandingkan menurut indeks"
+  },
+  "diffIdenticalNote": {
+    "message": " — konten identik"
+  },
+  "textDiffBlockyNote": {
+    "message": "Area perbedaan terlalu besar — ditampilkan sebagai blok utuh (tampilan struktur tidak terpengaruh)"
+  },
+  "textDiffGap": {
+    "message": "  ⋯ $count$ baris identik ⋯",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "btnCancel": {
+    "message": "Batal"
+  },
+  "statusCancelled": {
+    "message": "Dibatalkan"
+  },
+  "errInvalidJson": {
+    "message": "Sintaks JSON tidak valid."
+  },
+  "errInvalidEscape": {
+    "message": "String dengan escape tidak valid."
+  },
+  "errSnapshotUnavailable": {
+    "message": "Hasil yang disimpan tidak lagi tersedia. Jalankan operasi kembali."
+  },
+  "errTaskFailed": {
+    "message": "Operasi gagal. Coba lagi."
+  },
+  "errWorkerFailed": {
+    "message": "Proses latar belakang berhenti secara tak terduga. Coba lagi."
+  }
+}
