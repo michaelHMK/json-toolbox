@@ -124,7 +124,7 @@ function svgStart(width, height, locale) {
   <rect width="${width}" height="${height}" fill="url(#bg)"/>`;
 }
 
-// Match the three palettes in src/styles/app.css. These are schematic UI previews,
+// Match the three palettes in src/styles/themes.css. These are schematic UI previews,
 // while the gallery screenshots are captured from the actual extension.
 const THEMES = [
   { id: 'normal', label: 'themeNormal', bg: '#f7f8fc', panel: '#ffffff', subtle: '#fafbfc', border: '#e5e8ef', muted: '#697487', accent: '#635bff', soft: '#efefff', key: '#8b52b5', string: '#167c5b', radius: 5 },

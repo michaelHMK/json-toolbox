@@ -14,7 +14,12 @@ import zipfile
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ROOT = PROJECT_ROOT / 'src'
 RUNTIME_FILES = (
-    'manifest.json', 'background.js', 'styles/app.css', 'styles/virtual-tree.css',
+    'manifest.json', 'background.js', 'styles/app.css',
+    'styles/themes.css', 'styles/base.css', 'styles/layout.css',
+    'styles/components/navigation.css', 'styles/components/theme-picker.css',
+    'styles/components/controls.css', 'styles/components/editor.css',
+    'styles/components/tree.css', 'styles/components/text-view.css',
+    'styles/pages/formatter.css', 'styles/pages/compare.css',
     'formatter.html', 'compare.html', 'minify.html', 'escape.html', 'unescape.html',
     'pages/formatter.js', 'pages/compare.js', 'pages/transform.js',
     'shared/page.js', 'shared/navigation.js', 'shared/i18n.js', 'shared/theme.js',
@@ -33,6 +38,18 @@ def check_reference(name, ref, files):
     resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), ref))
     if resolved not in files:
         raise ValueError(f'{name} 引用了未打包的文件: {ref}')
+
+
+def check_css_references(name, source, files):
+    # 项目只使用静态本地路径；每条引用相对于所在样式表，而不是 HTML 入口。
+    source = re.sub(r'/\*.*?\*/', '', source, flags=re.DOTALL)
+    imports = re.findall(r'@import\s+[\"\']([^\"\']+)[\"\']', source, flags=re.IGNORECASE)
+    urls = re.findall(
+        r'\burl\(\s*(?:"([^"]+)"|\'([^\']+)\'|([^\s)]+))\s*\)',
+        source, flags=re.IGNORECASE,
+    )
+    for ref in imports + [next(value for value in groups if value) for groups in urls]:
+        check_reference(name, ref, files)
 
 
 def check_release():
@@ -102,6 +119,8 @@ def check_release():
             )
             for ref in imports + urls:
                 check_reference(name, ref, files)
+        elif path.suffix == '.css':
+            check_css_references(name, path.read_text(encoding='utf-8'), files)
     print(f'✓ Manifest、图标与 {len(files)} 个发布文件检查通过')
     return version, sorted(files)
 

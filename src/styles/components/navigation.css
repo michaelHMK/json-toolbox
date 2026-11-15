@@ -1,0 +1,81 @@
+/* Sidebar, brand and navigation, including their responsive layout. */
+.sidebar {
+  width: 224px;
+  flex: 0 0 224px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 16px 20px;
+  background: var(--panel);
+  border-inline-end: 1px solid var(--border);
+  overflow: visible;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 8px 34px;
+  color: var(--text);
+  text-decoration: none;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 15px/1 var(--mono);
+}
+:root[data-theme="comfort"] .brand-mark { border-radius: 50%; }
+:root[data-theme="dark"] .brand-mark { border-radius: 7px; }
+.brand-name { font-size: 17px; font-weight: 650; letter-spacing: .01em; }
+.nav-heading {
+  margin: 0 12px 10px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+}
+.main-nav { display: grid; gap: 5px; min-height: 0; overflow-y: auto; }
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-weight: 500;
+}
+.nav-link:hover { background: var(--panel-subtle); color: var(--text); }
+.nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-icon { width: 19px; height: 19px; flex: 0 0 19px; }
+.sidebar-bottom { margin-top: auto; padding-top: 32px; flex-shrink: 0; }
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 20px;
+  padding: 14px 10px 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.local-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: #22a06b; }
+
+@media (max-width: 1100px) {
+  .sidebar { width: 196px; flex-basis: 196px; }
+}
+
+@media (max-width: 780px) {
+  .sidebar { width: 100%; flex: none; padding: 12px 16px; border-inline-end: 0; border-bottom: 1px solid var(--border); }
+  .brand { margin: 0 0 12px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .nav-heading, .sidebar-footer { display: none; }
+  .sidebar-bottom { padding-top: 14px; }
+  .main-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .nav-link { flex: 0 0 auto; min-height: 38px; padding: 7px 10px; }
+}

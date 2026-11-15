@@ -1,0 +1,50 @@
+/* Plain/diff text surfaces and the virtual text renderer. */
+#output-text, #input-view, .input-preview {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 17px 18px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+#text-view {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  padding: 10px 0 24px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.tline { white-space: pre; padding: 0 15px; }
+.tline.del { background: var(--del-bg); color: var(--del-text); }
+.tline.add { background: var(--add-bg); color: var(--add-text); }
+.tline.gap { color: var(--text-dim); font-style: italic; }
+
+/* Large text: the scroll surface represents the complete indexed text. */
+#output-text.virtual-text, #input-view.virtual-text, .input-preview.virtual-text, #text-view.virtual-text {
+  position: relative;
+  padding: 0;
+  overflow-anchor: none;
+  tab-size: 2;
+  font-variant-ligatures: none;
+}
+.virtual-text-spacer { pointer-events: none; }
+.virtual-text-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  contain: layout paint;
+}
+.virtual-text-row { position: absolute; left: 0; right: 0; white-space: pre; }
+.virtual-text-row > span { display: inline-block; white-space: pre; }
+.virtual-text-row.del { background: var(--del-bg); color: var(--del-text); }
+.virtual-text-row.add { background: var(--add-bg); color: var(--add-text); }
+.virtual-text-row.gap { color: var(--text-dim); font-style: italic; }
+.virtual-text-selected .virtual-text-row { background: Highlight; color: HighlightText; }

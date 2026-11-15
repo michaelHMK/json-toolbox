@@ -69,7 +69,13 @@ src/                   # 完整扩展目录，在 Chrome 中加载此目录
   worker/
     index.js           # Web Worker 消息入口
     tasks.js           # 操作分发、搜索数据缓存与错误响应
-  styles/              # 页面共用样式与虚拟树样式
+  styles/
+    app.css            # 唯一 CSS 入口，按顺序导入以下样式
+    themes.css         # 主题变量
+    base.css           # 全局基础规则
+    layout.css         # 应用共用布局
+    components/        # 导航、主题选择器、控件、编辑器、树与文本视图
+    pages/             # 格式化与对比页面样式
   icons/               # 扩展图标（manifest 引用）
   _locales/            # 国际化文案
 scripts/
@@ -86,6 +92,8 @@ dist/                  # 生成的扩展 ZIP 与校验文件，已加入 Git 忽
 ```
 
 扩展运行时文件统一放在 `src/`，开发工具与商店材料留在外面。页面业务使用浏览器原生 ES modules，无需安装依赖或构建即可加载扩展。每个 HTML 保留单一页面业务入口，另有主题引导脚本在首次绘制前恢复已保存的外观。导航生成后统一应用翻译。
+
+各页面统一加载 `styles/app.css`，其中只按顺序声明 CSS 导入。共享组件规则放在 `styles/components/`，页面特有规则放在 `styles/pages/`，主题变量集中在 `styles/themes.css`。树组件统一管理基础树样式、虚拟行与键盘焦点样式。
 
 | 边界 | 职责与约定 |
 | --- | --- |
@@ -107,7 +115,7 @@ npm test
 python3 scripts/build_release.py --check
 ```
 
-测试覆盖数字字面量与特殊 key、搜索缓存与结果上限、结构及文本对比、Worker 并发和故障响应，以及发布包的间接模块依赖。浏览器交互仍需按下文的功能清单验证。
+测试覆盖数字字面量与特殊 key、搜索缓存与结果上限、结构及文本对比、Worker 并发和故障响应，以及发布包的间接模块和样式依赖。浏览器交互仍需按下文的功能清单验证。
 
 ### 性能验证
 
@@ -172,7 +180,7 @@ python3 scripts/build_release.py --check
 python3 scripts/build_release.py
 ```
 
-脚本检查版本号、所有语言版本的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入和 Worker 入口的相对路径，再按白名单打包 `src/` 中的运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录，没有外层 `src/` 目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
+脚本检查版本号、所有语言版本的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入、Worker 入口和 CSS `@import`/`url()` 依赖的相对路径，再按白名单打包 `src/` 中的运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录，没有外层 `src/` 目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
 
 上传前将 ZIP 解压到一个新目录，在 `chrome://extensions/` 中加载该目录并完成下面的检查。以后发布更新时先提高 `src/manifest.json` 的版本号，再重新打包。
 

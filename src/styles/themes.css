@@ -1,0 +1,89 @@
+/* Shared design tokens for the normal, comfort and dark themes. */
+:root {
+  color-scheme: light;
+  --bg: #f7f8fc;
+  --panel: #ffffff;
+  --panel-subtle: #fafbfc;
+  --border: #e5e8ef;
+  --border-strong: #d6dbe5;
+  --text: #1b2435;
+  --text-dim: #697487;
+  --accent: #635bff;
+  --accent-hover: #5148e5;
+  --accent-soft: #efefff;
+  --on-accent: #ffffff;
+  --key: #8b52b5;
+  --string: #167c5b;
+  --number: #3674c8;
+  --bool: #a9691d;
+  --null: #727b89;
+  --highlight: #fff3bf;
+  --current: #ffe08a;
+  --error-bg: #fff1f0;
+  --error-text: #b42318;
+  --error-border: #ffd2cc;
+  --del-bg: #fff0ee;
+  --del-text: #b42318;
+  --add-bg: #eaf9f0;
+  --add-text: #14724b;
+  --chg-bg: #fff7d6;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root[data-theme="comfort"] {
+  --bg: #e9e4da;
+  --panel: #f8f4eb;
+  --panel-subtle: #f1ecdf;
+  --border: #ddd5c6;
+  --border-strong: #cfc5b3;
+  --text: #3d4036;
+  --text-dim: #716e63;
+  --accent: #5f7056;
+  --accent-hover: #4f6048;
+  --accent-soft: #e3e7d8;
+  --key: #8b6049;
+  --string: #537253;
+  --number: #587588;
+  --bool: #8b5b28;
+  --null: #716e63;
+  --highlight: #eee1b6;
+  --current: #e5cf8c;
+  --error-bg: #f6e5df;
+  --error-text: #9a3d32;
+  --error-border: #dec4b8;
+  --del-bg: #f3e3dc;
+  --del-text: #9a3d32;
+  --add-bg: #e5ecdd;
+  --add-text: #42633f;
+  --chg-bg: #f0e5be;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e131a;
+  --panel: #151b24;
+  --panel-subtle: #19212b;
+  --border: #293340;
+  --border-strong: #374454;
+  --text: #dce5ef;
+  --text-dim: #8491a3;
+  --accent: #55d6be;
+  --accent-hover: #78e2cf;
+  --accent-soft: #173a38;
+  --on-accent: #082823;
+  --key: #8caef5;
+  --string: #a8d98e;
+  --number: #f2a585;
+  --bool: #e8c478;
+  --null: #98a2b0;
+  --highlight: #403a18;
+  --current: #544a1c;
+  --error-bg: #3a2224;
+  --error-text: #ffb4ab;
+  --error-border: #64373a;
+  --del-bg: #3a2224;
+  --del-text: #ffb4ab;
+  --add-bg: #173328;
+  --add-text: #8cdeb0;
+  --chg-bg: #3b320f;
+}
