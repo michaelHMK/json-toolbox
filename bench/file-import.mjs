@@ -1,5 +1,6 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/file-import.mjs [repo]
 // See README.md for scenarios, repetitions, verification and optional budgets.
+import { resolveExtension } from './extension-root.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
@@ -19,7 +20,7 @@ function listOption(name, fallback, allowed) {
   return [...new Set(values)];
 }
 
-const root = resolve(process.argv[2] || '.');
+const { root } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const scenarios = listOption('BENCH_SCENARIOS', 'regular,decimals,invalid', ['regular', 'decimals', 'invalid', 'deep']);
 const actions = listOption('BENCH_ACTIONS', 'format,minify', ['format', 'minify']);
 const repeats = numberOption('BENCH_REPEATS', 3, 1, true);

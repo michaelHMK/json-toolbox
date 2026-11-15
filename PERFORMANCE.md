@@ -70,6 +70,8 @@ Chrome 测量使用本地 HTTP 页面和真实 Worker；不包含扩展安装、
 
 ## 验证命令
 
+从仓库根目录运行。浏览器基准自动加载 `src/` 中的扩展；接收目录参数的脚本也支持直接传入扩展目录或旧版本的仓库根目录。
+
 ```sh
 npm test
 npm run check:release

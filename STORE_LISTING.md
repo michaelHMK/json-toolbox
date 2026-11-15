@@ -90,7 +90,7 @@ Large inputs and results use virtual rendering, so native browser Find covers on
 
 名称和简短描述来自发布包的 `_locales/*/messages.json`；上方文案与发布包一致。默认语言为 English，名称为 **JSON Toolbox**；简体中文名称为 **JSON 工具箱**。
 
-每种语言的可复制文案位于下方索引中的 `listing.txt`，依次包含名称、简短描述和详细描述。名称与简短描述应与该语言的 `_locales/<locale>/messages.json` 保持完全一致；详细描述填入控制台对应语言的详情字段。README 继续仅维护中英双语。
+每种语言的可复制文案位于下方索引中的 `listing.txt`，依次包含名称、简短描述和详细描述。名称与简短描述应与仓库中该语言的 `src/_locales/<locale>/messages.json` 保持完全一致；详细描述填入控制台对应语言的详情字段。README 继续仅维护中英双语。
 
 | 字段 | 填写内容 |
 | --- | --- |
@@ -108,7 +108,7 @@ Large inputs and results use virtual rendering, so native browser Find covers on
 
 ## 图片材料
 
-- 商店图标：[icons/icon128.png](icons/icon128.png)，128×128 PNG，图案 96×96，四周 16px 透明留白。
+- 商店图标：[src/icons/icon128.png](src/icons/icon128.png)，128×128 PNG，图案 96×96，四周 16px 透明留白。
 - 每种语言的目录包含 5 张 1280×800 实际界面截图、2 张本地化宣传图及一份 `listing.txt`。
 - 截图覆盖正常、护眼和暗色三种模式，以及当前带缩略预览的外观选择弹窗；正常仍是首次打开的默认模式。
 - 宣传图同时突出高性能、隐私和本地处理；大图强调针对大 JSON 的优化，不承诺具体耗时或性能排名。
@@ -152,22 +152,22 @@ Large inputs and results use virtual rendering, so native browser Find covers on
 ```bash
 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs \
 CHROMIUM_EXECUTABLE=/path/to/full/chromium \
-node store-assets/generate.mjs
+node scripts/store-assets/generate.mjs
 ```
 
-若 Playwright 可直接导入且已安装其完整 Chromium，可省略对应环境变量。脚本默认生成全部 13 种语言的截图与宣传图。仅更新部分语言时，可用逗号分隔的 `STORE_LOCALES` 筛选：
+若 Playwright 可直接导入且已安装其完整 Chromium，可省略对应环境变量。脚本从 `src/` 加载扩展，将全部 13 种语言的截图与宣传图写入 `store-assets/`。仅更新部分语言时，可用逗号分隔的 `STORE_LOCALES` 筛选：
 
 ```bash
-STORE_LOCALES=en,zh_CN node store-assets/generate.mjs
+STORE_LOCALES=en,zh_CN node scripts/store-assets/generate.mjs
 ```
 
 仅调整宣传图时，可保留现有界面截图：
 
 ```bash
-node store-assets/generate.mjs --promos-only
+node scripts/store-assets/generate.mjs --promos-only
 ```
 
-`listing.txt` 是供上架时复制的独立文案，不会随图片生成自动翻译；修改功能或 `_locales` 中的名称、简介后，应同步检查对应文案。
+`listing.txt` 是供上架时复制的独立文案，不会随图片生成自动翻译；修改功能或 `src/_locales/` 中的名称、简介后，应同步检查对应文案。
 
 维护说明：文件导入上限为 `50 * 1024 * 1024` 字节。只读虚拟预览阈值按 `text.length > 2 * 1024 * 1024` 判断，即 UTF-16 代码单元数，不是文件字节数；上架文案因此使用“超过约 200 万字符”，避免误写成“超过 2 MiB 的文件”。
 

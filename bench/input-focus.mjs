@@ -1,12 +1,13 @@
 // Verify native browser focus and keyboard shortcuts across input-mode changes.
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs CHROMIUM_EXECUTABLE=/path/to/chrome node bench/input-focus.mjs
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const root = resolve(process.cwd());
+const { root, moduleBase } = resolveExtension();
 const server = createServer(async (request, response) => {
   try {
     const file = resolve(root, '.' + new URL(request.url, 'http://localhost').pathname);
@@ -80,14 +81,14 @@ try {
       const preview = '#input-view' + suffix;
       if (side) await page.locator('#input-' + (side === 'left' ? 'right' : 'left')).fill('[0]');
       await page.locator(input).fill('[0]');
-      await page.evaluate(async ({ input, side }) => {
-        const { LARGE_INPUT_THRESHOLD } = await import('/src/shared/text-input.js');
+      await page.evaluate(async ({ input, side, moduleBase }) => {
+        const { LARGE_INPUT_THRESHOLD } = await import(moduleBase + 'shared/text-input.js');
         window.focusBenchLarge = '"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"';
         const expected = '[' + focusBenchLarge + ']';
         window.focusBenchExpected = side === 'left' ? { text: expected, text2: '[0]' }
           : side === 'right' ? { text: '[0]', text2: expected } : { text: expected };
         document.querySelector(input).setSelectionRange(1, 2);
-      }, { input, side });
+      }, { input, side, moduleBase });
       await page.locator(input).focus();
       const started = performance.now();
       const large = await sendTransfer(type, input, 'large');

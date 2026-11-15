@@ -1,12 +1,13 @@
 // Optional browser check: PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/browser.mjs [repo] [--verify]
 // Uses a local HTTP server; extension installation/i18n are outside this benchmark.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const root = resolve(process.argv[2] || '.');
+const { root } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const verify = process.argv.includes('--verify');
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const server = createServer(async (request, response) => {

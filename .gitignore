@@ -15,7 +15,7 @@
 dist/
 *.zip
 
-# Python（gen_icons.py）
+# Python 开发脚本
 __pycache__/
 *.py[cod]
 .Python

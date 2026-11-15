@@ -1,12 +1,13 @@
 // Optional browser regression: PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs
 // CHROMIUM_EXECUTABLE=/path/to/chrome node bench/accessibility.mjs [repo]
 // Local HTTP + a catalog-backed chrome.i18n stub; no extension installation or screen reader required.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdir, readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 
-const root = resolve(process.argv[2] || '.');
+const { root } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const server = createServer(async (request, response) => {
   try {

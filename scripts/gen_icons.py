@@ -78,7 +78,7 @@ def render(size):
 
 
 def main():
-    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icons')
+    out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src', 'icons')
     os.makedirs(out_dir, exist_ok=True)
     for size in SIZES:
         path = os.path.join(out_dir, 'icon%d.png' % size)

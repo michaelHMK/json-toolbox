@@ -3,13 +3,14 @@
 // --baseline records an older implementation without enforcing the new protocol.
 // Fixtures are constructed before browser measurement. Initial construction and
 // Worker recovery are reported separately from the five scroll steps.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const root = resolve(process.cwd());
+const { root, moduleBase } = resolveExtension();
 const baseline = process.argv.includes('--baseline');
 const outputPath = process.env.REMOTE_STATE_OUTPUT;
 const fullStateOperations = new Set(['init', 'update', 'recovery']);
@@ -192,9 +193,9 @@ try {
   // Real module Worker cancellation/recreation; no private page state is exposed.
   // This fixture adds unchanged branches so a lost onlyRequired option is visible.
   await page.goto(base + '/__remote-state.html');
-  const recovery = await page.evaluate(async () => {
+  const recovery = await page.evaluate(async (moduleBase) => {
     const [{ createRemoteTree }, { createTaskRunner }, { createChildPathIndex }] = await Promise.all([
-      import('/src/shared/remote-tree.js'), import('/src/shared/worker-client.js'), import('/src/shared/json-tree.js'),
+      import(moduleBase + 'shared/remote-tree.js'), import(moduleBase + 'shared/worker-client.js'), import(moduleBase + 'shared/json-tree.js'),
     ]);
     const source = JSON.stringify({ branch: { child: { n: 1 }, hidden: 99 },
       rows: Array.from({ length: 20000 }, () => ({ n: 1, hidden: 99 })), ignored: true });
@@ -238,7 +239,7 @@ try {
         replies: remoteStateReplies.filter((reply) => reply.phase === 'worker-recovery'),
       };
     } finally { tree.destroy(); run.cancel(); }
-  });
+  }, moduleBase);
   assert.equal(recovery.branchOpen, 'false');
   assert.equal(recovery.retainedManualExpansion, true);
   assert.equal(recovery.retainedManualCollapse, true);
