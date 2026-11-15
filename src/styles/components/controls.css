@@ -1,0 +1,78 @@
+/* Shared form controls, feedback, view switches and result counts. */
+button, input, select, textarea { font: inherit; }
+button {
+  padding: 8px 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, pre:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
+.button-compact { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+.icon-button { padding: 4px 8px; border-radius: 6px; }
+
+.field { display: inline-flex; align-items: center; gap: 8px; color: var(--text-dim); font-size: 13px; }
+.field select, .field input[type="text"], #level-select, #search {
+  padding: 6px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+}
+.field select:focus, .field input[type="text"]:focus, #level-select:focus, #search:focus { border-color: var(--accent); }
+.chk input { margin: 0; accent-color: var(--accent); }
+.shortcut { color: var(--text-dim); font: 11px/1.4 var(--mono); }
+
+.notice {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  padding: 10px 13px;
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
+  border-radius: 9px;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.error-announcement { flex-shrink: 0; }
+.feedback-bar { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.feedback-bar .status { white-space: normal; }
+.feedback-bar:has(#status:not(:empty), #busy:not([hidden])) { margin-bottom: 10px; }
+
+.status { overflow: hidden; color: var(--text-dim); font-size: 11px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+#busy { color: var(--accent); font-size: 11px; }
+
+.view-toggle {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+}
+.view-toggle button { padding: 3px 9px; border: 0; border-radius: 5px; background: transparent; font-size: 11px; color: var(--text-dim); }
+.view-toggle button.active { background: var(--panel); color: var(--accent); box-shadow: 0 1px 3px rgb(15 23 42 / 10%); }
+
+#match-info, #diff-info {
+  min-width: 44px;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

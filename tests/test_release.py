@@ -53,6 +53,36 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_release.check_reference('shared/worker-client.js', './worker/index.js', {'worker/index.js'})
 
+    def test_omitted_indirect_stylesheet_is_rejected(self):
+        files = tuple(name for name in build_release.RUNTIME_FILES if name != 'styles/components/tree.css')
+        with patch.object(build_release, 'RUNTIME_FILES', files):
+            with self.assertRaisesRegex(ValueError, r'styles/app\.css 引用了未打包的文件: .*components/tree\.css'):
+                self.check()
+
+    def test_nested_css_imports_and_resources_are_resolved_from_stylesheet(self):
+        original_read = Path.read_text
+        references = '''
+            /* @import "missing.css"; .unused { background: url(missing.png); } */
+            @import "../themes.css";
+            @import url('../pages/formatter.css') screen;
+            @import url(../base.css);
+            .fixture { background-image: url("../../icons/icon16.png"); }
+        '''
+
+        def read_text(path, *args, **kwargs):
+            source = original_read(path, *args, **kwargs)
+            if path.relative_to(build_release.ROOT).as_posix() == 'styles/components/tree.css':
+                source += references
+            return source
+
+        with patch.object(Path, 'read_text', read_text):
+            self.check()
+            for missing in ['@import "../missing.css";', '.fixture { background: url(../../icons/missing.png); }']:
+                with self.subTest(reference=missing):
+                    references = missing
+                    with self.assertRaisesRegex(ValueError, r'styles/components/tree\.css 引用了未打包的文件'):
+                        self.check()
+
     def test_missing_accessible_label_translation_is_rejected(self):
         original_read = Path.read_text
 

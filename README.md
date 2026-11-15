@@ -69,7 +69,13 @@ src/                   # Complete extension; load this directory in Chrome
   worker/
     index.js           # Web Worker message entry point
     tasks.js           # Task dispatch, cached search data, and error responses
-  styles/              # Shared page and virtual tree styles
+  styles/
+    app.css            # Single CSS entry point; imports the styles below in order
+    themes.css         # Theme tokens
+    base.css           # Global defaults
+    layout.css         # Shared application layout
+    components/        # Navigation, theme picker, controls, editor, tree, text view
+    pages/             # Formatter and comparison page styles
   icons/               # Extension icons referenced by the manifest
   _locales/            # Translations
 scripts/
@@ -86,6 +92,8 @@ dist/                  # Generated extension ZIP and checksum; ignored by Git
 ```
 
 All extension runtime files live under `src/`; development tools and store materials stay outside it. Page logic uses native browser ES modules. No dependency installation or build step is needed to load the extension. Each HTML page has one entry module for page logic; a separate theme bootstrap script restores the saved appearance before the first paint. Navigation is rendered before translations are applied.
+
+Every page loads `styles/app.css`, which only declares ordered CSS imports. Shared component rules live in `styles/components/`, page-specific rules in `styles/pages/`, and theme tokens in `styles/themes.css`. Tree styling, including virtual rows and keyboard focus, belongs to the tree component.
 
 | Boundary | Responsibilities and contracts |
 | --- | --- |
@@ -107,7 +115,7 @@ npm test
 python3 scripts/build_release.py --check
 ```
 
-Tests cover number literals and special keys, cached search data and result limits, structural and text comparisons, concurrent Worker requests and failure responses, and transitive module dependencies in the release package. Browser interactions should also be checked using the checklist below.
+Tests cover number literals and special keys, cached search data and result limits, structural and text comparisons, concurrent Worker requests and failure responses, and transitive module and stylesheet dependencies in the release package. Browser interactions should also be checked using the checklist below.
 
 ### Performance Checks
 
@@ -174,7 +182,7 @@ python3 scripts/build_release.py --check
 python3 scripts/build_release.py
 ```
 
-The script validates the version, name and description lengths in all locale catalogs, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports and the Worker entry point. It then packages runtime files from `src/` using an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root, without an enclosing `src/` directory, and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
+The script validates the version, name and description lengths in all locale catalogs, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports, the Worker entry point, and CSS `@import`/`url()` dependencies. It then packages runtime files from `src/` using an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root, without an enclosing `src/` directory, and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
 
 Before uploading, extract the ZIP to a new directory, load that directory through `chrome://extensions/`, and complete the checks below. For subsequent releases, increase the version in `src/manifest.json` before rebuilding.
 

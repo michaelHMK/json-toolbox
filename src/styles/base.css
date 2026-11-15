@@ -1,0 +1,15 @@
+/* Document defaults and visibility; component rules live in components/. */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+@media (max-width: 780px) {
+  html, body { height: auto; min-height: 100%; }
+}

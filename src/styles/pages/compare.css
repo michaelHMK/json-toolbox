@@ -1,0 +1,34 @@
+/* Comparison options and paired-pane layout; tree/text visuals are components. */
+.ignore-field { flex: 1; min-width: 250px; }
+#ignore-paths { flex: 1; min-width: 160px; }
+#key-field { width: 110px; }
+
+.compare-main { flex: 0 0 31%; min-height: 180px; margin-bottom: 16px; }
+/* The translated labels explicitly identify the old side as left and new as right. */
+.compare-main > .pane:first-child { grid-column: 1; grid-row: 1; }
+.compare-main > .pane:last-child { grid-column: 2; grid-row: 1; }
+[dir="rtl"] .compare-main > .pane:first-child { grid-column: 2; }
+[dir="rtl"] .compare-main > .pane:last-child { grid-column: 1; }
+.compare-result { flex: 1; }
+.compare-result-title { align-items: flex-start; }
+.compare-result-title .pane-label { min-height: 29px; }
+#struct-view { flex: 1; display: flex; min-height: 0; }
+[dir="rtl"] #struct-view { flex-direction: row-reverse; }
+.tree-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.tree-col + .tree-col { border-left: 1px solid var(--border); }
+.col-title { padding: 5px 14px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 11px; user-select: none; }
+
+#diff-nav { display: inline-flex; align-items: center; gap: 3px; }
+
+@media (max-width: 780px) {
+  /* This pane is also a .workspace; preserve its single-column mobile sizing. */
+  .compare-main { flex: none; min-height: 0; }
+  .compare-main > .pane:first-child, .compare-main > .pane:last-child,
+  [dir="rtl"] .compare-main > .pane:first-child, [dir="rtl"] .compare-main > .pane:last-child {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .compare-result { min-height: 480px; }
+  .compare-result-title { align-items: flex-start; flex-direction: column; }
+  .compare-result-title .pane-actions { justify-content: flex-start; }
+}
