@@ -1,38 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTaskRunner } from '../src/shared/worker-client.js';
-import { createTaskHandler } from '../src/worker/tasks.js';
+import { createSessionWorker } from './helpers/session-worker.js';
 import { loadPage } from './helpers/page-dom.js';
 
 function setup() {
-  const workers = [];
-  const held = new Set();
+  const worker = createSessionWorker();
   const page = loadPage('formatter', {
     expose: '{ state, doFormat, doClear, getTree: () => treeView }',
-    createTaskRunner(options) {
-      return createTaskRunner({ ...options, createWorker() {
-        const handle = createTaskHandler();
-        const worker = {
-          terminated: false,
-          requests: [],
-          terminate() { this.terminated = true; },
-          postMessage(request) {
-            this.requests.push(request);
-            if (!held.has(request.action)) this.complete(request);
-          },
-          complete(request) {
-            queueMicrotask(() => {
-              if (!this.terminated) this.onmessage({ data: handle(request) });
-            });
-          },
-          crash() { this.onerror({ message: 'worker crashed', preventDefault() {} }); },
-        };
-        workers.push(worker);
-        return worker;
-      } });
-    },
+    createTaskRunner: worker.createRunner,
   });
-  return { page, workers, held };
+  return { page, ...worker };
 }
 
 function assertView(page, expected) {

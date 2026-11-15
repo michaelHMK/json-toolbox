@@ -1,87 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { diffData } from '../src/core/structural-diff.js';
-import { makeTextDiff } from '../src/core/text-diff.js';
-import { collectNumberLiterals } from '../src/core/json.js';
 import { performance } from 'node:perf_hooks';
-
-function checkTextDiff(result) {
-  const a = result.aText.split('\n');
-  const b = result.bText.split('\n');
-  let aIndex = 0;
-  let bIndex = 0;
-  let changes = 0;
-  for (const op of result.ops) {
-    assert.ok(op.count > 0);
-    if (op.type !== 'add') {
-      assert.equal(op.aStart, aIndex);
-      aIndex += op.count;
-    }
-    if (op.type !== 'del') {
-      assert.equal(op.bStart, bIndex);
-      bIndex += op.count;
-    }
-    if (op.type === 'same') {
-      assert.deepEqual(a.slice(op.aStart, aIndex), b.slice(op.bStart, bIndex));
-    } else {
-      changes += op.count;
-    }
-  }
-  assert.equal(aIndex, a.length);
-  assert.equal(bIndex, b.length);
-  return { a, b, changes };
-}
-
-// 独立的小规模动态规划参照，验证回溯仍然给出最短插入/删除序列。
-function minimumChanges(a, b) {
-  let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    const current = [i];
-    for (let j = 1; j <= b.length; j++) {
-      current[j] = a[i - 1] === b[j - 1]
-        ? previous[j - 1] : Math.min(previous[j], current[j - 1]) + 1;
-    }
-    previous = current;
-  }
-  return previous[b.length];
-}
-
-test('text diff keeps shortest edits for repeated lines, insertions and deletions', () => {
-  let seed = 7213;
-  const random = (max) => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return (seed >>> 16) % max;
-  };
-  for (let i = 0; i < 200; i++) {
-    const left = Array.from({ length: random(20) }, () => random(6));
-    const right = Array.from({ length: random(20) }, () => random(6));
-    const result = makeTextDiff(JSON.stringify(left), JSON.stringify(right), '2');
-    assert.equal(result.blocky, false);
-    const { a, b, changes } = checkTextDiff(result);
-    assert.equal(changes, minimumChanges(a, b));
-  }
-});
-
-test('identical formatted text reports one complete same range', () => {
-  const value = Array.from({ length: 2000 }, (_, i) => ({ id: i, text: 'line\\ntext' }));
-  const left = JSON.stringify(value);
-  for (const right of [left, JSON.stringify(value, null, 4)]) {
-    const result = makeTextDiff(left, right, '2');
-    assert.equal(result.ops.length, 1);
-    assert.equal(checkTextDiff(result).changes, 0);
-    assert.deepEqual(result.totalLines, [result.ops[0].count, result.ops[0].count]);
-  }
-});
-
-test('text diff handles worst-case exact diff and the block replacement boundary', () => {
-  for (const size of [1500, 1501]) {
-    const left = JSON.stringify(Array.from({ length: size }, (_, i) => `left ${i}`));
-    const right = JSON.stringify(Array.from({ length: size }, (_, i) => `right ${i}`));
-    const result = makeTextDiff(left, right, '2');
-    assert.equal(result.blocky, size > 1500);
-    assert.equal(checkTextDiff(result).changes, size * 2);
-  }
-});
 
 test('structural diff retains independent escaped sibling paths and numeric previews', () => {
   const left = { 'a/b': { '~': [1, { value: 2 }] }, sibling: { gone: false } };
@@ -181,20 +101,6 @@ test('iterative structural diff keeps detail caps after returning from a deep br
   assert.equal(result.truncated, true);
   assert.equal(result.diffs[0].leftPath, '/deep' + '/child'.repeat(depth));
   assert.equal(result.diffs[4999].leftPath, '/wide/4998');
-});
-
-
-test('duplicate keys do not rescan unrelated numeric literal paths', () => {
-  const count = 20_000;
-  const text = '{"n":[' + Array(count).fill('1.0').join(',') + '],"o":{'
-    + Array.from({ length: count }, (_, i) => '"k":' + i).join(',') + '}}';
-  const started = performance.now();
-  const literals = collectNumberLiterals(text);
-  const elapsed = performance.now() - started;
-  assert.equal(Object.keys(literals).length, count);
-  assert.equal(literals['/n/0'], '1.0');
-  assert.equal(literals['/n/' + (count - 1)], '1.0');
-  assert.ok(elapsed < 2000, `literal scan took ${elapsed.toFixed(0)} ms`);
 });
 
 test('sparse precision literals do not rebuild paths for a deep array of equal numbers', () => {

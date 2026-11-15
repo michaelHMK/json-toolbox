@@ -29,5 +29,11 @@ export function createSessionWorker() {
       return worker;
     },
   });
-  return { createRunner, workers, held };
+  return {
+    createRunner, workers, held,
+    hold(action) {
+      held.clear();
+      if (action) held.add(action);
+    },
+  };
 }

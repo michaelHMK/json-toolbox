@@ -117,6 +117,8 @@ python3 scripts/build_release.py --check
 
 Tests cover number literals and special keys, cached search data and result limits, structural and text comparisons, concurrent Worker requests and failure responses, and transitive module and stylesheet dependencies in the release package. Browser interactions should also be checked using the checklist below.
 
+See [AGENTS.md](AGENTS.md#测试维护) for test ownership and maintenance rules. Extend existing behavior coverage before adding a new suite; keep algorithm edge cases in the algorithm tests and integration tests focused on their own boundaries.
+
 ### Performance Checks
 
 Run `npm run bench` for deterministic formatting, minifying, search, and diff benchmarks. Compare runs sequentially in the same environment. `npm run bench:budget` uses the median of three samples on 25 MiB fixtures and requires formatting/minifying time to stay within 3 times native parse/stringify time; CI runs this check.

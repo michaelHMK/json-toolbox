@@ -5,6 +5,7 @@ import {
   MAX_FILE_SIZE, createFileImport, formatFileSize, readJsonFile,
 } from '../src/shared/file-import.js';
 import { Element, loadPage } from './helpers/page-dom.js';
+import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
 
 const encoder = new TextEncoder();
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -208,23 +209,26 @@ test('reset invalidates a pending read and clears import UI', async () => {
   assert.equal(page.imported.length, 0);
 });
 
-function formatterImportPage(runTask) {
+function importPage(action, runTask) {
   let importOptions;
   let resets = 0;
-  const page = loadPage('formatter', {
+  const page = loadPage(action === 'format' ? 'formatter' : 'transform', {
+    bodyDataset: { action },
     runTask,
     createFileImport(options) {
       importOptions = options;
       return { reset() { resets++; } };
     },
-    expose: '{ state, doClear, doFormat, fillSample }',
+    expose: action === 'format'
+      ? '{ state, textInput, doClear, doFormat, fillSample }'
+      : '{ textInput, doClear, getOutput: () => outputText }',
   });
-  return { page, importOptions, get resets() { return resets; } };
+  return { page, importText: (text) => importOptions.onImport({ text }), get resets() { return resets; } };
 }
 
 test('formatter imports original text and formats even when paste formatting is disabled', async () => {
   const actions = [];
-  const { page, importOptions } = formatterImportPage(async (action, payload) => {
+  const { page, importText } = importPage('format', async (action, payload) => {
     actions.push({ action, payload });
     if (action === 'format') return {
       ok: true,
@@ -234,7 +238,7 @@ test('formatter imports original text and formats even when paste formatting is 
     return { ok: true, result: {} };
   });
   page.get('auto-format').checked = false;
-  importOptions.onImport({ text: '{"picked":true}' });
+  importText('{"picked":true}');
   await flush();
   assert.deepEqual(actions.map(({ action }) => action), ['clear', 'format']);
   assert.equal(actions[1].payload.text, '{"picked":true}');
@@ -243,7 +247,7 @@ test('formatter imports original text and formats even when paste formatting is 
 });
 
 test('formatter clear, sample and manual editing reset file import state', async () => {
-  const imported = formatterImportPage(async (action) => action === 'format'
+  const imported = importPage('format', async (action) => action === 'format'
     ? { ok: true, result: { text: '{}', data: {} }, duration: 0 }
     : { ok: true, result: {} });
   imported.page.doClear();
@@ -255,7 +259,7 @@ test('formatter clear, sample and manual editing reset file import state', async
 
 test('a stale format response cannot overwrite an imported document', async () => {
   let finishOld;
-  const { page, importOptions } = formatterImportPage((action, payload) => {
+  const { page, importText } = importPage('format', (action, payload) => {
     if (action === 'format' && payload.text === '{"old":true}') {
       return new Promise((resolve) => { finishOld = resolve; });
     }
@@ -268,7 +272,7 @@ test('a stale format response cannot overwrite an imported document', async () =
   });
   page.get('input').value = '{"old":true}';
   const oldFormat = page.doFormat();
-  importOptions.onImport({ text: '{"new":true}' });
+  importText('{"new":true}');
   await flush();
   finishOld({ ok: true, result: { text: '{"old":true}', data: { old: true } }, duration: 1 });
   await oldFormat;
@@ -278,21 +282,12 @@ test('a stale format response cannot overwrite an imported document', async () =
 
 test('minify imports and runs once while other transform pages do not bind import', async () => {
   const actions = [];
-  let importOptions;
-  const page = loadPage('transform', {
-    bodyDataset: { action: 'minify' },
-    runTask: async (action, payload) => {
-      actions.push({ action, payload });
-      if (action === 'minify') return { ok: true, result: { text: '{"a":1}' }, duration: 1 };
-      return { ok: true, result: {} };
-    },
-    createFileImport(options) {
-      importOptions = options;
-      return { reset() {} };
-    },
-    expose: '{ getOutput: () => outputText }',
+  const { page, importText } = importPage('minify', async (action, payload) => {
+    actions.push({ action, payload });
+    if (action === 'minify') return { ok: true, result: { text: '{"a":1}' }, duration: 1 };
+    return { ok: true, result: {} };
   });
-  importOptions.onImport({ text: '{ "a": 1 }' });
+  importText('{ "a": 1 }');
   await flush();
   assert.deepEqual(actions.map(({ action }) => action), ['clear', 'minify']);
   assert.equal(actions[1].payload.text, '{ "a": 1 }');
@@ -308,14 +303,14 @@ test('minify imports and runs once while other transform pages do not bind impor
 });
 
 test('large formatter imports use virtual input and release document caches', async () => {
-  const source = '{"payload":"' + 'x'.repeat(2 * 1024 * 1024 + 1) + '"}';
+  const source = '{"payload":"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"}';
   const actions = [];
-  const imported = formatterImportPage(async (action, payload) => {
+  const imported = importPage('format', async (action, payload) => {
     actions.push({ action, payload });
     if (action === 'format') return { ok: true, result: { text: '{"payload":"formatted"}' }, duration: 1 };
     return { ok: true, result: {} };
   });
-  imported.importOptions.onImport({ text: source });
+  imported.importText(source);
   await flush();
   assert.equal(imported.page.get('input').hidden, true);
   assert.equal(imported.page.get('input-view').hidden, false);
@@ -324,25 +319,14 @@ test('large formatter imports use virtual input and release document caches', as
   assert.equal(actions[1].payload.retainSearch, false);
 });
 
-function errorImportPage(action, result) {
-  let importOptions;
-  const page = loadPage(action === 'format' ? 'formatter' : 'transform', {
-    bodyDataset: { action },
-    runTask: async (task) => task === action ? result : { ok: true, result: {} },
-    createFileImport(options) { importOptions = options; return { reset() {} }; },
-    expose: '{ textInput }',
-  });
-  return { page, importText: (text) => importOptions.onImport({ text }) };
-}
-
 for (const action of ['format', 'minify']) {
   test(`${action} locates large parse errors in the virtual input without restoring a textarea`, async () => {
     const prefix = '[\r\n' + ('  "' + 'x'.repeat(40) + '",\r\n').repeat(60000);
     const source = prefix + '  INVALID_TOKEN,\r\n  1\r\n]';
     const position = prefix.length + 2;
-    const { page, importText } = errorImportPage(action, {
+    const { page, importText } = importPage(action, async (task) => task === action ? {
       ok: false, error: 'Invalid JSON token', position, line: 60002, column: 3,
-    });
+    } : { ok: true, result: {} });
     importText(source);
     await flush();
     const preview = page.get('input-view');
@@ -365,9 +349,9 @@ for (const action of ['format', 'minify']) {
   test(`${action} retains native selection and scrolling for small parse errors`, async () => {
     const source = '{\n "a": 1,\n "b": 2,\n "c": invalid\n}';
     const position = source.indexOf('invalid');
-    const { page, importText } = errorImportPage(action, {
+    const { page, importText } = importPage(action, async (task) => task === action ? {
       ok: false, error: 'Invalid JSON token', position, line: 4, column: 7,
-    });
+    } : { ok: true, result: {} });
     importText(source);
     await flush();
     const input = page.get('input');
@@ -383,25 +367,80 @@ for (const action of ['format', 'minify']) {
 }
 
 test('large minify imports use virtual input without affecting the original source', async () => {
-  const source = '{ "payload": "' + 'x'.repeat(2 * 1024 * 1024 + 1) + '" }';
-  let importOptions;
+  const source = '{ "payload": "' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '" }';
   let taskText = '';
-  const page = loadPage('transform', {
-    bodyDataset: { action: 'minify' },
-    runTask: async (action, payload) => {
-      if (action === 'minify') {
-        taskText = payload.text;
-        return { ok: true, result: { text: '{"payload":"minified"}' }, duration: 1 };
-      }
-      return { ok: true, result: {} };
-    },
-    createFileImport(options) { importOptions = options; return { reset() {} }; },
-    expose: '{ getOutput: () => outputText }',
+  const { page, importText } = importPage('minify', async (action, payload) => {
+    if (action === 'minify') {
+      taskText = payload.text;
+      return { ok: true, result: { text: '{"payload":"minified"}' }, duration: 1 };
+    }
+    return { ok: true, result: {} };
   });
-  importOptions.onImport({ text: source });
+  importText(source);
   await flush();
   assert.equal(taskText, source);
   assert.equal(page.getOutput(), '{"payload":"minified"}');
   assert.equal(page.get('input').hidden, true);
   assert.equal(page.get('input-view').hidden, false);
+});
+
+function comparisonImportPage(runTask) {
+  const imports = [];
+  const page = loadPage('compare', {
+    expose: '{ textInputs, doSwap, doClear }',
+    runTask,
+    createFileImport: (options) => { imports.push(options); return { reset() {} }; },
+  });
+  return { page, imports };
+}
+
+test('comparison imports, swaps and clears virtual input without losing original source', () => {
+  const { page, imports } = comparisonImportPage();
+  const text = '"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"';
+  imports[0].onImport({ text });
+  assert.equal(page.textInputs.left.getText(), text);
+  assert.equal(page.get('input-left').value, '');
+  assert.equal(page.get('input-view-left').hidden, false);
+  page.get('input-right').value = '{}';
+  page.doSwap();
+  assert.equal(page.textInputs.right.getText(), text);
+  assert.equal(page.textInputs.left.getText(), '{}');
+  page.doClear();
+  assert.equal(page.textInputs.right.getText(), '');
+  assert.equal(page.get('input-view-right').hidden, true);
+});
+
+test('clearing or editing after file import supersedes the deferred automatic comparison', async () => {
+  for (const action of ['clear', 'edit']) {
+    const requests = [];
+    const { page, imports } = comparisonImportPage(async (name) => {
+      requests.push(name);
+      return { ok: true, result: {} };
+    });
+    imports[0].onImport({ text: '{"a":1}' });
+    imports[1].onImport({ text: '{"a":2}' });
+    if (action === 'clear') page.doClear();
+    else {
+      page.get('input-left').value = '{"new":3}';
+      page.get('input-left').events.input();
+    }
+    await flush();
+    assert.ok(!requests.includes('diff'), 'stale file import must not start a new comparison');
+  }
+});
+
+test('clearing a deferred large file import prevents formatter and minifier from restarting', async () => {
+  for (const action of ['format', 'minify']) {
+    const requests = [];
+    const { page, importText } = importPage(action, async (name) => {
+      requests.push(name);
+      return { ok: true, result: {} };
+    });
+    importText('"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"');
+    page.doClear();
+    await flush();
+    assert.ok(!requests.includes(action));
+    assert.equal(page.get('input').value, '');
+    assert.equal(page.get('input-view').hidden, true);
+  }
 });
