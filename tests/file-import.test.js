@@ -7,7 +7,7 @@ import {
 import { Element, loadPage } from './helpers/page-dom.js';
 
 const encoder = new TextEncoder();
-const flush = () => new Promise((resolve) => setImmediate(resolve));
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const jsonFile = (text, name = 'data.json') => new File([text], name, { type: 'text/plain' });
 
 async function expectKey(promise, key) {

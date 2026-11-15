@@ -3,6 +3,8 @@ import { resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 // node --expose-gc bench/diff.mjs [source directory or file URL]
+// TEXT_DIFF_BENCH_LINES=2180000 adds a report-sized sparse-edit case. The
+// default also exercises this path, at a scale suitable for the normal suite.
 // Memory deltas are measured immediately after each call, before a forced GC.
 // They include temporary allocations awaiting GC and are not peak/retained memory.
 const sourceArg = process.argv[2];
@@ -12,7 +14,7 @@ const sourceUrl = sourceArg
     : pathToFileURL(resolve(sourceArg) + sep)
   : new URL('../src/core/', import.meta.url);
 const { diffData } = await import(new URL('structural-diff.js', sourceUrl));
-const { makeTextDiff } = await import(new URL('text-diff.js', sourceUrl));
+const { makeTextDiff, diffFormattedText } = await import(new URL('text-diff.js', sourceUrl));
 
 console.log(JSON.stringify({
   node: process.version, source: sourceUrl.href, warmups: 2, samples: 7,
@@ -75,6 +77,21 @@ const equalText = JSON.stringify(rows);
 measure('text-50k-equal', () => makeTextDiff(equalText, equalText, '2'), (result) => {
   if (result.blocky || result.ops.length !== 1 || result.ops[0].type !== 'same') {
     throw new Error('Expected one unchanged text range');
+  }
+});
+
+const sparseLineCount = Number(process.env.TEXT_DIFF_BENCH_LINES || 250_000);
+if (!Number.isSafeInteger(sparseLineCount) || sparseLineCount < 1) {
+  throw new Error('TEXT_DIFF_BENCH_LINES must be a positive integer');
+}
+const sparseLeft = Array.from({ length: sparseLineCount }, (_, i) => `  "value": ${i % 10000},`).join('\n');
+const sparseRight = Array.from({ length: sparseLineCount }, (_, i) =>
+  `  "value": ${i % 11237 === 0 ? '999999' : i % 10000},`).join('\n');
+const sparseChanges = Math.ceil(sparseLineCount / 11237);
+measure(`text-${sparseLineCount}-sparse-lines`, () => diffFormattedText(sparseLeft, sparseRight), (result) => {
+  const changes = result.ops.reduce((count, op) => count + (op.type === 'same' ? 0 : op.count), 0);
+  if (result.blocky || changes !== sparseChanges * 2 || result.totalLines.some((n) => n !== sparseLineCount)) {
+    throw new Error('Expected an exact diff preserving all scattered changes');
   }
 });
 

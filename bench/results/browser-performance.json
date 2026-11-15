@@ -1,0 +1,2044 @@
+{
+  "browser": "156.0.8078.47",
+  "inputBudgetMs": 50,
+  "frameBudgetMs": 35,
+  "results": [
+    {
+      "scenario": "textarea-threshold",
+      "shape": "single",
+      "kib": 256,
+      "medianWriteLayoutMs": 15.3,
+      "maxWriteLayoutMs": 16.1
+    },
+    {
+      "scenario": "textarea-threshold",
+      "shape": "single",
+      "kib": 512,
+      "medianWriteLayoutMs": 21,
+      "maxWriteLayoutMs": 42.1
+    },
+    {
+      "scenario": "textarea-threshold",
+      "shape": "single",
+      "kib": 1024,
+      "medianWriteLayoutMs": 60.8,
+      "maxWriteLayoutMs": 73.8
+    },
+    {
+      "scenario": "textarea-threshold",
+      "shape": "multiline",
+      "kib": 256,
+      "medianWriteLayoutMs": 41.7,
+      "maxWriteLayoutMs": 44.3
+    },
+    {
+      "scenario": "textarea-threshold",
+      "shape": "multiline",
+      "kib": 512,
+      "medianWriteLayoutMs": 91,
+      "maxWriteLayoutMs": 107.3
+    },
+    {
+      "scenario": "textarea-threshold",
+      "shape": "multiline",
+      "kib": 1024,
+      "medianWriteLayoutMs": 136.5,
+      "maxWriteLayoutMs": 148.7
+    },
+    {
+      "scenario": "formatter-paste-10MiB-single",
+      "inputMiB": 10,
+      "dispatchLayoutMs": 8.3,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 1,
+      "elapsedMs": 34.1,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "formatter-drop-10MiB-single",
+      "inputMiB": 10,
+      "dispatchLayoutMs": 7.6,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 1,
+      "elapsedMs": 34.7,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "formatter-paste-10MiB-multiline",
+      "inputMiB": 10.000005722045898,
+      "dispatchLayoutMs": 8.1,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 50,
+      "elapsedMs": 33.4,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "formatter-drop-10MiB-multiline",
+      "inputMiB": 10.000005722045898,
+      "dispatchLayoutMs": 12.2,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 50,
+      "elapsedMs": 40.3,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "compare-paste-10MiB-single",
+      "inputMiB": 10,
+      "dispatchLayoutMs": 9,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 1,
+      "elapsedMs": 33.1,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "compare-drop-10MiB-single",
+      "inputMiB": 10,
+      "dispatchLayoutMs": 8.8,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 1,
+      "elapsedMs": 34.5,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "compare-paste-10MiB-multiline",
+      "inputMiB": 10.000005722045898,
+      "dispatchLayoutMs": 6,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 27,
+      "elapsedMs": 38.7,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "compare-drop-10MiB-multiline",
+      "inputMiB": 10.000005722045898,
+      "dispatchLayoutMs": 9.8,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 27,
+      "elapsedMs": 34.3,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "minify-paste-10MiB-single",
+      "inputMiB": 10,
+      "dispatchLayoutMs": 8,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 1,
+      "elapsedMs": 34.2,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "minify-drop-10MiB-single",
+      "inputMiB": 10,
+      "dispatchLayoutMs": 7.5,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 1,
+      "elapsedMs": 34.5,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "minify-paste-10MiB-multiline",
+      "inputMiB": 10.000005722045898,
+      "dispatchLayoutMs": 6.3,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 54,
+      "elapsedMs": 33.7,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "minify-drop-10MiB-multiline",
+      "inputMiB": 10.000005722045898,
+      "dispatchLayoutMs": 11,
+      "prevented": true,
+      "textareaLength": 0,
+      "textareaHidden": true,
+      "previewHidden": false,
+      "renderedRows": 54,
+      "elapsedMs": 33.9,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": []
+    },
+    {
+      "scenario": "format-large-text",
+      "inputMiB": 25,
+      "elapsedMs": 500.3,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 298.40000009536743,
+          "duration": 10.599999904632568,
+          "action": "format",
+          "textChars": 26222882,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "format",
+          "ok": true,
+          "includeData": false,
+          "duration": 344,
+          "elapsedMs": 430.59999990463257,
+          "keys": [
+            "text",
+            "lineIndex"
+          ],
+          "nestedRowValue": false
+        }
+      ]
+    },
+    {
+      "scenario": "format-large-tree-window",
+      "elapsedMs": 500.2,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 795.0999999046326,
+          "duration": 14.699999809265137,
+          "action": "parse",
+          "textChars": 41023032,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1205.5999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "parse",
+          "ok": true,
+          "includeData": false,
+          "duration": 380,
+          "elapsedMs": 409.59999990463257,
+          "keys": [
+            "snapshotId"
+          ],
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "update",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 15.900000095367432,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 96735,
+          "rows": 256,
+          "nestedRowValue": false
+        }
+      ]
+    },
+    {
+      "scenario": "tree-expand-all",
+      "elapsedMs": 446.3,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 1278.5,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "tree",
+          "operation": "update",
+          "ok": true,
+          "duration": 382,
+          "elapsedMs": 383,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        }
+      ]
+    },
+    {
+      "scenario": "fully-expanded-close-one",
+      "syncMs": 0.8,
+      "elapsedMs": 64.5,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 1713.6999998092651,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "tree",
+          "operation": "setOpen",
+          "ok": true,
+          "duration": 18,
+          "elapsedMs": 29.09999990463257,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418303,
+          "rows": 256,
+          "nestedRowValue": false
+        }
+      ]
+    },
+    {
+      "scenario": "fully-expanded-open-one",
+      "syncMs": 0.4,
+      "elapsedMs": 66.1,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 1780.2999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "tree",
+          "operation": "setOpen",
+          "ok": true,
+          "duration": 16,
+          "elapsedMs": 16.800000190734863,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        }
+      ]
+    },
+    {
+      "scenario": "remote-tree-scroll-60-frames",
+      "p50Ms": 16.7,
+      "p95Ms": 16.8,
+      "maxMs": 16.8,
+      "emptyFrames": 0,
+      "renderedRows": 56,
+      "elapsedMs": 1030.9,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 1877,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1894.4000000953674,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1911,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1927.6999998092651,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1944.1999998092651,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1960.7999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1977.6999998092651,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 1994.1999998092651,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2010.2999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2027.1999998092651,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2044.0999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2060.7999997138977,
+          "duration": 0.10000038146972656,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2077.5999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2094.199999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2110.9000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2127.699999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2144.199999809265,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2161,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2177.699999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2194.4000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2211.0999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2227.4000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2244.199999809265,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2260.9000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2277.5999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2294.4000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2311.199999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2327.5,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2344.2999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2361,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2377.5999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2394.2999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2410.699999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2427.699999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2444.2999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2460.9000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2477.699999809265,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2494.2999997138977,
+          "duration": 0.10000038146972656,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2510.9000000953674,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2527.5999999046326,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2544.0999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2560.7999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2577.199999809265,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2594.0999999046326,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2611,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2627.699999809265,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2644.4000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2660.7999997138977,
+          "duration": 0.10000038146972656,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2677.5,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2694,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2710.9000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2727.5,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2744.0999999046326,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2760.9000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2777.5999999046326,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2794.0999999046326,
+          "duration": 0.09999990463256836,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2811.2999997138977,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2827.5,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 2844.5999999046326,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 2,
+          "elapsedMs": 5.400000095367432,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.799999713897705,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.4000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.8000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.4000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.4000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.5,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.4000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 2.8000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.5,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.5,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.5,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.3000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.3000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.299999713897705,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.9000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.799999713897705,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.3000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 4,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.9000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.200000286102295,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.1000003814697266,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.8000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.200000286102295,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 2.8999996185302734,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.3000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.200000286102295,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 4.300000190734863,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 2.6999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.9000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.5,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 5,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 4.299999713897705,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.4000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.0999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.299999713897705,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.3000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.3000001907348633,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 3.1000003814697266,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 1,
+          "elapsedMs": 3.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "rows",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 2.5999999046325684,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 2418327,
+          "rows": 256,
+          "nestedRowValue": false
+        }
+      ]
+    },
+    {
+      "scenario": "compare-large-file-import-and-tree-windows",
+      "inputMiBPerSide": 25,
+      "elapsedMs": 485,
+      "longTasks": [],
+      "longestTaskMs": 0,
+      "sendTasks": [
+        {
+          "start": 364,
+          "duration": 27.09999990463257,
+          "action": "diff",
+          "textChars": 26222882,
+          "secondTextChars": 26222882
+        },
+        {
+          "start": 702.2000002861023,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        },
+        {
+          "start": 703.4000000953674,
+          "duration": 0,
+          "action": "tree",
+          "textChars": 0,
+          "secondTextChars": 0
+        }
+      ],
+      "decodeTasks": [
+        {
+          "start": 273.59999990463257,
+          "duration": 16.200000286102295,
+          "chars": 26222882
+        },
+        {
+          "start": 329.80000019073486,
+          "duration": 15.5,
+          "chars": 26222882
+        }
+      ],
+      "lineIndexTasks": [],
+      "messages": [
+        {
+          "action": "diff",
+          "ok": true,
+          "includeData": false,
+          "duration": 282,
+          "elapsedMs": 336.30000019073486,
+          "keys": [
+            "diffs",
+            "pairs",
+            "stats",
+            "truncated",
+            "keyFallback",
+            "total",
+            "snapshotId"
+          ],
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "update",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 1.1999998092651367,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 96735,
+          "rows": 256,
+          "nestedRowValue": false
+        },
+        {
+          "action": "tree",
+          "operation": "update",
+          "ok": true,
+          "duration": 0,
+          "elapsedMs": 1.4000000953674316,
+          "keys": [
+            "rowCount",
+            "start",
+            "rows",
+            "activeIndex",
+            "activePath",
+            "activeRow"
+          ],
+          "rowCount": 96735,
+          "rows": 256,
+          "nestedRowValue": false
+        }
+      ]
+    }
+  ],
+  "violations": []
+}

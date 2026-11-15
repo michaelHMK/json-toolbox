@@ -4,6 +4,10 @@ import { searchData } from '../core/search.js';
 import { diffData } from '../core/structural-diff.js';
 import { diffFormattedText } from '../core/text-diff.js';
 import { parseErrorLocation } from '../core/parse-error.js';
+import { createTreeTasks } from './tree-tasks.js';
+import { createTextLineIndex } from '../core/text-lines.js';
+
+const TEXT_INDEX_THRESHOLD = 256 * 1024;
 
 /**
  * 一次 Worker 会话的任务入口。format/minify/parse 按需更新搜索数据；
@@ -18,6 +22,7 @@ export function createTaskHandler() {
   let document = null;
   let comparison = null;
   let snapshotSequence = 0;
+  const treeTask = createTreeTasks();
 
   function taskError(code, message) {
     return Object.assign(new Error(message), { code });
@@ -37,6 +42,10 @@ export function createTaskHandler() {
   function documentData(snapshot) {
     if (snapshot.numberLiterals === null) {
       snapshot.numberLiterals = collectNumberLiterals(snapshot.source);
+    }
+    if (lastData === snapshot.data) {
+      lastNumberLiterals = snapshot.numberLiterals;
+      lastSource = null;
     }
     return { data: snapshot.data, numberLiterals: snapshot.numberLiterals };
   }
@@ -75,7 +84,7 @@ export function createTaskHandler() {
       case 'format': {
         const includeData = options.includeData !== false;
         const cached = document?.source === text ? document : null;
-        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData, parsed: cached });
+        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData || options.includeNumberLiterals === true, parsed: cached });
         retainSearch(formatted.data, text, formatted.numberLiterals, options.retainSearch !== false);
         document = options.retainSnapshot ? {
           id: ++snapshotSequence, source: text, output: formatted.text,
@@ -98,15 +107,28 @@ export function createTaskHandler() {
         retainSearch(parsed.data, text, parsed.numberLiterals, options.retainSearch !== false);
         if (options.retainSnapshot) {
           if (!cached) document = { id: ++snapshotSequence, source: text, ...parsed };
-          return { ...parsed, snapshotId: document.id };
+          return { ...(options.includeData === false ? {} : parsed), snapshotId: document.id };
         }
         document = null;
         return parsed;
       }
       case 'parseSnapshot':
-        return documentData(requireSnapshot(document, options.snapshotId));
+        return options.includeData === false
+          ? { snapshotId: requireSnapshot(document, options.snapshotId).id }
+          : documentData(requireSnapshot(document, options.snapshotId));
       case 'comparisonData':
-        return comparisonData(requireSnapshot(comparison, options.snapshotId));
+        return options.includeData === false
+          ? { snapshotId: requireSnapshot(comparison, options.snapshotId).id }
+          : comparisonData(requireSnapshot(comparison, options.snapshotId));
+      case 'tree': {
+        if (options.kind === 'comparison') {
+          const snapshot = requireSnapshot(comparison, options.snapshotId);
+          if (options.side !== 'left' && options.side !== 'right') throw taskError('TASK_FAILED', 'Invalid tree side');
+          return treeTask(snapshot, snapshot[options.side], options);
+        }
+        const snapshot = requireSnapshot(document, options.snapshotId);
+        return treeTask(snapshot, documentData(snapshot), options);
+      }
       case 'snapshotText': {
         if (options.kind === 'document') {
           return { data: requireSnapshot(document, options.snapshotId).source };
@@ -165,6 +187,15 @@ export function createTaskHandler() {
     const started = Date.now();
     try {
       const result = runAction(request);
+      // A million-line output must not build its offsets in the UI message
+      // callback. Keep the index cloneable; no strings or functions per line.
+      if (request.includeTextIndex) {
+        if (result.text?.length > TEXT_INDEX_THRESHOLD) result.lineIndex ||= createTextLineIndex(result.text);
+        if (result.aText?.length > TEXT_INDEX_THRESHOLD) result.aLineIndex ||= createTextLineIndex(result.aText);
+        if (result.bText?.length > TEXT_INDEX_THRESHOLD) {
+          result.bLineIndex ||= result.aText === result.bText ? result.aLineIndex : createTextLineIndex(result.bText);
+        }
+      }
       return { id: request.id, ok: true, result, duration: Date.now() - started };
     } catch (error) {
       const code = error.code || (error instanceof SyntaxError ? 'INVALID_JSON' : 'TASK_FAILED');

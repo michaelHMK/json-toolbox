@@ -1,16 +1,9 @@
 import { appendJsonPath } from './json-path.js';
 
-const NATIVE_STRINGIFY_THRESHOLD = 2 * 1024 * 1024;
-const NUMBER_LITERAL_PROBE_LIMIT = 256;
-
-function withinNumberLiteralBudget(literals) {
-  if (literals === null) return false;
-  let count = 0;
-  for (const path in literals) {
-    if (++count > NUMBER_LITERAL_PROBE_LIMIT) return false;
-  }
-  return true;
-}
+// V8/Chrome cannot materialize a string beyond this limit. Bound the backing
+// buffer as well, so a tiny, deeply nested input cannot grow into multi-GB output.
+const MAX_OUTPUT_LENGTH = 0x1fffffe8;
+const UTF16_ENCODING = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1 ? 'utf-16le' : 'utf-16be';
 
 function skipJsonWhitespace(text, i) {
   while (i < text.length) {
@@ -22,7 +15,7 @@ function skipJsonWhitespace(text, i) {
 }
 
 // 输入必须先通过 JSON.parse；restore=true 时把原生序列化丢失的数字字面量回填
-function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infinity) {
+function scanNumberLiterals(text, numberLiterals, restore) {
   const parentDepths = [];
   const containerIsArray = [];
   const arrayIndexes = [];
@@ -187,8 +180,7 @@ function scanNumberLiterals(text, numberLiterals, restore, literalLimit = Infini
       } else {
         const value = Number(raw);
         if (!Number.isFinite(value) || raw !== String(value)) {
-          // null means the probe is incomplete, never a usable partial map.
-          if (++literalCount > literalLimit) return null;
+          literalCount++;
           literalPaths.push(currentPath());
           literalValues.push(raw);
         }
@@ -310,21 +302,74 @@ function normalizeJsonIndent(indent) {
   return ' '.repeat(Math.min(10, Math.floor(value)));
 }
 
-// 常见输入直接生成结果；需要原生 key 排序、去重或字符串规范化时返回 null
-function formatJsonTextDirect(text, indentUnit) {
+// 输入已由 JSON.parse 验证。直接复制 token，避免创建每个 token 的切片/连接树。
+// 需要原生 key 排序、去重或字符串规范化时整体回退，不返回部分字面量表。
+function formatJsonTextDirect(text, indentUnit, collectLiterals) {
+  const wide = /[^\x00-\x7f]/.test(text);
+  const BufferType = wide ? Uint16Array : Uint8Array;
+  let output = new BufferType(Math.min(MAX_OUTPUT_LENGTH, Math.max(64, text.length * (indentUnit === null ? 1 : 2))));
+  let used = 0;
   const pretty = indentUnit !== null;
-  const lineIndents = pretty ? ['\n'] : null;
+  const indentCode = indentUnit === '\t' ? 9 : 32;
+  const indentWidth = indentUnit?.length ?? 0;
   const parentIsArray = [];
-  const objectKeys = [];
-  const objectKeySets = [];
+  const arrayIndexes = [];
+  const keyCounts = [];
+  const keySets = [];
+  // Sixteen pairs per nesting level; reuse the same storage for sibling objects.
+  let keyRanges = new Int32Array(32 * 16);
+  const numberLiterals = collectLiterals ? Object.create(null) : null;
+  const pathSegments = collectLiterals ? [] : null;
+  const pathKeyStarts = collectLiterals ? [] : null;
+  const pathKeyEnds = collectLiterals ? [] : null;
+  const pathKeyEscapes = collectLiterals ? [] : null;
+  const encodedPaths = collectLiterals ? [''] : null;
+  let pathLength = 0;
+  let encodedLength = 1;
   let depth = 0;
   let i = 0;
   let state = 0; // 0=值，1=对象 key，2=值结束
-  let output = '';
 
-  function lineIndent(level) {
-    if (lineIndents[level] === undefined) lineIndents[level] = '\n' + indentUnit.repeat(level);
-    return lineIndents[level];
+  function reserve(count) {
+    const needed = used + count;
+    if (needed > MAX_OUTPUT_LENGTH) throw new RangeError('Formatted JSON exceeds the maximum string length');
+    if (needed <= output.length) return;
+    const grown = new BufferType(Math.min(MAX_OUTPUT_LENGTH, Math.max(needed, Math.ceil(output.length * 1.5))));
+    grown.set(output.subarray(0, used));
+    output = grown;
+  }
+
+  function copy(start, end) {
+    reserve(end - start);
+    for (let n = start; n < end; n++) output[used++] = text.charCodeAt(n);
+  }
+
+  function newline(level) {
+    const count = level * indentWidth;
+    reserve(count + 1);
+    output[used++] = 10;
+    const end = used + count;
+    while (used < end) output[used++] = indentCode;
+  }
+
+  function setSegment(index, value) {
+    pathSegments[index] = value;
+    pathLength = index + 1;
+    encodedLength = Math.min(encodedLength, index + 1);
+  }
+
+  function currentPath() {
+    for (let n = encodedLength; n <= pathLength; n++) {
+      const frame = n - 1;
+      if (pathSegments[frame] === null) {
+        pathSegments[frame] = pathKeyEscapes[frame]
+          ? JSON.parse(text.slice(pathKeyStarts[frame], pathKeyEnds[frame]))
+          : text.slice(pathKeyStarts[frame] + 1, pathKeyEnds[frame] - 1);
+      }
+      encodedPaths[n] = appendJsonPath(encodedPaths[n - 1], pathSegments[frame]);
+    }
+    encodedLength = pathLength + 1;
+    return encodedPaths[pathLength];
   }
 
   while (true) {
@@ -332,15 +377,26 @@ function formatJsonTextDirect(text, indentUnit) {
       if (depth === 0) break;
       i = skipJsonWhitespace(text, i);
       if (text.charCodeAt(i) === 44) {
-        output += ',';
+        reserve(1);
+        output[used++] = 44;
         i++;
-        if (pretty) output += lineIndent(depth);
-        state = parentIsArray[depth - 1] ? 0 : 1;
+        if (pretty) newline(depth);
+        if (parentIsArray[depth - 1]) {
+          if (collectLiterals) setSegment(depth - 1, ++arrayIndexes[depth - 1]);
+          state = 0;
+        } else {
+          state = 1;
+        }
       } else {
-        const close = text[i++];
+        const close = text.charCodeAt(i++);
         depth--;
-        if (pretty) output += lineIndent(depth);
-        output += close;
+        if (pretty) newline(depth);
+        reserve(1);
+        output[used++] = close;
+        if (collectLiterals) {
+          pathLength = depth;
+          encodedLength = Math.min(encodedLength, depth + 1);
+        }
       }
       continue;
     }
@@ -363,19 +419,44 @@ function formatJsonTextDirect(text, indentUnit) {
         }
       }
       i++;
-      const token = text.slice(start, i);
-      const key = escaped ? JSON.parse(token) : token.slice(1, -1);
+      const first = text.charCodeAt(start + 1);
+      if (first >= 48 && first <= 57) return null;
       const frame = depth - 1;
-      const seen = objectKeys[frame];
-      const seenSet = objectKeySets[frame];
-      if ((key.charCodeAt(0) >= 48 && key.charCodeAt(0) <= 57) || (seenSet ? seenSet.has(key) : seen.includes(key))) return null;
-      if (seenSet) {
-        seenSet.add(key);
+      const base = frame * 32;
+      const count = keyCounts[frame];
+      let seenSet = keySets[frame];
+      if (count < 16) {
+        for (let n = 0; n < count; n++) {
+          const previousStart = keyRanges[base + n * 2];
+          const previousEnd = keyRanges[base + n * 2 + 1];
+          if (previousEnd - previousStart !== i - start) continue;
+          let offset = 1;
+          while (offset < i - start && text.charCodeAt(previousStart + offset) === text.charCodeAt(start + offset)) offset++;
+          if (offset === i - start) return null;
+        }
+        keyRanges[base + count * 2] = start;
+        keyRanges[base + count * 2 + 1] = i;
+        keyCounts[frame]++;
       } else {
-        seen.push(key);
-        if (seen.length === 16) objectKeySets[frame] = new Set(seen);
+        if (!seenSet) {
+          seenSet = new Set();
+          for (let n = 0; n < 16; n++) seenSet.add(text.slice(keyRanges[base + n * 2], keyRanges[base + n * 2 + 1]));
+          keySets[frame] = seenSet;
+        }
+        const key = text.slice(start, i);
+        if (seenSet.has(key)) return null;
+        seenSet.add(key);
       }
-      output += token + (pretty ? ': ' : ':');
+      if (collectLiterals) {
+        setSegment(frame, null);
+        pathKeyStarts[frame] = start;
+        pathKeyEnds[frame] = i;
+        pathKeyEscapes[frame] = escaped;
+      }
+      copy(start, i);
+      reserve(pretty ? 2 : 1);
+      output[used++] = 58;
+      if (pretty) output[used++] = 32;
       i = skipJsonWhitespace(text, i) + 1;
       state = 0;
       continue;
@@ -384,27 +465,35 @@ function formatJsonTextDirect(text, indentUnit) {
     const c = text.charCodeAt(i);
     if (c === 123 || c === 91) {
       const isArray = c === 91;
-      const close = isArray ? ']' : '}';
+      const close = isArray ? 93 : 125;
       const end = skipJsonWhitespace(text, i + 1);
-      if (text.charCodeAt(end) === close.charCodeAt(0)) {
-        output += text[i] + close;
+      if (text.charCodeAt(end) === close) {
+        reserve(2);
+        output[used++] = c;
+        output[used++] = close;
         i = end + 1;
         state = 2;
         continue;
       }
       parentIsArray[depth] = isArray;
       if (isArray) {
-        objectKeys[depth] = null;
-        objectKeySets[depth] = null;
+        if (collectLiterals) {
+          arrayIndexes[depth] = 0;
+          setSegment(depth, 0);
+        }
       } else {
-        const keys = objectKeys[depth] || [];
-        keys.length = 0;
-        objectKeys[depth] = keys;
-        objectKeySets[depth] = null;
+        keyCounts[depth] = 0;
+        keySets[depth] = null;
+        if ((depth + 1) * 32 > keyRanges.length) {
+          const grown = new Int32Array(Math.max((depth + 1) * 32, keyRanges.length * 2));
+          grown.set(keyRanges);
+          keyRanges = grown;
+        }
       }
       depth++;
-      output += text[i];
-      if (pretty) output += lineIndent(depth);
+      reserve(1);
+      output[used++] = c;
+      if (pretty) newline(depth);
       i++;
       state = isArray ? 0 : 1;
       continue;
@@ -421,20 +510,30 @@ function formatJsonTextDirect(text, indentUnit) {
           return null;
         }
       }
-      output += text.slice(start, i);
+      copy(start, i);
       state = 2;
       continue;
     }
     const start = i;
+    let simpleInteger = true;
     while (i < text.length) {
       const code = text.charCodeAt(i);
       if (code === 44 || code === 93 || code === 125 || code === 0x20 || code === 0x0a || code === 0x0d || code === 0x09) break;
+      if (code === 46 || code === 101 || code === 69) simpleInteger = false;
       i++;
     }
-    output += text.slice(start, i);
+    if (collectLiterals && (c === 45 || (c >= 48 && c <= 57))) {
+      const length = i - start;
+      if (!simpleInteger || length > 15 || (length === 2 && c === 45)) {
+        const raw = text.slice(start, i);
+        const value = Number(raw);
+        if (!Number.isFinite(value) || raw !== String(value)) numberLiterals[currentPath()] = raw;
+      }
+    }
+    copy(start, i);
     state = 2;
   }
-  return output;
+  return { text: new TextDecoder(wide ? UTF16_ENCODING : 'utf-8').decode(output.subarray(0, used)), numberLiterals };
 }
 
 /**
@@ -446,21 +545,12 @@ export function formatJson(text, { indent = '2', includeNumberLiterals = false, 
   // parsed 只由持有同一原文解析结果的 Worker 会话传入，避免切换视图重复解析。
   const data = parsed ? parsed.data : JSON.parse(text);
   const indentUnit = indent === null ? null : normalizeJsonIndent(indent);
-  let output = null;
   let numberLiterals = parsed?.numberLiterals ?? null;
-
-  // Native serialization is fast for ordinary large documents. Bound the probe
-  // so numeric arrays can use their original tokens without a per-value map.
-  if (text.length > NATIVE_STRINGIFY_THRESHOLD) {
-    if (numberLiterals === null) {
-      numberLiterals = scanNumberLiterals(text, Object.create(null), false, NUMBER_LITERAL_PROBE_LIMIT);
-    }
-    if (withinNumberLiteralBudget(numberLiterals)) output = stringifyJson(data, numberLiterals, indentUnit);
+  const direct = formatJsonTextDirect(text, indentUnit, includeNumberLiterals && numberLiterals === null);
+  if (direct) {
+    numberLiterals ??= direct.numberLiterals;
+    return { text: direct.text, data, numberLiterals };
   }
-  if (output === null) output = formatJsonTextDirect(text, indentUnit);
-  if ((output === null || includeNumberLiterals) && numberLiterals === null) {
-    numberLiterals = collectNumberLiterals(text);
-  }
-  if (output === null) output = stringifyJson(data, numberLiterals, indentUnit);
-  return { text: output, data, numberLiterals };
+  numberLiterals ??= collectNumberLiterals(text);
+  return { text: stringifyJson(data, numberLiterals, indentUnit), data, numberLiterals };
 }

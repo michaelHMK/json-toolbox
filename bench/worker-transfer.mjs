@@ -28,7 +28,7 @@ const page = await browser.newPage();
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/__worker-transfer.html`);
   const results = await page.evaluate(async () => {
-    const { decodeTaskResponse } = await import('/src/shared/worker-protocol.js');
+    const { createTaskResponseDecoder } = await import('/src/shared/worker-protocol.js');
     const rows = [];
     const median = (values) => +values.sort((a, b) => a - b)[Math.floor(values.length / 2)].toFixed(2);
     const settle = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
@@ -39,12 +39,14 @@ try {
     observer.observe({ type: 'longtask' });
 
     function openWorker() {
+      const decodeTaskResponse = createTaskResponseDecoder();
       const worker = new Worker('/src/worker/index.js', { type: 'module' });
       let sequence = 0;
       let pending;
       worker.onmessage = (event) => {
         const response = decodeTaskResponse(event.data);
-        Object.defineProperty(response, 'transportFallback', { value: !!event.data.result?.serializedData });
+        if (!response) return;
+        Object.defineProperty(response, 'transportFallback', { value: !!event.data.result?.streamedData });
         pending?.(response);
       };
       worker.onerror = (event) => {
@@ -178,12 +180,12 @@ try {
       const withoutSnapshot = await runTask('parse', { text });
       const next = await runTask('parse', { text: '{"alive":true}' });
       rows.push({
-        name: 'client-continues-after-deep-response-and-unrecoverable-transfer',
+        name: 'client-continues-after-deep-response-with-and-without-snapshot',
         deepOk: deep.ok, deepDepth: deep.ok ? nesting(deep.result.data).depth : null,
         noSnapshotOk: withoutSnapshot.ok, noSnapshotError: withoutSnapshot.error,
         nextOk: next.ok, nextAlive: next.result?.data?.alive,
       });
-      if (!deep.ok || nesting(deep.result.data).depth !== 20_000 || withoutSnapshot.ok || !next.ok || !next.result.data.alive) {
+      if (!deep.ok || nesting(deep.result.data).depth !== 20_000 || !withoutSnapshot.ok || !next.ok || !next.result.data.alive) {
         throw new Error('Client transfer recovery or later task failed');
       }
     } finally { clientWorker?.terminate(); }

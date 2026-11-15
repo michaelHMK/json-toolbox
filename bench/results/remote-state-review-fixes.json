@@ -1,0 +1,864 @@
+{
+  "capturedDate": "2026-11-15",
+  "baseline": {
+    "source": "Original review reproducer, captured before the state-transfer protocol fix",
+    "fixture": {
+      "differences": 5000,
+      "depth": 20,
+      "leftCharacters": 1140001,
+      "rightCharacters": 1140001,
+      "requiredChildren": 105001
+    },
+    "initialConstruction": {
+      "postMessageMs": [
+        1.3000001907348633,
+        35.39999961853027,
+        37.19999980926514,
+        53.80000019073486,
+        34.90000009536743
+      ],
+      "maxPostMessageMs": 53.80000019073486,
+      "longTasksMs": [
+        81,
+        77,
+        114,
+        54,
+        51
+      ],
+      "maxLongTaskMs": 114
+    },
+    "denseDiffScroll": {
+      "postMessageMs": [
+        53.5,
+        44.700000286102295,
+        45,
+        61.30000019073486,
+        65.7000002861023,
+        50,
+        47.200000286102295,
+        45,
+        49.59999990463257,
+        59.89999961853027
+      ],
+      "maxPostMessageMs": 65.7000002861023,
+      "longTasksMs": [
+        56,
+        64,
+        68,
+        52,
+        51,
+        62
+      ],
+      "maxLongTaskMs": 68,
+      "rowsRequests": 10,
+      "requiredChildrenPerRequest": 105001
+    }
+  },
+  "after": {
+    "browser": "156.0.8078.47",
+    "mode": "regression",
+    "fixture": {
+      "differences": 5000,
+      "depth": 20,
+      "leftCharacters": 1140001,
+      "rightCharacters": 1140001,
+      "requiredChildren": 105001
+    },
+    "note": "Long Task API reports tasks >=50 ms; zero means none observed. Construction/recovery are excluded from the scroll budget. Local HTTP omits extension startup/i18n.",
+    "phases": [
+      {
+        "name": "initial-construction",
+        "messages": [
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "action": "diff",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 1.3000001907348633
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "action": "tree",
+            "operation": "update",
+            "side": "left",
+            "hasOptions": true,
+            "requiredChildren": 105001,
+            "forceExpand": 105001,
+            "elapsedMs": 34.39999961853027
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "action": "tree",
+            "operation": "update",
+            "side": "right",
+            "hasOptions": true,
+            "requiredChildren": 105001,
+            "forceExpand": 105001,
+            "elapsedMs": 33.90000009536743
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "action": "tree",
+            "operation": "reveal",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "action": "tree",
+            "operation": "reveal",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          }
+        ],
+        "replies": [
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "ok": true,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "operation": "update",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "operation": "update",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "operation": "reveal",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "initial-construction",
+            "worker": 1,
+            "operation": "reveal",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          }
+        ],
+        "longTasksMs": [
+          117,
+          78,
+          113
+        ],
+        "maxLongTaskMs": 117,
+        "maxPostMessageMs": 34.39999961853027,
+        "domEntries": [
+          38,
+          39
+        ],
+        "placeholders": 0
+      },
+      {
+        "name": "dense-diff-scroll",
+        "messages": [
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.10000038146972656
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          }
+        ],
+        "replies": [
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "dense-diff-scroll",
+            "worker": 1,
+            "operation": "rows",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          }
+        ],
+        "longTasksMs": [],
+        "maxLongTaskMs": 0,
+        "maxPostMessageMs": 0.10000038146972656,
+        "domEntries": [
+          39,
+          39
+        ],
+        "placeholders": 0
+      },
+      {
+        "name": "tree-interactions",
+        "messages": [
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "reveal",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "reveal",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "reveal",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "reveal",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "setOpen",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "setOpen",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.10000038146972656
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "setOpen",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "setOpen",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "action": "tree",
+            "operation": "move",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0.09999990463256836
+          }
+        ],
+        "replies": [
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "reveal",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "reveal",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "reveal",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "reveal",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "setOpen",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215000,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "setOpen",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215000,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "setOpen",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "setOpen",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "tree-interactions",
+            "worker": 1,
+            "operation": "move",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215002,
+            "nestedRowValue": false
+          }
+        ],
+        "longTasksMs": [],
+        "maxLongTaskMs": 0,
+        "maxPostMessageMs": 0.10000038146972656,
+        "domEntries": [
+          39,
+          39
+        ],
+        "placeholders": 0
+      },
+      {
+        "name": "comparison-page-recovery",
+        "messages": [
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "diff",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 2.8999996185302734
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "tree",
+            "operation": "update",
+            "side": "left",
+            "hasOptions": true,
+            "requiredChildren": 105001,
+            "forceExpand": 105001,
+            "elapsedMs": 40.89999961853027
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "tree",
+            "operation": "update",
+            "side": "right",
+            "hasOptions": true,
+            "requiredChildren": 105001,
+            "forceExpand": 105001,
+            "elapsedMs": 49.69999980926514
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "tree",
+            "operation": "rows",
+            "side": "left",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "action": "tree",
+            "operation": "rows",
+            "side": "right",
+            "hasOptions": false,
+            "requiredChildren": 0,
+            "forceExpand": 0,
+            "elapsedMs": 0
+          }
+        ],
+        "replies": [
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "ok": true,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "operation": "rows",
+            "side": "left",
+            "ok": false,
+            "code": "TREE_MODEL_UNAVAILABLE",
+            "nestedRowValue": false
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "operation": "rows",
+            "side": "right",
+            "ok": false,
+            "code": "TREE_MODEL_UNAVAILABLE",
+            "nestedRowValue": false
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "operation": "update",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215000,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "operation": "update",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215000,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "operation": "rows",
+            "side": "left",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215000,
+            "nestedRowValue": false
+          },
+          {
+            "phase": "comparison-page-recovery",
+            "worker": 2,
+            "operation": "rows",
+            "side": "right",
+            "ok": true,
+            "rows": 256,
+            "rowCount": 215000,
+            "nestedRowValue": false
+          }
+        ],
+        "longTasksMs": [],
+        "maxLongTaskMs": 0,
+        "maxPostMessageMs": 49.69999980926514,
+        "domEntries": [
+          39,
+          39
+        ],
+        "placeholders": 0
+      }
+    ],
+    "recovery": {
+      "beforeCount": 9,
+      "afterCount": 11,
+      "paths": [
+        "",
+        "/branch",
+        "/rows",
+        "/rows/5",
+        "/rows/5/n",
+        "/rows/19000",
+        "/rows/19000/n"
+      ],
+      "branchOpen": "false",
+      "retainedManualExpansion": true,
+      "retainedManualCollapse": true,
+      "messages": [
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "action": "parse",
+          "hasOptions": false,
+          "requiredChildren": 0,
+          "forceExpand": 0,
+          "elapsedMs": 0.19999980926513672
+        },
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "action": "tree",
+          "operation": "setOpen",
+          "hasOptions": false,
+          "requiredChildren": 0,
+          "forceExpand": 0,
+          "elapsedMs": 0
+        },
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "action": "tree",
+          "operation": "update",
+          "hasOptions": true,
+          "requiredChildren": 6,
+          "forceExpand": 3,
+          "elapsedMs": 0
+        },
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "action": "tree",
+          "operation": "setOpen",
+          "hasOptions": false,
+          "requiredChildren": 0,
+          "forceExpand": 0,
+          "elapsedMs": 0
+        }
+      ],
+      "replies": [
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "ok": true,
+          "nestedRowValue": false
+        },
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "operation": "setOpen",
+          "ok": false,
+          "code": "TREE_MODEL_UNAVAILABLE",
+          "nestedRowValue": false
+        },
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "operation": "update",
+          "ok": true,
+          "rows": 11,
+          "rowCount": 11,
+          "nestedRowValue": false
+        },
+        {
+          "phase": "worker-recovery",
+          "worker": 2,
+          "operation": "setOpen",
+          "ok": true,
+          "rows": 11,
+          "rowCount": 11,
+          "nestedRowValue": false
+        }
+      ]
+    },
+    "errors": []
+  }
+}

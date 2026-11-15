@@ -12,7 +12,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 - **保持交互流畅**：Web Worker 承担解析、搜索与对比，减少主线程计算对界面响应的影响。
 - **轻量浏览大结果**：树和长文本按可见区域渲染，避免一次创建全部结果节点；支持树搜索定位与完整复制。
-- **大输入虚拟化**：超过 2 MiB 的输入使用只读虚拟预览，避免原生 textarea 的全量布局开销。
+- **大输入虚拟化**：超过 262,144 个 UTF-16 码元的输入（ASCII 文本约 256 KiB）使用只读虚拟预览，避免原生 textarea 的全量布局开销。
 - **减少重复开销**：普通文档复用解析结果和计算缓存；大文件纯文本处理按数据选择原生或直接序列化，深层嵌套自动回退到迭代处理，并释放不需要的 Worker 文档缓存。
 
 性能验证方法与大结果的使用边界见下文[性能验证](#性能验证)。
@@ -35,7 +35,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 | **JSON 转义 / 去转义** | 文本与 JSON 字符串互转，一键复制 |
 | **JSON 对比** | 双 JSON 结构化 diff（新增 / 删除 / 变更 / 类型变化）；数组按下标或主键配对；可忽略指定路径；树形高亮与「只看差异」；文本逐行 diff |
 
-格式化与压缩页面还支持通过文件选择器或拖拽导入一个本地 UTF-8 `.json` 文件（最大 50 MiB）。导入后输入区保留文件原文，并自动执行当前格式化或压缩操作。大输入始终保留只读虚拟预览，语法出错时也在预览内定位浏览器提供的错误位置。
+格式化、压缩页面和对比页的两侧输入均支持通过文件选择器或拖拽导入本地 UTF-8 `.json` 文件（每个最大 50 MiB）。导入后保留原文并自动执行操作；对比页在两侧都有输入后自动对比。大文本粘贴和纯文本拖放同样使用虚拟预览。大输入始终保留只读虚拟预览，语法出错时也在预览内定位浏览器提供的错误位置。
 
 侧边栏可在各工具页之间切换。`_locales/` 包含 13 个语言及地区版本：英文（`en`）、简体中文（`zh_CN`）、繁体中文（台湾 `zh_TW`、香港 `zh_HK`）、日语（`ja`）、韩语（`ko`）、德语（`de`）、法语（`fr`）、西班牙语（`es`）、葡萄牙语（巴西 `pt_BR`、葡萄牙 `pt_PT`）、俄语（`ru`）和阿拉伯语（`ar`）。Chrome 根据浏览器界面语言选择翻译，默认语言为英文；扩展 API 不可用时，页面静态文案也以英文兜底。阿拉伯语界面从右向左排列，JSON 输入、输出和树始终从左向右显示。
 
@@ -73,7 +73,7 @@ styles/app.css         # 五个页面共用样式
 icons/                 # 扩展图标（manifest 引用）
 _locales/              # 国际化文案
 tests/                 # 算法与通信契约、发布文件检查
-bench/                 # 搜索/对比算法基准与可选浏览器验证
+bench/                 # 格式化/搜索/对比算法基准与可选浏览器验证
 package.json           # 原生 ES modules 与测试命令，无第三方依赖
 gen_icons.py           # 重新生成 icons/ 下 PNG（可选）
 build_release.py       # 发布检查与白名单打包（Python 标准库）
@@ -89,7 +89,7 @@ store-assets/          # 商店截图、宣传图与生成脚本（不打进扩�
 | `pages → shared` | 页面管理自己的状态；共享层负责浏览器交互。格式化树和对比树保留各自的展开、搜索及差异逻辑。 |
 | `pages/shared → core` | 视图使用 JSON Pointer 与文本行偏移索引；JSON 解析、搜索与对比通过 Worker 执行。 |
 | `shared/worker-client → worker/index` | 请求按 id 配对，全部完成才结束忙碌状态。页面启用串行队列，同类未发送任务只保留最新输入；清空取消排队任务，取消结果带 `cancelled: true`。 |
-| `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。页面通过 `retainSnapshot`/`snapshotId` 复用解析结果；`includeData: false` 省略对象传输，切树视图再取。清空使快照失效，压缩页不保留不需要的搜索数据。 |
+| `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。页面通过 `retainSnapshot`/`snapshotId` 复用解析结果；`includeData: false` 省略对象传输。大文档树模型留在 Worker，仅返回最多 256 行的窗口；小文档仍使用同步树。清空使快照失效，压缩页不保留不需要的搜索数据。 |
 | `core` | 不依赖 DOM、Chrome API 或 Worker 全局对象；无效输入抛出异常，由任务层转换为错误响应。数字原文字面量的扫描与恢复集中在 `json.js`。 |
 
 共享虚拟视图负责窗口索引和 DOM 生命周期；页面保留各自的搜索、配对、筛选和导航逻辑。新增任务时，先将算法放入 `core/`，再接入 `worker/tasks.js`；新增运行时文件还需加入 `build_release.py` 的白名单。
@@ -107,7 +107,7 @@ python3 build_release.py --check
 
 ### 性能验证
 
-运行 `npm run bench` 测量搜索与对比算法性能。比较结果时，应在相同环境下串行运行基准。
+运行 `npm run bench` 测量确定性数据集下的格式化、压缩、搜索与对比性能。比较结果时，应在相同环境下串行运行基准。`npm run bench:budget` 用 25 MiB 样本的中位数检查格式化/压缩相对原生 parse/stringify 的耗时预算。实现取舍、测量限制和复现命令见 [PERFORMANCE.md](PERFORMANCE.md)。
 
 可选的浏览器验证覆盖大文本、虚拟树、导航和 Worker 数据传输，需要本地已有 Playwright 与 Chromium：
 
@@ -121,6 +121,8 @@ node bench/file-import.mjs .
 node bench/text-view.mjs
 node bench/tree-view.mjs
 node bench/worker-transfer.mjs
+node bench/performance.mjs
+node bench/remote-pages.mjs
 node bench/theme.mjs
 ```
 

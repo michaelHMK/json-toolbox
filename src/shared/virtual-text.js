@@ -54,7 +54,7 @@ export function createVirtualTextView(element) {
     let info = geometry.get(index);
     if (info) return info;
     const text = row.prefix + row.text.slice(row.start, row.end);
-    const ascii = !/[^\x20-\x7e]/.test(text);
+    const ascii = row.ascii === true || !/[^\x20-\x7e]/.test(text);
     if (ascii) {
       info = { text, width: text.length * characterWidth, ascii: true };
     } else {
@@ -403,10 +403,10 @@ export function createVirtualTextView(element) {
   const resize = new ResizeObserver(() => refresh());
   resize.observe(element);
   return {
-    setText(text) {
+    setText(text, lineIndex) {
       if (model && diffResult === null && model.sourceText === text) { refresh(); return; }
       diffResult = null;
-      setModel(createPlainTextRows(text), text);
+      setModel(createPlainTextRows(text, lineIndex), text);
     },
     setDiff(result) {
       if (model && diffResult === result) { refresh(); return; }

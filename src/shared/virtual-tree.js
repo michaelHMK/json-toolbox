@@ -1,231 +1,12 @@
-import { appendJsonPath } from '../core/json-path.js';
-import { createChildPathIndex, span } from './json-tree.js';
+import { createTreeModel } from '../core/tree-model.js';
+export { createTreeModel } from '../core/tree-model.js';
+import { span } from './json-tree.js';
 import { t } from './i18n.js';
 
 const isContainer = (value) => value !== null && typeof value === 'object';
-const decodeKey = (key) => key.replace(/~1/g, '/').replace(/~0/g, '~');
 const PREVIEW_LIMIT = 2000;
 const MAX_SCROLL_HEIGHT = 8_000_000;
 let nextTreeId = 0;
-const MODEL_OPTIONS = ['data', 'expandLevel', 'expanded', 'collapsed', 'forceExpand', 'onlyRequired', 'requiredChildren'];
-const modelOptions = (options) => Object.fromEntries(MODEL_OPTIONS.filter((key) => Object.hasOwn(options, key)).map((key) => [key, options[key]]));
-
-// Logical rows are compressed sibling ranges, not one allocation per value.
-// The model has no DOM dependency; opening containers builds its index iteratively.
-export function createTreeModel(initial = {}) {
-  let options = {
-    data: undefined, expandLevel: 1, expanded: new Set(), collapsed: new Set(),
-    forceExpand: new Set(), onlyRequired: false, requiredChildren: new Map(),
-    ...modelOptions(initial),
-  };
-  let keyCache = new WeakMap();
-  let segments = [];
-  let containers = new Map();
-  let rowCount = 0;
-
-  function keysOf(value) {
-    if (Array.isArray(value)) return null;
-    let keys = keyCache.get(value);
-    if (!keys) keyCache.set(value, keys = Object.keys(value));
-    return keys;
-  }
-  const openAt = (path, depth) => !options.collapsed.has(path)
-    && (path === '' || options.expanded.has(path) || options.forceExpand.has(path) || depth < options.expandLevel);
-
-  function keyAt(record, position) {
-    const index = record.indices ? record.indices[position] : position;
-    return record.keys ? record.keys[index] : index;
-  }
-
-  // Only requested object keys get an index. Building a million-entry key Map
-  // to locate one search result would undo the savings from virtual rendering.
-  function positionsFor(record, paths) {
-    if (!paths?.size) return [];
-    const indexes = [];
-    if (record.keys) {
-      const wanted = new Set([...paths].map((path) => decodeKey(path.slice(record.path.length + 1))));
-      for (let i = 0; i < record.keys.length; i++) if (wanted.has(record.keys[i])) indexes.push(i);
-    } else {
-      for (const path of paths) {
-        const key = path.slice(record.path.length + 1);
-        const i = Number(key);
-        if (Number.isInteger(i) && i >= 0 && i < record.value.length && String(i) === key) indexes.push(i);
-      }
-      indexes.sort((a, b) => a - b);
-    }
-    return indexes;
-  }
-
-  function emit(segment, count = 1) {
-    segment.row = rowCount;
-    segment.count = count;
-    rowCount += count;
-    segments.push(segment);
-    return segment;
-  }
-
-  function build() {
-    segments = [];
-    containers = new Map();
-    rowCount = 0;
-    if (options.data === undefined) return;
-    const expansionChildren = createChildPathIndex([...options.expanded, ...options.forceExpand]);
-
-    function enter(value, key, path, depth, isIndex, posInSet = 1, setSize = 1) {
-      const open = isContainer(value) && openAt(path, depth);
-      const descriptor = { kind: 'entry', value, key, path, depth, isIndex, open, posInSet, setSize };
-      const entry = emit({ kind: 'entry', descriptor });
-      if (!open) return null;
-      const record = { value, path, depth, keys: keysOf(value), indices: null, ranges: [], entryRow: entry.row };
-      if (options.onlyRequired) record.indices = positionsFor(record, options.requiredChildren.get(path));
-      record.length = record.indices ? record.indices.length : record.keys ? record.keys.length : value.length;
-      record.opens = [];
-      if (depth + 1 < options.expandLevel) {
-        // Automatic expansion must inspect containers, but primitive siblings
-        // still share one range and never acquire persistent paths/row objects.
-        for (let position = 0; position < record.length; position++) {
-          const childKey = keyAt(record, position);
-          const child = value[childKey];
-          if (!isContainer(child)) continue;
-          const childPath = appendJsonPath(path, childKey);
-          if (openAt(childPath, depth + 1)) record.opens.push({ position, key: childKey, value: child, path: childPath });
-        }
-      } else {
-        const candidates = positionsFor(record, expansionChildren.get(path));
-        let filteredIndex = 0;
-        for (const index of candidates) {
-          let position = index;
-          if (record.indices) {
-            while (filteredIndex < record.indices.length && record.indices[filteredIndex] < index) filteredIndex++;
-            if (record.indices[filteredIndex] !== index) continue;
-            position = filteredIndex;
-          }
-          const childKey = record.keys ? record.keys[index] : index;
-          const child = value[childKey];
-          const childPath = appendJsonPath(path, childKey);
-          if (isContainer(child) && openAt(childPath, depth + 1)) record.opens.push({ position, key: childKey, value: child, path: childPath });
-        }
-      }
-      record.next = 0;
-      record.openIndex = 0;
-      containers.set(path, record);
-      return record;
-    }
-
-    const root = enter(options.data, null, '', 0, false);
-    const stack = root ? [root] : [];
-    while (stack.length) {
-      const record = stack[stack.length - 1];
-      const child = record.opens[record.openIndex];
-      const end = child ? child.position : record.length;
-      if (end > record.next) {
-        record.ranges.push(emit({ kind: 'range', record, start: record.next }, end - record.next));
-      }
-      if (child) {
-        record.next = child.position + 1;
-        record.openIndex++;
-        const nested = enter(child.value, child.key, child.path, record.depth + 1, record.keys === null, child.position + 1, record.length);
-        if (nested) stack.push(nested);
-      } else {
-        emit({ kind: 'close', descriptor: { kind: 'close', value: record.value, path: record.path, depth: record.depth } });
-        // Traversal scratch is not part of the persistent row index.
-        record.opens = null;
-        stack.pop();
-      }
-    }
-  }
-
-  function rowAt(index) {
-    if (!Number.isInteger(index) || index < 0 || index >= rowCount) return null;
-    let lo = 0;
-    let hi = segments.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      if (segments[mid].row + segments[mid].count <= index) lo = mid + 1;
-      else hi = mid;
-    }
-    const segment = segments[lo];
-    if (segment.kind !== 'range') return segment.descriptor;
-    const { record } = segment;
-    const key = keyAt(record, segment.start + index - segment.row);
-    return {
-      kind: 'entry', key, value: record.value[key], path: appendJsonPath(record.path, key),
-      depth: record.depth + 1, isIndex: record.keys === null, open: false,
-      posInSet: segment.start + index - segment.row + 1, setSize: record.length,
-    };
-  }
-
-  function indexOf(path) {
-    if (path === '') return rowCount ? 0 : -1;
-    const opened = containers.get(path);
-    if (opened) return opened.entryRow;
-    const slash = path.lastIndexOf('/');
-    const parent = containers.get(path.slice(0, slash));
-    if (!parent) return -1;
-    const key = decodeKey(path.slice(slash + 1));
-    let position = parent.keys ? parent.keys.indexOf(key) : Number(key);
-    if (!Number.isInteger(position) || position < 0 || (!parent.keys && String(position) !== key)) return -1;
-    if (parent.indices) {
-      let lo = 0;
-      let hi = parent.indices.length;
-      while (lo < hi) {
-        const mid = (lo + hi) >>> 1;
-        if (parent.indices[mid] < position) lo = mid + 1;
-        else hi = mid;
-      }
-      if (parent.indices[lo] !== position) return -1;
-      position = lo;
-    }
-    let lo = 0;
-    let hi = parent.ranges.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >>> 1;
-      const range = parent.ranges[mid];
-      if (range.start + range.count <= position) lo = mid + 1;
-      else hi = mid;
-    }
-    const range = parent.ranges[lo];
-    return range && position >= range.start ? range.row + position - range.start : -1;
-  }
-
-  function update(next) {
-    if (Object.hasOwn(next, 'data') && next.data !== options.data) keyCache = new WeakMap();
-    options = { ...options, ...modelOptions(next) };
-    build();
-  }
-  function setOpen(path, open) {
-    if (open) { options.expanded.add(path); options.collapsed.delete(path); }
-    else { options.expanded.delete(path); options.collapsed.add(path); }
-    build();
-  }
-  function reveal(path) {
-    const existing = indexOf(path);
-    if (existing >= 0) return existing;
-    let value = options.data;
-    let parentPath = '';
-    const ancestors = [];
-    const keys = path === '' ? [] : path.slice(1).split('/').map(decodeKey);
-    for (const key of keys) {
-      if (!isContainer(value) || !Object.hasOwn(value, key)) return -1;
-      ancestors.push(parentPath);
-      value = value[key];
-      parentPath = appendJsonPath(parentPath, key);
-    }
-    for (const ancestor of ancestors) {
-      options.expanded.add(ancestor);
-      options.collapsed.delete(ancestor);
-    }
-    build();
-    return indexOf(path);
-  }
-
-  build();
-  return {
-    update, setOpen, reveal, rowAt, indexOf,
-    sizeOf: (value) => Array.isArray(value) ? value.length : keysOf(value).length,
-    get rowCount() { return rowCount; },
-  };
-}
 
 function prefix(text) {
   let end = Math.min(text.length, PREVIEW_LIMIT);
@@ -235,15 +16,15 @@ function prefix(text) {
   return text.slice(0, end);
 }
 
-function literalPreview(text) {
-  return text.length > PREVIEW_LIMIT ? prefix(text) + t('strTruncated', [text.length.toLocaleString()]) : text;
+function literalPreview(text, length = text.length) {
+  return length > PREVIEW_LIMIT ? prefix(text) + t('strTruncated', [length.toLocaleString()]) : text;
 }
 
-function preview(value) {
+function preview(value, length = typeof value === 'string' ? value.length : undefined) {
   if (typeof value === 'string') {
     const encoded = JSON.stringify(prefix(value));
-    if (value.length > PREVIEW_LIMIT || encoded.length > PREVIEW_LIMIT) {
-      return prefix(encoded) + t('strTruncated', [value.length.toLocaleString()]);
+    if (length > PREVIEW_LIMIT || encoded.length > PREVIEW_LIMIT) {
+      return prefix(encoded) + t('strTruncated', [length.toLocaleString()]);
     }
     return encoded;
   }
@@ -251,15 +32,18 @@ function preview(value) {
 }
 
 /**
- * A local-data virtual tree. update replaces any supplied options and rebuilds
- * logical rows; refresh only repaints the viewport. reveal opens ancestors and
- * scrolls to a path. setOpen notifies onToggle only with { notify: true }.
+ * A virtual tree with either a local model or an injected windowed model.
+ * update replaces supplied options; refresh only paints the viewport. reveal
+ * opens ancestors and scrolls to a path. setOpen notifies onToggle only with
+ * { notify: true }. Local operations stay synchronous; remote mutations return
+ * promises and window misses render placeholders until their response arrives.
  * Source data must remain immutable between updates, so key lists can be cached.
  */
 export function createVirtualTree(container, initial = {}) {
   let options = { rowHeight: 24, overscan: 12, highlights: new Set(), decorations: new Map(), numberLiterals: null, ...initial };
-  const model = createTreeModel(options);
+  const model = initial.model || createTreeModel(options);
   let currentPath = null;
+  let activationVersion = 0;
   let activePath = model.rowCount ? '' : null;
   let activeIndex = model.rowCount ? 0 : -1;
   const treeId = `json-tree-${++nextTreeId}`;
@@ -267,6 +51,7 @@ export function createVirtualTree(container, initial = {}) {
   const originalAttributes = new Map(['role', 'tabindex', 'aria-activedescendant'].map((name) => [name, container.getAttribute(name)]));
   let frame = null;
   let destroyed = false;
+  let navigation = Promise.resolve();
   let maxWidth = 0;
   const requestFrame = globalThis.requestAnimationFrame || ((callback) => setTimeout(callback, 0));
   const cancelFrame = globalThis.cancelAnimationFrame || clearTimeout;
@@ -306,7 +91,9 @@ export function createVirtualTree(container, initial = {}) {
       row.appendChild(span('toggle-spacer', ''));
       row.appendChild(span('punct', Array.isArray(value) ? ']' : '}'));
       row.addEventListener('click', () => {
+        activationVersion++;
         activePath = path;
+        model.setActive?.(path, -1);
         setOpen(path, false, { notify: true });
         container.focus({ preventScroll: true });
       });
@@ -330,16 +117,16 @@ export function createVirtualTree(container, initial = {}) {
     // Set the active row before the browser focuses the tree on pointer-down.
     row.addEventListener('pointerdown', activate);
     if (key !== null) {
-      row.appendChild(span('key', descriptor.isIndex ? String(key) : preview(String(key))));
+      row.appendChild(span('key', descriptor.isIndex ? String(key) : preview(String(key), descriptor.keyLength)));
       row.appendChild(span('punct', ': '));
     }
     if (containerValue) {
       const isArray = Array.isArray(value);
       row.appendChild(span('punct', isArray ? '[' : '{'));
-      const size = model.sizeOf(value);
+      const size = descriptor.size ?? model.sizeOf(value);
       const summaryText = t(isArray ? 'treeSummaryItems' : 'treeSummaryKeys', [size.toLocaleString()]);
       const summary = span('summary', summaryText);
-      entry.setAttribute('aria-label', key === null ? summaryText : `${literalPreview(String(key))}: ${summaryText}`);
+      entry.setAttribute('aria-label', key === null ? summaryText : `${literalPreview(String(key), descriptor.keyLength)}: ${summaryText}`);
       if (size) entry.setAttribute('aria-expanded', String(open));
       if (!open) {
         row.appendChild(summary);
@@ -347,7 +134,7 @@ export function createVirtualTree(container, initial = {}) {
       }
       const flip = () => {
         activate();
-        setOpen(path, !open, { notify: true });
+        setOpen(path, !(model.openState?.(path, open) ?? open), { notify: true });
         container.focus({ preventScroll: true });
       };
       toggle.addEventListener('click', flip);
@@ -359,8 +146,9 @@ export function createVirtualTree(container, initial = {}) {
       });
     } else {
       const type = value === null ? 'null' : typeof value === 'boolean' ? 'bool' : typeof value;
-      const literal = typeof value === 'number' ? options.numberLiterals?.[path] : undefined;
-      row.appendChild(span('v ' + type, literal === undefined ? preview(value) : literalPreview(String(literal))));
+      const literal = descriptor.literal ?? (typeof value === 'number' ? options.numberLiterals?.[path] : undefined);
+      row.appendChild(span('v ' + type, literal === undefined ? preview(value, descriptor.valueLength)
+        : literalPreview(String(literal), descriptor.literalLength)));
       row.addEventListener('click', () => {
         if (hasTextSelection()) return;
         activate();
@@ -380,20 +168,36 @@ export function createVirtualTree(container, initial = {}) {
     const logicalTop = scrollTop * g.scale;
     const start = Math.max(0, Math.floor(logicalTop / options.rowHeight) - options.overscan);
     const end = Math.min(model.rowCount, Math.ceil((logicalTop + g.viewport) / options.rowHeight) + options.overscan);
+    const loading = model.ensureRange?.(start, end);
+    if (loading) loading.then((changed) => {
+      if (changed && !destroyed) { restoreActive(); refresh(); }
+    });
     layer.style.top = `${scrollTop - logicalTop + start * options.rowHeight}px`;
     const fragment = document.createDocumentFragment();
     // Keep the active descendant mounted when wheel scrolling recycles its row.
     // This costs one extra row, independent of the size or depth of the JSON.
     let pinned = null;
     if (activeIndex >= 0 && (activeIndex < start || activeIndex >= end)) {
-      pinned = renderRow(model.rowAt(activeIndex), activeIndex);
-      pinned.classList.add('virtual-active-outside');
+      const descriptor = model.rowAt(activeIndex);
+      if (descriptor) {
+        pinned = renderRow(descriptor, activeIndex);
+        pinned.classList.add('virtual-active-outside');
+      }
     }
     if (pinned && activeIndex < start) fragment.appendChild(pinned);
-    for (let index = start; index < end; index++) fragment.appendChild(renderRow(model.rowAt(index), index));
+    for (let index = start; index < end; index++) {
+      const descriptor = model.rowAt(index);
+      if (descriptor) fragment.appendChild(renderRow(descriptor, index));
+      else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'entry virtual-placeholder';
+        placeholder.setAttribute('aria-hidden', 'true');
+        fragment.appendChild(placeholder);
+      }
+    }
     if (pinned && activeIndex >= end) fragment.appendChild(pinned);
     layer.replaceChildren(fragment);
-    if (activeIndex >= 0) container.setAttribute('aria-activedescendant', itemId(activeIndex));
+    if (activeIndex >= 0 && model.rowAt(activeIndex)) container.setAttribute('aria-activedescendant', itemId(activeIndex));
     else container.removeAttribute('aria-activedescendant');
     maxWidth = Math.max(maxWidth, layer.scrollWidth || 0);
     if (maxWidth) spacer.style.minWidth = `${maxWidth}px`;
@@ -413,23 +217,55 @@ export function createVirtualTree(container, initial = {}) {
       activePath = null;
     }
     options = { ...options, ...next };
-    model.update(next);
-    restoreActive();
-    refresh();
+    return after(model.update(next), () => { restoreActive(); refresh(); });
+  }
+  // The local model is synchronous. Remote models keep the same rendering and
+  // interaction code, but settle mutations only after their Worker response.
+  function after(result, apply) {
+    if (result?.then) return result.then((value) => {
+      if (!destroyed && value !== false) return apply(value);
+      return false;
+    });
+    return apply(result);
   }
   function setOpen(path, open, { notify = false } = {}) {
-    model.setOpen(path, open);
-    restoreActive();
-    refresh();
-    if (notify) options.onToggle?.(path, open);
+    const result = model.setOpen(path, open);
+    // Synchronize paired trees for every user intention, including quick
+    // successive clicks whose older rendering response is superseded.
+    if (notify && result?.then) options.onToggle?.(path, open);
+    return after(result, () => {
+      restoreActive();
+      refresh();
+      if (model.move) ensureActiveVisible();
+      if (notify && !result?.then) options.onToggle?.(path, open);
+    });
   }
   function reveal(path) {
-    const index = model.reveal(path);
+    return navigateResult(model.reveal(path), (index) => showPath(path, index));
+  }
+  function navigateResult(result, apply) {
+    const selected = activationVersion;
+    return after(result, (value) => {
+      if (model.active && selected !== activationVersion) {
+        restoreActive();
+        refresh();
+        ensureActiveVisible();
+        return true;
+      }
+      return apply(value);
+    });
+  }
+  function showPath(path, index) {
     if (index < 0) return false;
     activePath = path;
     activeIndex = index;
+    model.setActive?.(path, index);
     const g = geometry();
     const logicalTop = Math.max(0, Math.min(g.logicalRange, index * options.rowHeight - (g.viewport - options.rowHeight) / 2));
+    // A reveal can be the first response of an asynchronous tree (superseding
+    // its initial update). Grow the physical scroller before assigning its
+    // position, otherwise browsers clamp that assignment to the old height.
+    spacer.style.height = `${g.physicalHeight}px`;
     container.scrollTop = logicalTop / g.scale;
     refresh();
     // Nested indentation can put the actual key/value thousands of pixels to
@@ -461,8 +297,10 @@ export function createVirtualTree(container, initial = {}) {
       && (container.contains(selection.anchorNode) || container.contains(selection.focusNode));
   }
   function setActive(path, index) {
+    activationVersion++;
     activePath = path;
     activeIndex = index;
+    model.setActive?.(path, index);
     // Pointer activation must not replace text nodes: doing so clears the
     // browser's text selection, including double-click selection of a value.
     for (const entry of [...layer.children]) {
@@ -472,6 +310,11 @@ export function createVirtualTree(container, initial = {}) {
     container.setAttribute('aria-activedescendant', itemId(index));
   }
   function restoreActive() {
+    if (model.active) {
+      activePath = model.active.path;
+      activeIndex = model.active.index;
+      return;
+    }
     // Collapse/filter operations may hide the active item: fall back to its
     // closest visible ancestor without moving focus out of the tree.
     let path = activePath ?? '';
@@ -484,39 +327,60 @@ export function createVirtualTree(container, initial = {}) {
     activeIndex = index;
   }
   function moveActive(index, step) {
+    if (model.move) return navigateResult(model.move(index, step), (next) => {
+      if (next >= 0) return showPath(model.active.path, next);
+    });
     let row = model.rowAt(index);
     while (row?.kind === 'close') { index += step; row = model.rowAt(index); }
     if (!row) return;
     reveal(row.path);
   }
-  function keydown(event) {
-    if (event.altKey || event.ctrlKey || event.metaKey || activeIndex < 0) return;
+  function navigate(key) {
+    if (destroyed || activeIndex < 0) return;
     const row = model.rowAt(activeIndex);
-    const expandable = isContainer(row.value) && model.sizeOf(row.value) > 0;
-    switch (event.key) {
-      case 'ArrowDown': moveActive(activeIndex + 1, 1); break;
-      case 'ArrowUp': moveActive(activeIndex - 1, -1); break;
-      case 'Home': moveActive(0, 1); break;
-      case 'End': moveActive(model.rowCount - 1, -1); break;
+    if (!row) return;
+    const expandable = isContainer(row.value) && (row.size ?? model.sizeOf(row.value)) > 0;
+    switch (key) {
+      case 'ArrowDown': return moveActive(activeIndex + 1, 1);
+      case 'ArrowUp': return moveActive(activeIndex - 1, -1);
+      case 'Home': return moveActive(0, 1);
+      case 'End': return moveActive(model.rowCount - 1, -1);
       case 'ArrowRight':
-        if (expandable && !row.open) setOpen(row.path, true, { notify: true });
+        if (expandable && !row.open) return setOpen(row.path, true, { notify: true });
         else if (expandable) {
+          if (model.child) return navigateResult(model.child(row.path), (index) => {
+            if (index >= 0) return showPath(model.active.path, index);
+          });
           const child = model.rowAt(activeIndex + 1);
-          if (child?.kind === 'entry' && child.depth > row.depth) moveActive(activeIndex + 1, 1);
+          if (child?.kind === 'entry' && child.depth > row.depth) return moveActive(activeIndex + 1, 1);
         }
         break;
       case 'ArrowLeft':
-        if (expandable && row.open) setOpen(row.path, false, { notify: true });
-        else if (row.path !== '') reveal(row.path.slice(0, row.path.lastIndexOf('/')));
+        if (expandable && row.open) return setOpen(row.path, false, { notify: true });
+        else if (row.path !== '') return reveal(row.path.slice(0, row.path.lastIndexOf('/')));
         break;
       case 'Enter':
       case ' ':
-        if (expandable) setOpen(row.path, !row.open, { notify: true });
+        if (expandable) return setOpen(row.path, !row.open, { notify: true });
         break;
-      default: return;
     }
+  }
+  function keydown(event) {
+    if (event.altKey || event.ctrlKey || event.metaKey || activeIndex < 0) return;
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End', 'ArrowRight', 'ArrowLeft', 'Enter', ' '].includes(event.key)) return;
     event.preventDefault();
-    ensureActiveVisible();
+    if (model.move) {
+      const selected = activationVersion;
+      navigation = navigation.then(async () => {
+        if (selected !== activationVersion || destroyed) return;
+        await model.whenSettled?.();
+        if (selected === activationVersion && !destroyed) {
+          restoreActive();
+          return navigate(event.key);
+        }
+      });
+    }
+    else { navigate(event.key); ensureActiveVisible(); }
   }
   function ensureActiveVisible() {
     if (activeIndex < 0) return;
@@ -551,7 +415,8 @@ export function createVirtualTree(container, initial = {}) {
     spacer.replaceChildren();
     container.replaceChildren();
     container.classList.remove('virtual-tree');
-    model.update({ data: undefined, expanded: new Set(), collapsed: new Set(), forceExpand: new Set(), requiredChildren: new Map() });
+    if (model.destroy) model.destroy();
+    else model.update({ data: undefined, expanded: new Set(), collapsed: new Set(), forceExpand: new Set(), requiredChildren: new Map() });
     options = {};
     currentPath = null;
     activePath = null;

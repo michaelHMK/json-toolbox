@@ -1,5 +1,6 @@
-// Store offsets into the original string, never an array of every line's text.
-export function createTextLines(text) {
+// A transferable/cloneable index has no source text or bound methods. Workers
+// build this once; the UI attaches a reader without scanning the document.
+export function createTextLineIndex(text) {
   const hasCR = text.includes('\r');
   const visitBreaks = (visit) => {
     if (hasCR) {
@@ -23,6 +24,17 @@ export function createTextLines(text) {
   });
   maxLineLength = Math.max(maxLineLength, text.length - previous);
   starts[count] = text.length;
+  // Long minified lines can spend tens of milliseconds just checking their
+  // character width. Carry the safe fast-path flag with the Worker index.
+  const ascii = maxLineLength > 8000 && !(count === 1
+    ? /[^\x20-\x7e]/.test(text) : /[^\x20-\x7e\r\n]/.test(text));
+  return { starts, count, maxLineLength, ascii };
+}
+
+// Store offsets into the original string, never an array of every line's text.
+// A supplied index must describe this exact text, including its CR/LF policy.
+export function createTextLines(text, index) {
+  const { starts, count, maxLineLength, ascii } = index ?? createTextLineIndex(text);
   return {
     text, starts, count, maxLineLength,
     bounds(index) {
@@ -33,13 +45,13 @@ export function createTextLines(text) {
         if (text.charCodeAt(end - 1) === 10) end--;
         if (text.charCodeAt(end - 1) === 13) end--;
       }
-      return { text, start, end, prefix: '', className: '' };
+      return { text, start, end, prefix: '', className: '', ascii };
     },
   };
 }
 
-export function createPlainTextRows(text) {
-  const lines = createTextLines(text);
+export function createPlainTextRows(text, index) {
+  const lines = createTextLines(text, index);
   return {
     count: lines.count,
     maxLineLength: lines.maxLineLength,
@@ -52,8 +64,8 @@ export function createPlainTextRows(text) {
 // A segment describes many displayed rows. Even million-line add/delete blocks
 // need one segment each; individual rows are materialized only for the viewport.
 export function createDiffTextRows(result, { gapText, blockyText } = {}) {
-  const left = createTextLines(result.aText);
-  const right = createTextLines(result.bText);
+  const left = createTextLines(result.aText, result.aLineIndex);
+  const right = createTextLines(result.bText, result.bLineIndex);
   const segments = [];
   let count = 0;
   const append = (length, source, start, className, prefix, note) => {

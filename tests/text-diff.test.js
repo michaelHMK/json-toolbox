@@ -74,3 +74,56 @@ test('large one-sided insertions do not need an approximate replacement', () => 
     assert.deepEqual(checkCoverage(result), counts);
   }
 });
+
+test('line fingerprint collisions never hide changed lines', () => {
+  // These distinct pairs collide under 32-bit FNV-1a; the second pair also
+  // shares its length, so checking only the fingerprint and length is unsafe.
+  for (const [left, right] of [['costarring', 'liquid'], ['declinate', 'macallums']]) {
+    for (const [a, b] of [[left, right], [`same\n${left}\nend`, `same\n${right}\nend`]]) {
+      const result = diffFormattedText(a, b);
+      const counts = checkCoverage(result);
+      assert.equal(result.blocky, false);
+      assert.equal(counts.del, 1);
+      assert.equal(counts.add, 1);
+    }
+  }
+});
+
+test('line indexes preserve LF boundaries, trailing empties, CR and UTF-16 content', () => {
+  for (const [left, right] of [
+    ['', '\n'], ['\n', ''], ['first\n', 'first'], ['\r\n', '\n'],
+    ['\r', ''], ['一\n😀\n\ud800', '一\n😃\n\ud800'],
+    ['a\r\nb\r\nc\r', 'a\r\nb\nc\r'],
+  ]) {
+    const result = diffFormattedText(left, right);
+    assert.equal(result.blocky, false);
+    checkCoverage(result);
+    assert.deepEqual(result.totalLines, [left.split('\n').length, right.split('\n').length]);
+  }
+});
+
+test('randomized indexed diff matches an independent shortest-edit oracle', () => {
+  const alphabet = ['', 'same', '\r', '一', '😀', 'declinate', 'macallums'];
+  let seed = 19017;
+  const random = (max) => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed % max;
+  };
+  for (let sample = 0; sample < 300; sample++) {
+    const left = Array.from({ length: 1 + random(20) }, () => alphabet[random(alphabet.length)]);
+    const right = Array.from({ length: 1 + random(20) }, () => alphabet[random(alphabet.length)]);
+    let previous = Array.from({ length: right.length + 1 }, (_, i) => i);
+    for (let a = 1; a <= left.length; a++) {
+      const current = [a];
+      for (let b = 1; b <= right.length; b++) {
+        current[b] = left[a - 1] === right[b - 1]
+          ? previous[b - 1] : Math.min(previous[b], current[b - 1]) + 1;
+      }
+      previous = current;
+    }
+    const result = diffFormattedText(left.join('\n'), right.join('\n'));
+    const counts = checkCoverage(result);
+    assert.equal(result.blocky, false);
+    assert.equal(counts.del + counts.add, previous[right.length]);
+  }
+});

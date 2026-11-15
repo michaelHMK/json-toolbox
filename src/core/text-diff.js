@@ -4,10 +4,42 @@ import { formatJson } from './json.js';
 const TEXT_DIFF_MAX_DISTANCE = 3000;
 const TEXT_DIFF_MAX_TRACE_BYTES = 20 * 1024 * 1024;
 
+// Keep only offsets and 32-bit fingerprints, not a string and an array entry
+// for every line. Hash matches are always checked against the source text:
+// collisions must never turn a changed line into an unchanged one.
+// This API compares LF-delimited formatted text, preserving any literal CR.
+function indexLines(text) {
+  let count = 1;
+  for (let at = text.indexOf('\n'); at !== -1; at = text.indexOf('\n', at + 1)) count++;
+  const starts = new Uint32Array(count + 1);
+  const hashes = new Int32Array(count);
+  let start = 0;
+  for (let line = 0; line < count; line++) {
+    starts[line] = start;
+    const end = line + 1 === count ? text.length : text.indexOf('\n', start);
+    let hash = 2166136261;
+    for (let at = start; at < end; at++) hash = Math.imul(hash ^ text.charCodeAt(at), 16777619);
+    hashes[line] = hash;
+    start = end + 1;
+  }
+  starts[count] = text.length + 1;
+  return { text, starts, hashes, count };
+}
+
+function sameLine(a, ai, b, bi) {
+  if (a.hashes[ai] !== b.hashes[bi]) return false;
+  const startA = a.starts[ai];
+  const startB = b.starts[bi];
+  const length = a.starts[ai + 1] - startA - 1;
+  if (length !== b.starts[bi + 1] - startB - 1) return false;
+  for (let offset = 0; offset < length; offset++) {
+    if (a.text.charCodeAt(startA + offset) !== b.text.charCodeAt(startB + offset)) return false;
+  }
+  return true;
+}
+
 // Myers O(ND) 行级 diff，返回 run 序列：{ type: 'same'|'del'|'add', aStart/bStart, count }
-function myersOps(a, b) {
-  const N = a.length;
-  const M = b.length;
+function myersOps(a, b, start, N, M) {
   if (!N) return M ? [{ type: 'add', bStart: 0, count: M }] : [];
   if (!M) return [{ type: 'del', aStart: 0, count: N }];
   if (Math.abs(N - M) > TEXT_DIFF_MAX_DISTANCE) return null;
@@ -27,7 +59,7 @@ function myersOps(a, b) {
       let x = (i === 0 || (i !== d && previous[i - 1] < previous[i]))
         ? previous[i] : previous[i - 1] + 1;
       let y = x - k;
-      while (x < N && y < M && a[x] === b[y]) { x++; y++; }
+      while (x < N && y < M && sameLine(a, x + start, b, y + start)) { x++; y++; }
       current[i] = x;
       if (x >= N && y >= M) { D = d; break search; }
     }
@@ -98,26 +130,26 @@ export function diffFormattedText(aText, bText) {
       aText, bText, blocky: false, totalLines: [count, count],
     };
   }
-  const a = aText.split('\n');
-  const b = bText.split('\n');
+  const a = indexLines(aText);
+  const b = indexLines(bText);
 
   let start = 0;
-  while (start < a.length && start < b.length && a[start] === b[start]) start++;
-  let endA = a.length - 1;
-  let endB = b.length - 1;
-  while (endA >= start && endB >= start && a[endA] === b[endB]) { endA--; endB--; }
+  while (start < a.count && start < b.count && sameLine(a, start, b, start)) start++;
+  let endA = a.count - 1;
+  let endB = b.count - 1;
+  while (endA >= start && endB >= start && sameLine(a, endA, b, endB)) { endA--; endB--; }
 
-  const midA = a.slice(start, endA + 1);
-  const midB = b.slice(start, endB + 1);
+  const countA = endA + 1 - start;
+  const countB = endB + 1 - start;
   const ops = [];
   let blocky = false;
 
   if (start > 0) ops.push({ type: 'same', aStart: 0, bStart: 0, count: start });
-  const middleOps = myersOps(midA, midB);
+  const middleOps = myersOps(a, b, start, countA, countB);
   if (middleOps === null) {
     blocky = true;
-    if (midA.length) ops.push({ type: 'del', aStart: start, count: midA.length });
-    if (midB.length) ops.push({ type: 'add', bStart: start, count: midB.length });
+    if (countA) ops.push({ type: 'del', aStart: start, count: countA });
+    if (countB) ops.push({ type: 'add', bStart: start, count: countB });
   } else {
     for (const op of middleOps) {
       const shifted = { type: op.type, count: op.count };
@@ -126,8 +158,8 @@ export function diffFormattedText(aText, bText) {
       ops.push(shifted);
     }
   }
-  const suffix = a.length - 1 - endA;
+  const suffix = a.count - 1 - endA;
   if (suffix > 0) ops.push({ type: 'same', aStart: endA + 1, bStart: endB + 1, count: suffix });
 
-  return { ops, aText, bText, blocky, totalLines: [a.length, b.length] };
+  return { ops, aText, bText, blocky, totalLines: [a.count, b.count] };
 }

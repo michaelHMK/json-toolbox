@@ -48,15 +48,31 @@
       </div>
 
       <main class="workspace compare-main">
-        <section class="pane">
-          <div class="pane-title" data-i18n="paneOld">Old (left)</div>
+        <section id="input-pane-left" class="pane input-pane">
+          <div class="pane-title">
+            <div class="pane-label"><span data-i18n="paneOld">Old (left)</span>
+              <span id="file-name-left" class="file-name" aria-live="polite" hidden></span></div>
+            <button id="btn-import-left" type="button" class="button-compact" data-i18n="btnImportFile"
+              data-i18n-title="btnImportFileTitle" title="Choose a local .json file, or drop one into the input pane">Import file</button>
+            <input id="file-input-left" type="file" accept=".json" hidden>
+          </div>
           <textarea id="input-left" dir="ltr" data-i18n-aria-label="paneOld" aria-label="Old (left)" spellcheck="false" wrap="off"
             data-i18n-placeholder="inputLeftPlaceholder" placeholder="Paste old JSON…"></textarea>
+          <pre role="region" tabindex="0" id="input-view-left" class="input-preview" dir="ltr" data-i18n-aria-label="paneOld" aria-label="Old (left)" data-i18n-title="largeInputTitle" title="Read-only large-file preview" hidden></pre>
+          <div id="file-drop-hint-left" class="file-drop-hint" data-i18n="fileDropHint" hidden>Release to import a JSON file</div>
         </section>
-        <section class="pane">
-          <div class="pane-title" data-i18n="paneNew">New (right)</div>
+        <section id="input-pane-right" class="pane input-pane">
+          <div class="pane-title">
+            <div class="pane-label"><span data-i18n="paneNew">New (right)</span>
+              <span id="file-name-right" class="file-name" aria-live="polite" hidden></span></div>
+            <button id="btn-import-right" type="button" class="button-compact" data-i18n="btnImportFile"
+              data-i18n-title="btnImportFileTitle" title="Choose a local .json file, or drop one into the input pane">Import file</button>
+            <input id="file-input-right" type="file" accept=".json" hidden>
+          </div>
           <textarea id="input-right" dir="ltr" data-i18n-aria-label="paneNew" aria-label="New (right)" spellcheck="false" wrap="off"
             data-i18n-placeholder="inputRightPlaceholder" placeholder="Paste new JSON… (Cmd/Ctrl + Enter to compare)"></textarea>
+          <pre role="region" tabindex="0" id="input-view-right" class="input-preview" dir="ltr" data-i18n-aria-label="paneNew" aria-label="New (right)" data-i18n-title="largeInputTitle" title="Read-only large-file preview" hidden></pre>
+          <div id="file-drop-hint-right" class="file-drop-hint" data-i18n="fileDropHint" hidden>Release to import a JSON file</div>
         </section>
       </main>
 
