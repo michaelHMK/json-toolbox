@@ -1,11 +1,12 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/tree-view.mjs
 // Starts a temporary local server. Optional: BENCH_BASE_URL and CHROMIUM_EXECUTABLE.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const root = resolve(process.cwd());
+const root = process.env.BENCH_BASE_URL ? null : resolveExtension().root;
 const server = process.env.BENCH_BASE_URL ? null : createServer(async (request, response) => {
   try {
     const file = resolve(root, '.' + new URL(request.url, 'http://localhost').pathname);
@@ -69,7 +70,11 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(base + '/formatter.html');
   const toggleBudget = await page.evaluate(async () => {
-    const { createTreeModel } = await import('/src/core/tree-model.js');
+    // Derive the module location from the served page, including older layouts
+    // and BENCH_BASE_URL targets unrelated to the current working directory.
+    const entry = document.querySelector('script[type="module"][src]');
+    if (!entry) throw new Error('Formatter page has no module entry');
+    const { createTreeModel } = await import(new URL('../core/tree-model.js', entry.src).href);
     const data = Array.from({ length: 91_000 }, (_, id) => ({ id, price: 19.9, name: 'item' + id,
       nested: { a: 1, b: 2 }, tags: ['a', 'b', 'c'] }));
     const started = performance.now();

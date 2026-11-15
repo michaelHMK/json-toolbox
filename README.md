@@ -6,7 +6,7 @@ English | [简体中文](README.zh-CN.md)
 
 JSON Toolbox is a Chrome extension (Manifest V3) built around performance and privacy, with tools to format, minify, escape, and compare JSON. Zero permissions, uploads, or tracking. No ads or third-party runtime dependencies. Works offline after installation.
 
-See the `version` field in [`manifest.json`](manifest.json) for the current version.
+See the `version` field in [`src/manifest.json`](src/manifest.json) for the current version.
 
 ## Performance for Large JSON
 
@@ -20,7 +20,7 @@ See [Performance Checks](#performance-checks) below for verification commands an
 ## Privacy
 
 - **No uploads or tracking**: the extension makes no network requests, loads no remote code, and includes no telemetry, ads, or third-party SDKs.
-- **No extra extension permissions**: no website access or storage permissions, and no reading of website content, browsing history, cookies, or account information. See [`manifest.json`](manifest.json).
+- **No extra extension permissions**: no website access or storage permissions, and no reading of website content, browsing history, cookies, or account information. See [`src/manifest.json`](src/manifest.json).
 - **No saved input history**: inputs and results are processed only in the memory of the tool page and its local Worker. The extension does not write them to browser storage, files, or cloud services; it writes to the system clipboard only when you copy.
 - **Local theme preference**: only your theme choice is saved in `localStorage` on your device. This does not save input content or require additional extension permissions.
 
@@ -37,7 +37,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 
 Formatter, Minifier, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation; Compare runs once both inputs are present. Large pastes and plain-text drops also use the virtual preview. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position.
 
-Use the sidebar to switch between tools. The interface includes 13 locale catalogs in `_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), and Arabic (`ar`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
+Use the sidebar to switch between tools. The interface includes 13 locale catalogs in `src/_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), and Arabic (`ar`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
 Choose **Normal**, **Eye comfort**, or **Dark** under **Appearance** in the sidebar. The default is Normal. Your choice is remembered locally across tool pages and after reopening the extension.
 
@@ -46,7 +46,7 @@ Choose **Normal**, **Eye comfort**, or **Dark** under **Appearance** in the side
 1. Open Chrome and go to `chrome://extensions/`.
 2. Enable **Developer mode** in the upper-right corner.
 3. Click **Load unpacked**.
-4. Select the **repository root** containing `manifest.json`, rather than a ZIP file in `dist/`.
+4. Select the repository's **`src/` directory**, which contains `manifest.json`.
 5. Click the extension icon in the toolbar to open JSON Toolbox.
 
 Keyboard shortcut: most pages support **Cmd/Ctrl + Enter** to run the current operation.
@@ -56,9 +56,9 @@ Use **Tab** to enter a JSON tree. **Up/Down** move between visible nodes, **Righ
 ## Project Structure
 
 ```
-manifest.json          # Extension manifest; load from the repository root
-*.html                 # Stable entry points for the five tool pages
-src/
+src/                   # Complete extension; load this directory in Chrome
+  manifest.json        # Extension manifest
+  *.html               # Stable entry points for the five tool pages
   background.js        # Service Worker: opens the toolbox when the extension icon is clicked
   pages/               # Page interactions, view state, and rendering
     formatter.js
@@ -69,20 +69,23 @@ src/
   worker/
     index.js           # Web Worker message entry point
     tasks.js           # Task dispatch, cached search data, and error responses
-styles/app.css         # Shared styles for all five pages
-icons/                 # Extension icons referenced by the manifest
-_locales/              # Translations
+  styles/              # Shared page and virtual tree styles
+  icons/               # Extension icons referenced by the manifest
+  _locales/            # Translations
+scripts/
+  build_release.py     # Release validation and allowlist packaging using Python's standard library
+  gen_icons.py         # Regenerate PNG files in src/icons/ (optional)
+  store-assets/        # Store screenshot and promotional image generators
 tests/                 # Algorithm and messaging contracts, release validation
 bench/                 # Formatting/search/diff benchmarks and optional browser checks
-package.json           # Native ES modules and test commands; no third-party dependencies
-gen_icons.py           # Regenerate PNG files in icons/ (optional)
-build_release.py       # Release validation and allowlist packaging using Python's standard library
+package.json           # Native ES modules and development commands; no third-party dependencies
 STORE_LISTING.md       # Chrome Web Store listing copy and submission guidance
 PRIVACY.md             # English and Chinese privacy policy hosted in the public repository
-store-assets/          # Store screenshots, promotional images, and generation script; excluded from the extension ZIP
+store-assets/          # Store screenshots, promotional images, and listing copy; excluded from the extension ZIP
+dist/                  # Generated extension ZIP and checksum; ignored by Git
 ```
 
-Page logic uses native browser ES modules. No dependency installation or build step is needed to load the extension. Each HTML page has one entry module for page logic; a separate theme bootstrap script restores the saved appearance before the first paint. Navigation is rendered before translations are applied.
+All extension runtime files live under `src/`; development tools and store materials stay outside it. Page logic uses native browser ES modules. No dependency installation or build step is needed to load the extension. Each HTML page has one entry module for page logic; a separate theme bootstrap script restores the saved appearance before the first paint. Navigation is rendered before translations are applied.
 
 | Boundary | Responsibilities and contracts |
 | --- | --- |
@@ -92,15 +95,15 @@ Page logic uses native browser ES modules. No dependency installation or build s
 | `worker/tasks → core` | Each Worker caches its current document/comparison. `retainSnapshot`/`snapshotId` reuse parsing; `includeData: false` omits object transfer. Large documents keep their tree model in the Worker and return windows of at most 256 rows; small documents use synchronous trees. Clear invalidates snapshots, and the minify page does not retain unused search data. |
 | `core` | Algorithms do not depend on the DOM, Chrome APIs, or Worker globals. Invalid input throws an exception, which the task layer converts to an error response. Scanning and restoring original number literals is centralized in `json.js`. |
 
-Shared virtual renderers own viewport indexing and DOM lifecycles; pages retain their distinct search, pairing, filtering, and navigation behavior. To add a task, place its algorithm in `core/` and connect it through `worker/tasks.js`. Add any new runtime files to the allowlist in `build_release.py` as well.
+Shared virtual renderers own viewport indexing and DOM lifecycles; pages retain their distinct search, pairing, filtering, and navigation behavior. To add a task, place its algorithm in `src/core/` and connect it through `src/worker/tasks.js`. Add any new runtime files to the allowlist in `scripts/build_release.py` as well.
 
 ## Development Checks
 
-Requires Node.js 20+ and Python 3. No `npm install` is needed:
+Run the following commands from the repository root. Requires Node.js 20+ and Python 3; no `npm install` is needed:
 
 ```bash
 npm test
-python3 build_release.py --check
+python3 scripts/build_release.py --check
 ```
 
 Tests cover number literals and special keys, cached search data and result limits, structural and text comparisons, concurrent Worker requests and failure responses, and transitive module dependencies in the release package. Browser interactions should also be checked using the checklist below.
@@ -126,6 +129,8 @@ node bench/remote-pages.mjs
 node bench/theme.mjs
 ```
 
+Browser check directory arguments such as `.` refer to a checkout; the scripts load its `src/` extension directory and also recognize the root layout of older checkouts. You can pass an extension directory directly.
+
 These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, view switching, and deeply nested Worker transfers.
 
 The accessibility check uses the English and Arabic catalogs through a simulated extension i18n API to verify layout, keyboard navigation, and Chromium's accessibility tree. It does not replace manual screen-reader testing.
@@ -147,30 +152,30 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 Large inputs and outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete inputs and results stay in memory; large text diffs use block replacement.
 
-For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
+For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000 --directory src` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
 
 ## Regenerate Icons
 
 Requires Python 3 with no third-party dependencies:
 
 ```bash
-python3 gen_icons.py
+python3 scripts/gen_icons.py
 ```
 
-The output directory is `icons/`. Existing PNG files are overwritten.
+The output directory is `src/icons/`. Existing PNG files are overwritten.
 
 ## Build a Release
 
 Requires Python 3 with no third-party dependencies:
 
 ```bash
-python3 build_release.py --check
-python3 build_release.py
+python3 scripts/build_release.py --check
+python3 scripts/build_release.py
 ```
 
-The script validates the version, name and description lengths in all locale catalogs, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports and the Worker entry point. It then packages runtime files from an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
+The script validates the version, name and description lengths in all locale catalogs, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports and the Worker entry point. It then packages runtime files from `src/` using an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root, without an enclosing `src/` directory, and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
 
-Before uploading, extract the ZIP to a new directory, load that directory through `chrome://extensions/`, and complete the checks below. For subsequent releases, increase the version in `manifest.json` before rebuilding.
+Before uploading, extract the ZIP to a new directory, load that directory through `chrome://extensions/`, and complete the checks below. For subsequent releases, increase the version in `src/manifest.json` before rebuilding.
 
 ### First Store Submission
 

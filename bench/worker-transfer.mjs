@@ -1,10 +1,11 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/worker-transfer.mjs [repo]
 // Exercises real browser module Workers. Deep objects never cross Playwright's own transport.
+import { resolveExtension } from './extension-root.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 
-const root = resolve(process.argv[2] || '.');
+const { root, moduleBase } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const server = createServer(async (request, response) => {
   try {
@@ -27,8 +28,8 @@ const browser = await chromium.launch({ headless: true, executablePath: process.
 const page = await browser.newPage();
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/__worker-transfer.html`);
-  const results = await page.evaluate(async () => {
-    const { createTaskResponseDecoder } = await import('/src/shared/worker-protocol.js');
+  const results = await page.evaluate(async (moduleBase) => {
+    const { createTaskResponseDecoder } = await import(moduleBase + 'shared/worker-protocol.js');
     const rows = [];
     const median = (values) => +values.sort((a, b) => a - b)[Math.floor(values.length / 2)].toFixed(2);
     const settle = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
@@ -40,7 +41,7 @@ try {
 
     function openWorker() {
       const decodeTaskResponse = createTaskResponseDecoder();
-      const worker = new Worker('/src/worker/index.js', { type: 'module' });
+      const worker = new Worker(moduleBase + 'worker/index.js', { type: 'module' });
       let sequence = 0;
       let pending;
       worker.onmessage = (event) => {
@@ -168,11 +169,11 @@ try {
       }
       rows.push({ name: `deep-${depth}-main-thread-JSON-parse-only`, inputKiB: +(left.length / 1024).toFixed(2), medianMs: median(parseTimes) });
     }
-    const { createTaskRunner } = await import('/src/shared/worker-client.js');
+    const { createTaskRunner } = await import(moduleBase + 'shared/worker-client.js');
     let clientWorker;
     const runTask = createTaskRunner({
       serialize: true,
-      createWorker: () => (clientWorker = new Worker('/src/worker/index.js', { type: 'module' })),
+      createWorker: () => (clientWorker = new Worker(moduleBase + 'worker/index.js', { type: 'module' })),
     });
     try {
       const text = '{"child":'.repeat(20_000) + '0' + '}'.repeat(20_000);
@@ -191,7 +192,7 @@ try {
     } finally { clientWorker?.terminate(); }
     observer.disconnect();
     return rows;
-  });
+  }, moduleBase);
   console.log(JSON.stringify({ browser: browser.version(), root, results }, null, 2));
 } finally {
   await browser.close();

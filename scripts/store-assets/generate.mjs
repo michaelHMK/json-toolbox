@@ -1,6 +1,6 @@
 // Generate localized promotional images and screenshots of the real extension.
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs \
-// CHROMIUM_EXECUTABLE=/path/to/full/chromium node store-assets/generate.mjs
+// CHROMIUM_EXECUTABLE=/path/to/full/chromium node scripts/store-assets/generate.mjs
 // Optional: STORE_LOCALES=en,zh_CN to regenerate selected locales only.
 // Add --promos-only to update promotional images without recapturing screenshots.
 // Extension loading requires full Chromium, not chrome-headless-shell.
@@ -12,8 +12,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { writePromoSources } from './promos.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const assets = dirname(fileURLToPath(import.meta.url));
-const root = resolve(assets, '..');
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const assets = join(projectRoot, 'store-assets');
+const root = join(projectRoot, 'src');
 const executablePath = process.env.CHROMIUM_EXECUTABLE;
 const available = (await readdir(join(root, '_locales'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();

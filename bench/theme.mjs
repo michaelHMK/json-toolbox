@@ -1,11 +1,12 @@
 // Optional browser check: PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/theme.mjs [repo]
 // CHROMIUM_EXECUTABLE overrides the browser; THEME_SCREENSHOT_DIR optionally saves real UI screenshots.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 
-const root = resolve(process.argv[2] || '.');
+const { root } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const storageKey = 'json-toolbox.theme';
 const pages = ['formatter', 'minify', 'escape', 'unescape', 'compare'];

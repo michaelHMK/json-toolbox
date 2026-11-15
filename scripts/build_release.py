@@ -11,19 +11,20 @@ import struct
 import zipfile
 
 
-ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ROOT = PROJECT_ROOT / 'src'
 RUNTIME_FILES = (
-    'manifest.json', 'src/background.js', 'styles/app.css', 'styles/virtual-tree.css',
+    'manifest.json', 'background.js', 'styles/app.css', 'styles/virtual-tree.css',
     'formatter.html', 'compare.html', 'minify.html', 'escape.html', 'unescape.html',
-    'src/pages/formatter.js', 'src/pages/compare.js', 'src/pages/transform.js',
-    'src/shared/page.js', 'src/shared/navigation.js', 'src/shared/i18n.js', 'src/shared/theme.js',
-    'src/shared/worker-client.js', 'src/shared/worker-protocol.js', 'src/shared/feedback.js',
-    'src/shared/file-import.js', 'src/shared/text-input.js', 'src/shared/clipboard.js', 'src/shared/json-tree.js',
-    'src/shared/virtual-tree.js', 'src/shared/remote-tree.js', 'src/shared/virtual-text.js',
-    'src/worker/index.js', 'src/worker/tasks.js', 'src/worker/tree-tasks.js',
-    'src/core/json.js', 'src/core/json-path.js', 'src/core/parse-error.js', 'src/core/tree-model.js',
-    'src/core/escape.js', 'src/core/search.js',
-    'src/core/structural-diff.js', 'src/core/text-diff.js', 'src/core/text-lines.js',
+    'pages/formatter.js', 'pages/compare.js', 'pages/transform.js',
+    'shared/page.js', 'shared/navigation.js', 'shared/i18n.js', 'shared/theme.js',
+    'shared/worker-client.js', 'shared/worker-protocol.js', 'shared/feedback.js',
+    'shared/file-import.js', 'shared/text-input.js', 'shared/clipboard.js', 'shared/json-tree.js',
+    'shared/virtual-tree.js', 'shared/remote-tree.js', 'shared/virtual-text.js',
+    'worker/index.js', 'worker/tasks.js', 'worker/tree-tasks.js',
+    'core/json.js', 'core/json-path.js', 'core/parse-error.js', 'core/tree-model.js',
+    'core/escape.js', 'core/search.js',
+    'core/structural-diff.js', 'core/text-diff.js', 'core/text-lines.js',
 )
 
 
@@ -112,7 +113,7 @@ def main():
         version, files = check_release()
         if args.check:
             return
-        output = ROOT / 'dist' / f'json-toolbox-{version}.zip'
+        output = PROJECT_ROOT / 'dist' / f'json-toolbox-{version}.zip'
         output.parent.mkdir(exist_ok=True)
         # 固定元数据；相同源文件可重现相同 ZIP 和校验值。
         with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:

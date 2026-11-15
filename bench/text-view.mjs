@@ -2,12 +2,13 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs CHROMIUM_EXECUTABLE=/path/to/chromium node bench/text-view.mjs
 // Component timings are single-run smoke measurements, not the candidate medians
 // from text-rendering.mjs. No extension APIs or network services are required.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const root = resolve(process.cwd());
+const { root, moduleBase } = resolveExtension();
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url, 'http://localhost').pathname;
   if (pathname === '/__text_bench__') {
@@ -59,12 +60,12 @@ const visibleMarker = async (selector, marker) => {
 
 try {
   await page.goto(base + '/__text_bench__');
-  await page.evaluate(async () => {
-    const { createVirtualTextView } = await import('/src/shared/virtual-text.js');
+  await page.evaluate(async (moduleBase) => {
+    const { createVirtualTextView } = await import(moduleBase + 'shared/virtual-text.js');
     window.output = document.querySelector('#output-text');
     window.textView = createVirtualTextView(output);
     textView.setText('small 中文 😀');
-  });
+  }, moduleBase);
   assert.equal(await page.locator('#output-text').textContent(), 'small 中文 😀');
   for (const scenario of ['100000-lines', '5MiB-single-line', 'unicode-tab-line', '2000000-lines']) {
     const measurement = await page.evaluate((scenario) => {

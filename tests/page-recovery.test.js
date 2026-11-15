@@ -6,7 +6,7 @@ import { createTaskHandler } from '../src/worker/tasks.js';
 import { createBusyFeedback } from '../src/shared/feedback.js';
 import { loadPage, Element } from './helpers/page-dom.js';
 
-const english = JSON.parse(readFileSync(new URL('../_locales/en/messages.json', import.meta.url)));
+const english = JSON.parse(readFileSync(new URL('../src/_locales/en/messages.json', import.meta.url)));
 function translate(key, substitutions = []) {
   const entry = english[key];
   return entry.message.replace(/\$(\w+)\$/g, (_, name) =>

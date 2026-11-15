@@ -2,12 +2,13 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs CHROMIUM_EXECUTABLE=/path/to/chrome node bench/remote-pages.mjs [repo]
 // This checks real layout, asynchronous navigation and scroll synchronization;
 // it deliberately does not measure CPU performance.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 
-const root = resolve(process.argv[2] || '.');
+const { root } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const server = createServer(async (request, response) => {
   try {

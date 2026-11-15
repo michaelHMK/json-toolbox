@@ -2,6 +2,7 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs CHROMIUM_EXECUTABLE=/path/to/chrome node bench/performance.mjs
 // PERF_TREE_MIB=25 (default), PERF_INPUT_BUDGET_MS=50, PERF_FRAME_BUDGET_MS=35.
 // PERF_PROFILE_TEXT_LINES=1 optionally instruments line-index construction.
+import { resolveExtension } from './extension-root.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -9,7 +10,7 @@ import { extname, resolve } from 'node:path';
 import { createFormatSource } from './format-data.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const root = resolve(process.cwd());
+const { root, moduleBase } = resolveExtension();
 const treeMiB = Number(process.env.PERF_TREE_MIB || 25);
 const inputBudget = Number(process.env.PERF_INPUT_BUDGET_MS || 50);
 const frameBudget = Number(process.env.PERF_FRAME_BUDGET_MS || 35);
@@ -37,7 +38,7 @@ const server = createServer(async (request, response) => {
     if (!file.startsWith(root + '/')) throw new Error('Invalid path');
     response.setHeader('Content-Type', ({ '.js': 'text/javascript', '.html': 'text/html', '.css': 'text/css' })[extname(file)] || 'application/octet-stream');
     let contents = await readFile(file);
-    if (process.env.PERF_PROFILE_TEXT_LINES && url.pathname === '/src/core/text-lines.js') {
+    if (process.env.PERF_PROFILE_TEXT_LINES && url.pathname === moduleBase + 'core/text-lines.js') {
       contents = contents.toString().replace('export function createTextLineIndex(', 'function measuredCreateTextLineIndex(') + `
 export function createTextLineIndex(...args) {
   const start = performance.now();

@@ -6,7 +6,7 @@
 
 JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V3），提供 JSON 格式化、压缩、转义与对比。零权限、零上传、零追踪，无广告、无运行时第三方依赖，安装后即可离线使用。
 
-当前版本见 [`manifest.json`](manifest.json) 中的 `version` 字段。
+当前版本见 [`src/manifest.json`](src/manifest.json) 中的 `version` 字段。
 
 ## 面向大 JSON 的高性能
 
@@ -20,7 +20,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 ## 隐私
 
 - **不上传、不追踪**：扩展不发起网络请求，不加载远程代码，没有遥测、广告或第三方 SDK。
-- **零额外扩展权限**：不申请网站访问或存储权限，不读取网页内容、浏览历史、Cookie 或账号信息，见 [`manifest.json`](manifest.json)。
+- **零额外扩展权限**：不申请网站访问或存储权限，不读取网页内容、浏览历史、Cookie 或账号信息，见 [`src/manifest.json`](src/manifest.json)。
 - **不保存输入记录**：输入与结果仅在工具页及本地 Worker 的内存中处理，不主动写入浏览器存储、文件或云端；只在你执行复制时写入系统剪贴板。
 - **主题偏好仅保存在本地**：`localStorage` 仅保存你选择的主题，不保存输入内容，也不需要新增扩展权限。
 
@@ -37,7 +37,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 格式化、压缩页面和对比页的两侧输入均支持通过文件选择器或拖拽导入本地 UTF-8 `.json` 文件（每个最大 50 MiB）。导入后保留原文并自动执行操作；对比页在两侧都有输入后自动对比。大文本粘贴和纯文本拖放同样使用虚拟预览。大输入始终保留只读虚拟预览，语法出错时也在预览内定位浏览器提供的错误位置。
 
-侧边栏可在各工具页之间切换。`_locales/` 包含 13 个语言及地区版本：英文（`en`）、简体中文（`zh_CN`）、繁体中文（台湾 `zh_TW`、香港 `zh_HK`）、日语（`ja`）、韩语（`ko`）、德语（`de`）、法语（`fr`）、西班牙语（`es`）、葡萄牙语（巴西 `pt_BR`、葡萄牙 `pt_PT`）、俄语（`ru`）和阿拉伯语（`ar`）。Chrome 根据浏览器界面语言选择翻译，默认语言为英文；扩展 API 不可用时，页面静态文案也以英文兜底。阿拉伯语界面从右向左排列，JSON 输入、输出和树始终从左向右显示。
+侧边栏可在各工具页之间切换。`src/_locales/` 包含 13 个语言及地区版本：英文（`en`）、简体中文（`zh_CN`）、繁体中文（台湾 `zh_TW`、香港 `zh_HK`）、日语（`ja`）、韩语（`ko`）、德语（`de`）、法语（`fr`）、西班牙语（`es`）、葡萄牙语（巴西 `pt_BR`、葡萄牙 `pt_PT`）、俄语（`ru`）和阿拉伯语（`ar`）。Chrome 根据浏览器界面语言选择翻译，默认语言为英文；扩展 API 不可用时，页面静态文案也以英文兜底。阿拉伯语界面从右向左排列，JSON 输入、输出和树始终从左向右显示。
 
 侧边栏的“外观”提供**正常、护眼、暗色**三种模式，默认使用正常模式。主题选择会保存在本地，切换工具页或重新打开扩展时会恢复该选择。
 
@@ -46,7 +46,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 1. 打开 Chrome，进入 `chrome://extensions/`
 2. 开启右上角 **开发者模式**
 3. 点击 **加载已解压的扩展程序**
-4. 选择本仓库**根目录**（包含 `manifest.json` 的目录，不要选 `dist/` 里的 zip）
+4. 选择本仓库的 **`src/` 目录**（其中包含 `manifest.json`）
 5. 点击工具栏中的扩展图标，即可打开 JSON 工具箱
 
 快捷键：多数页面支持 **Cmd/Ctrl + Enter** 执行当前操作。
@@ -56,9 +56,9 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 ## 项目结构
 
 ```
-manifest.json          # 扩展清单，仍从仓库根目录加载
-*.html                 # 五个工具页的稳定入口
-src/
+src/                   # 完整扩展目录，在 Chrome 中加载此目录
+  manifest.json        # 扩展清单
+  *.html               # 五个工具页的稳定入口
   background.js        # Service Worker：点击扩展图标时打开工具页
   pages/               # 页面交互、视图状态与渲染
     formatter.js
@@ -69,20 +69,23 @@ src/
   worker/
     index.js           # Web Worker 消息入口
     tasks.js           # 操作分发、搜索数据缓存与错误响应
-styles/app.css         # 五个页面共用样式
-icons/                 # 扩展图标（manifest 引用）
-_locales/              # 国际化文案
+  styles/              # 页面共用样式与虚拟树样式
+  icons/               # 扩展图标（manifest 引用）
+  _locales/            # 国际化文案
+scripts/
+  build_release.py     # 发布检查与白名单打包（Python 标准库）
+  gen_icons.py         # 重新生成 src/icons/ 下 PNG（可选）
+  store-assets/        # 商店截图与宣传图生成脚本
 tests/                 # 算法与通信契约、发布文件检查
 bench/                 # 格式化/搜索/对比算法基准与可选浏览器验证
-package.json           # 原生 ES modules 与测试命令，无第三方依赖
-gen_icons.py           # 重新生成 icons/ 下 PNG（可选）
-build_release.py       # 发布检查与白名单打包（Python 标准库）
+package.json           # 原生 ES modules 与开发命令，无第三方依赖
 STORE_LISTING.md       # Chrome 商店上架文案与表单说明
 PRIVACY.md             # 中英文隐私政策（由当前公开仓库托管）
-store-assets/          # 商店截图、宣传图与生成脚本（不打进扩展 ZIP）
+store-assets/          # 商店截图、宣传图与上架文案（不打进扩展 ZIP）
+dist/                  # 生成的扩展 ZIP 与校验文件，已加入 Git 忽略规则
 ```
 
-页面业务使用浏览器原生 ES modules，无需安装依赖或构建即可加载扩展。每个 HTML 保留单一页面业务入口，另有主题引导脚本在首次绘制前恢复已保存的外观。导航生成后统一应用翻译。
+扩展运行时文件统一放在 `src/`，开发工具与商店材料留在外面。页面业务使用浏览器原生 ES modules，无需安装依赖或构建即可加载扩展。每个 HTML 保留单一页面业务入口，另有主题引导脚本在首次绘制前恢复已保存的外观。导航生成后统一应用翻译。
 
 | 边界 | 职责与约定 |
 | --- | --- |
@@ -92,15 +95,15 @@ store-assets/          # 商店截图、宣传图与生成脚本（不打进扩�
 | `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。页面通过 `retainSnapshot`/`snapshotId` 复用解析结果；`includeData: false` 省略对象传输。大文档树模型留在 Worker，仅返回最多 256 行的窗口；小文档仍使用同步树。清空使快照失效，压缩页不保留不需要的搜索数据。 |
 | `core` | 不依赖 DOM、Chrome API 或 Worker 全局对象；无效输入抛出异常，由任务层转换为错误响应。数字原文字面量的扫描与恢复集中在 `json.js`。 |
 
-共享虚拟视图负责窗口索引和 DOM 生命周期；页面保留各自的搜索、配对、筛选和导航逻辑。新增任务时，先将算法放入 `core/`，再接入 `worker/tasks.js`；新增运行时文件还需加入 `build_release.py` 的白名单。
+共享虚拟视图负责窗口索引和 DOM 生命周期；页面保留各自的搜索、配对、筛选和导航逻辑。新增任务时，先将算法放入 `src/core/`，再接入 `src/worker/tasks.js`；新增运行时文件还需加入 `scripts/build_release.py` 的白名单。
 
 ## 开发验证
 
-需要 Node.js 20+ 和 Python 3，无需 `npm install`：
+以下命令均从仓库根目录运行。需要 Node.js 20+ 和 Python 3，无需 `npm install`：
 
 ```bash
 npm test
-python3 build_release.py --check
+python3 scripts/build_release.py --check
 ```
 
 测试覆盖数字字面量与特殊 key、搜索缓存与结果上限、结构及文本对比、Worker 并发和故障响应，以及发布包的间接模块依赖。浏览器交互仍需按下文的功能清单验证。
@@ -126,6 +129,8 @@ node bench/remote-pages.mjs
 node bench/theme.mjs
 ```
 
+浏览器验证命令中的 `.` 等目录参数指向仓库，脚本会加载其中的 `src/` 扩展目录，也兼容旧版本将扩展放在仓库根目录的布局；还可以直接传入扩展目录。
+
 可访问性检查通过模拟扩展国际化 API 加载英文和阿拉伯语翻译，验证布局、键盘导航及 Chromium 无障碍树；它不能代替真实读屏软件测试。
 
 文件导入基准默认在两个页面对每个场景各跑三次，输出逐次测量及中位数。默认场景包括 50 MiB 常规文档（`regular`）、4 MiB 保留 `1.20` 字面量的数组（`decimals`）、50 MiB 无效单行 JSON（`invalid`）。样本及 `File` 构造在计时前完成；总耗时包含成功或错误反馈后的两次动画帧，长任务仅统计导入测量区间。完整输入/输出复制及错误位置检查在测量后执行。堆内存读数包含基准样本；耗时较长的跨代理内存测量需用 `BENCH_MEMORY=1` 显式开启。
@@ -145,30 +150,30 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。输入和结果仍完整保留在内存中；较大的文本差异采用整块替换展示。
 
-日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
+日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000 --directory src`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
 
 ## 重新生成图标
 
 需要 Python 3，无第三方依赖：
 
 ```bash
-python3 gen_icons.py
+python3 scripts/gen_icons.py
 ```
 
-输出目录为 `icons/`（会覆盖现有 PNG）。
+输出目录为 `src/icons/`（会覆盖现有 PNG）。
 
 ## 打包发布
 
 需要 Python 3，无第三方依赖：
 
 ```bash
-python3 build_release.py --check
-python3 build_release.py
+python3 scripts/build_release.py --check
+python3 scripts/build_release.py
 ```
 
-脚本检查版本号、所有语言版本的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入和 Worker 入口的相对路径，再按白名单打包运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
+脚本检查版本号、所有语言版本的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入和 Worker 入口的相对路径，再按白名单打包 `src/` 中的运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录，没有外层 `src/` 目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
 
-上传前将 ZIP 解压到一个新目录，在 `chrome://extensions/` 中加载该目录并完成下面的检查。以后发布更新时先提高 `manifest.json` 的版本号，再重新打包。
+上传前将 ZIP 解压到一个新目录，在 `chrome://extensions/` 中加载该目录并完成下面的检查。以后发布更新时先提高 `src/manifest.json` 的版本号，再重新打包。
 
 ### 首次上架
 

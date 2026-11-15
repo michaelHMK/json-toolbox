@@ -5,7 +5,9 @@
   "scripts": {
     "test": "node --test && python3 -m unittest discover -s tests -p 'test_*.py'",
     "bench": "node --expose-gc bench/format.mjs && node --expose-gc bench/search.mjs && node --expose-gc bench/diff.mjs",
-    "check:release": "python3 build_release.py --check",
+    "check:release": "python3 scripts/build_release.py --check",
+    "build:release": "python3 scripts/build_release.py",
+    "generate:icons": "python3 scripts/gen_icons.py",
     "bench:performance": "node bench/performance.mjs",
     "bench:budget": "node --expose-gc bench/format.mjs --size-mib=25 --samples=3 --assert-ratio=3"
   }
