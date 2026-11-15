@@ -3,6 +3,8 @@ import vm from 'node:vm';
 import { createTreeModel } from '../../src/core/tree-model.js';
 import { appendJsonPath, PATH_SEP, createChildPathIndex } from '../../src/core/json-path.js';
 import { createPlainTextRows, createDiffTextRows, safeTextWindow } from '../../src/core/text-lines.js';
+import { createDocumentSession } from '../../src/shared/document-session.js';
+import { createComparisonSession } from '../../src/shared/comparison-session.js';
 
 // Minimal DOM for exercising real page handlers and lazy rendering in Node.
 // Browser layout/paint still needs browser verification.
@@ -107,6 +109,7 @@ export function loadPage(name, {
     removeAllRanges() { this.ranges = []; },
     addRange(range) { this.ranges.push(range); },
   };
+  const createRunner = createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) }));
   const context = vm.createContext({
     document: {
       body: { dataset: bodyDataset },
@@ -120,7 +123,9 @@ export function loadPage(name, {
       }),
     },
     initializePage: () => {},
-    createTaskRunner: createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) })),
+    createTaskRunner: createRunner,
+    createDocumentSession: (options) => createDocumentSession({ ...options, createRunner }),
+    createComparisonSession: (options) => createComparisonSession({ ...options, createRunner }),
     createFileImport,
     t: translate,
     appendJsonPath, createChildPathIndex, createTreeModel,

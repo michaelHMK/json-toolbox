@@ -3,7 +3,10 @@ import { execFileSync } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 import vm from 'node:vm';
 import { Element } from '../tests/helpers/page-dom.js';
-import { appendJsonPath, PATH_SEP } from '../src/core/json-path.js';
+import { appendJsonPath, createChildPathIndex, PATH_SEP } from '../src/core/json-path.js';
+import { createTreeModel } from '../src/core/tree-model.js';
+import { createDocumentSession } from '../src/shared/document-session.js';
+import { createComparisonSession } from '../src/shared/comparison-session.js';
 
 // Pure rendering fixture: real page functions + minimal DOM, no browser layout
 // or paint. Heap deltas include unreclaimed temporary allocations, not RSS.
@@ -12,7 +15,13 @@ const revision = process.argv[2];
 const read = (path) => revision
   ? execFileSync('git', ['show', `${revision}:${path}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
   : readFileSync(new URL('../' + path, import.meta.url), 'utf8');
-const compile = (source) => source.replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+const compile = (source) => source
+  .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '')
+  .replace(/^export /gm, '');
+
+function createRunner() {
+  return Object.assign(async () => ({ ok: true, result: {} }), { cancel: () => false });
+}
 
 function page(name) {
   const elements = new Map();
@@ -22,10 +31,22 @@ function page(name) {
   };
   const context = vm.createContext({
     document: { getElementById: get, createElement: (tag) => new Element(tag), createDocumentFragment: () => new Element('#fragment') },
-    initializePage() {}, createTaskRunner: () => async () => ({ ok: true, result: {} }),
+    initializePage() {}, createTaskRunner: createRunner,
+    createDocumentSession: (options) => createDocumentSession({ ...options, createRunner }),
+    createComparisonSession: (options) => createComparisonSession({ ...options, createRunner }),
+    createFileImport: () => ({ reset() {} }),
+    createTextInput: (element) => ({
+      getText: () => element.value,
+      setText: (text) => { element.value = text; },
+      selectPosition() {},
+      isLarge: () => false,
+    }),
+    LARGE_INPUT_THRESHOLD: 262144,
     createVirtualTextView: () => ({ setText() {}, setDiff() {}, refresh() {}, clear() {} }),
     createFeedback: () => ({ setStatus() {}, showError() {}, hideError() {}, showParseError() {} }),
-    t: (key) => key, appendJsonPath, PATH_SEP, copyText: async () => {}, setTimeout, clearTimeout,
+    createBusyFeedback: () => () => {},
+    t: (key) => key, appendJsonPath, createChildPathIndex, createTreeModel, PATH_SEP,
+    copyText: async () => {}, setTimeout, clearTimeout,
   });
   vm.runInContext(compile(read('src/shared/json-tree.js')), context);
   try { vm.runInContext(compile(read('src/shared/virtual-tree.js')), context); }

@@ -64,7 +64,7 @@ src/                   # Complete extension; load this directory in Chrome
     formatter.js
     compare.js
     transform.js       # Shared page logic for minify, escape, and unescape
-  shared/              # Navigation, i18n, virtual tree/text views, clipboard, Worker protocol
+  shared/              # Browser UI, document/comparison sessions, and Worker transport
   core/                # Pure algorithms: JSON formatting, paths, search, structural/text diff
   worker/
     index.js           # Web Worker message entry point
@@ -89,10 +89,11 @@ All extension runtime files live under `src/`; development tools and store mater
 
 | Boundary | Responsibilities and contracts |
 | --- | --- |
-| `pages → shared` | Pages own their state; shared modules handle browser interactions. The formatter and comparison trees retain their own expansion, search, and difference logic. |
+| `pages → shared` | Pages own interaction and view state; shared modules handle browser interactions and virtual rendering. The formatter and comparison trees retain their own expansion, search navigation, and difference presentation. |
+| `pages → document-session / comparison-session` | The formatter and comparison pages request document operations through their sessions. Sessions own Worker snapshots, cancellation and recovery, and rejection of stale responses; pages do not handle snapshot ids or rebuild discarded Worker data themselves. |
 | `pages/shared → core` | Views use JSON Pointer encoding and line-offset indexes. JSON parsing, search, and comparison run in the Worker. |
-| `shared/worker-client → worker/index` | Requests match by id and busy lasts until all finish. Pages enable a serial queue that coalesces unsent work by key; clear discards queued work, whose responses carry `cancelled: true`. |
-| `worker/tasks → core` | Each Worker caches its current document/comparison. `retainSnapshot`/`snapshotId` reuse parsing; `includeData: false` omits object transfer. Large documents keep their tree model in the Worker and return windows of at most 256 rows; small documents use synchronous trees. Clear invalidates snapshots, and the minify page does not retain unused search data. |
+| `shared/worker-client → worker/index` | Transport matches requests by id, manages the serial queue, and reports busy/reset events. Queues coalesce unsent work by key; discarded requests carry `cancelled: true`. Document lifecycle and recovery belong to the sessions. |
+| `worker/tasks → core` | Each Worker caches its current document/comparison. Sessions use `retainSnapshot`/`snapshotId` to reuse parsing; `includeData: false` omits object transfer. Large documents keep their tree model in the Worker and return windows of at most 256 rows; small documents use synchronous trees. Clear invalidates snapshots, and the minify page does not retain unused search data. |
 | `core` | Algorithms do not depend on the DOM, Chrome APIs, or Worker globals. Invalid input throws an exception, which the task layer converts to an error response. Scanning and restoring original number literals is centralized in `json.js`. |
 
 Shared virtual renderers own viewport indexing and DOM lifecycles; pages retain their distinct search, pairing, filtering, and navigation behavior. To add a task, place its algorithm in `src/core/` and connect it through `src/worker/tasks.js`. Add any new runtime files to the allowlist in `scripts/build_release.py` as well.

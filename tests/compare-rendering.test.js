@@ -30,8 +30,6 @@ function assertCleared(page) {
     assert.equal(page.state[name], null, name);
   }
   for (const name of ['leftData', 'rightData']) assert.equal(page.state[name], undefined, name);
-  assert.equal(page.state.leftText, '');
-  assert.equal(page.state.rightText, '');
   assert.equal(page.get('tree-left').children.length, 0);
   assert.equal(page.get('tree-right').children.length, 0);
   assert.equal(page.get('text-view').children.length, 0);
@@ -70,9 +68,12 @@ test('clear discards an outstanding structural comparison response', async () =>
 test('text diff uses the completed comparison snapshot even after input edits', async () => {
   const handler = createTaskHandler();
   const requests = [];
+  let completedSnapshotId;
   const page = loadCompare(async (action, payload) => {
     requests.push({ action, ...payload });
-    return handler({ action, ...payload });
+    const response = handler({ action, ...payload });
+    if (action === 'diff') completedSnapshotId = response.result.snapshotId;
+    return response;
   });
   const left = '{"old":1}';
   const right = '{"old":2}';
@@ -81,7 +82,8 @@ test('text diff uses the completed comparison snapshot even after input edits', 
   setInputs(page, '{"unsaved":10}', '{"unsaved":20}');
   await page.setCompareView('text');
   const request = requests.find((request) => request.action === 'textDiff');
-  assert.equal(request.snapshotId, page.state.result.snapshotId);
+  assert.ok(Number.isInteger(completedSnapshotId));
+  assert.equal(request.snapshotId, completedSnapshotId);
   assert.equal(request.text, undefined, 'snapshot requests do not resend input');
   assert.equal(request.text2, undefined);
   assert.equal(JSON.parse(page.state.textResult.aText).old, 1);
