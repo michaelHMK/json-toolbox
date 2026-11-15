@@ -10,13 +10,14 @@ import { createVirtualTextView } from '../shared/virtual-text.js';
 initializePage();
 
 const inputEl = document.getElementById('input');
+const inputViewEl = document.getElementById('input-view');
 const outputEl = document.getElementById('output-text');
 const outputView = createVirtualTextView(outputEl);
 const statusEl = document.getElementById('status');
 const busyEl = document.getElementById('busy');
 const errorEl = document.getElementById('error');
 const action = document.body.dataset.action;
-const textInput = createTextInput(inputEl, action === 'minify' ? document.getElementById('input-view') : null);
+const textInput = createTextInput(inputEl, inputViewEl);
 
 let outputText = '';
 let hasOutput = false;
@@ -34,27 +35,24 @@ const { setStatus, showError, hideError, showParseError } = createFeedback({
   statusEl, errorEl, selectInputPosition: textInput.selectPosition,
 });
 
-let fileImport = { reset() {} };
-if (action === 'minify') {
-  fileImport = createFileImport({
-    dropZone: document.getElementById('input-pane'),
-    fileInput: document.getElementById('file-input'),
-    triggerEl: document.getElementById('btn-import'),
-    fileNameEl: document.getElementById('file-name'),
-    dropHint: document.getElementById('file-drop-hint'),
-    onImport: ({ text }) => {
-      resetDocument();
-      textInput.setText(text);
-      if (textInput.isLarge()) {
-        const version = dataVersion;
-        setTimeout(() => { if (version === dataVersion) void runTransform(); }, 0);
-      } else {
-        void runTransform();
-      }
-    },
-    onError: showError,
-  });
-}
+const fileImport = createFileImport({
+  dropZone: document.getElementById('input-pane'),
+  fileInput: document.getElementById('file-input'),
+  triggerEl: document.getElementById('btn-import'),
+  fileNameEl: document.getElementById('file-name'),
+  dropHint: document.getElementById('file-drop-hint'),
+  onImport: ({ text }) => {
+    resetDocument();
+    textInput.setText(text);
+    if (textInput.isLarge()) {
+      const version = dataVersion;
+      setTimeout(() => { if (version === dataVersion) void runTransform(); }, 0);
+    } else {
+      void runTransform();
+    }
+  },
+  onError: showError,
+});
 
 async function runTransform() {
   const text = textInput.getText();
@@ -80,7 +78,7 @@ async function runTransform() {
   if (action === 'minify') {
     setStatus(t('statusMinified', [outputText.length.toLocaleString(), String(res.duration)]));
   } else {
-    setStatus(t(action === 'escape' ? 'statusEscaped' : 'statusUnescaped', [outputText.length.toLocaleString()]));
+    setStatus(t(action === 'escape' ? 'statusEscaped' : 'statusUnescaped', [outputText.length.toLocaleString(), String(res.duration)]));
   }
 }
 
@@ -131,28 +129,20 @@ document.getElementById('btn-copy').addEventListener('click', doCopy);
 document.getElementById('btn-clear').addEventListener('click', doClear);
 document.getElementById('btn-sample').addEventListener('click', fillSample);
 
-inputEl.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-    e.preventDefault();
-    runTransform();
-  }
-});
 function inputChanged() {
   fileImport.reset();
   dataVersion++;
   runTask.cancel({ onlyIfBusy: true });
 }
 inputEl.addEventListener('input', inputChanged);
-if (action === 'minify') {
-  for (const element of [inputEl, document.getElementById('input-view')]) {
-    for (const type of ['paste', 'drop']) element.addEventListener(type, (event) => {
-      if (textInput.acceptTransfer(event)) inputChanged();
-    });
-    element.addEventListener('dragover', (event) => {
-      if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
-    });
-  }
-  document.getElementById('input-view').addEventListener('keydown', (e) => {
+for (const element of [inputEl, inputViewEl]) {
+  for (const type of ['paste', 'drop']) element.addEventListener(type, (event) => {
+    if (textInput.acceptTransfer(event)) inputChanged();
+  });
+  element.addEventListener('dragover', (event) => {
+    if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
+  });
+  element.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
       runTransform();

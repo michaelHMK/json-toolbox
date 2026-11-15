@@ -162,7 +162,7 @@ try {
 
   // Synthetic transfer dispatch invokes the production paste/drop handlers.
   // Clipboard acquisition/source generation happen outside the measured task.
-  for (const name of ['formatter', 'compare', 'minify']) {
+  for (const name of ['formatter', 'compare', 'minify', 'escape', 'unescape']) {
     for (const shape of ['single', 'multiline']) {
       for (const type of ['paste', 'drop']) {
         await page.goto(`${base}/${name}.html`);
