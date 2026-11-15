@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createTaskRunner } from '../src/shared/worker-client.js';
-import { createTaskHandler } from '../src/worker/tasks.js';
+import { createSessionWorker } from './helpers/session-worker.js';
 import { createBusyFeedback } from '../src/shared/feedback.js';
 import { loadPage, Element } from './helpers/page-dom.js';
 
@@ -14,38 +13,16 @@ function translate(key, substitutions = []) {
 }
 
 function setup(name, action = 'minify') {
-  const workers = [];
-  let heldAction;
+  const worker = createSessionWorker();
   const page = loadPage(name, {
     bodyDataset: { action },
     translate,
     expose: name === 'formatter' ? '{ state, doFormat, ensureTreeData, runSearch, doClear }'
       : name === 'compare' ? '{ state, doCompare, setCompareView, doClear }'
         : '{ runTransform, doClear, getOutput: () => outputText }',
-    createTaskRunner(options) {
-      return createTaskRunner({ ...options, createWorker() {
-        const handle = createTaskHandler();
-        const worker = {
-          terminated: false,
-          requests: [],
-          terminate() { this.terminated = true; },
-          postMessage(request) {
-            this.requests.push(request);
-            if (request.action === heldAction) return;
-            this.complete(request);
-          },
-          complete(request) {
-            queueMicrotask(() => {
-              if (!this.terminated) this.onmessage({ data: handle(request) });
-            });
-          },
-        };
-        workers.push(worker);
-        return worker;
-      } });
-    },
+    createTaskRunner: worker.createRunner,
   });
-  return { page, workers, hold(action) { heldAction = action; } };
+  return { page, ...worker };
 }
 
 test('busy exposes cancel after one second and hides it once all work settles', (context) => {

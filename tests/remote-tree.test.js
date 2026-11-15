@@ -2,20 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRemoteTree } from '../src/shared/remote-tree.js';
 import { createTaskHandler } from '../src/worker/tasks.js';
-import { Element } from './helpers/page-dom.js';
-
-async function withDom(run) {
-  const previous = globalThis.document;
-  globalThis.document = {
-    createElement: (tag) => new Element(tag),
-    createDocumentFragment: () => new Element('#fragment'),
-  };
-  try { await run(); }
-  finally {
-    if (previous === undefined) delete globalThis.document;
-    else globalThis.document = previous;
-  }
-}
+import { Element, withDom } from './helpers/page-dom.js';
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 function session(text) {

@@ -90,6 +90,24 @@ export class Element {
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
 }
 
+function createDocument() {
+  return {
+    createElement: (tag) => new Element(tag),
+    createDocumentFragment: () => new Element('#fragment'),
+  };
+}
+
+// Keep the document installed until asynchronous component work has settled.
+export async function withDom(run) {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  globalThis.document = createDocument();
+  try { return await run(); }
+  finally {
+    if (previous) Object.defineProperty(globalThis, 'document', previous);
+    else delete globalThis.document;
+  }
+}
+
 export function loadPage(name, {
   runTask = async () => ({ ok: true, result: {} }),
   expose,
@@ -112,10 +130,9 @@ export function loadPage(name, {
   const createRunner = createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) }));
   const context = vm.createContext({
     document: {
+      ...createDocument(),
       body: { dataset: bodyDataset },
       getElementById: get,
-      createElement: (tag) => new Element(tag),
-      createDocumentFragment: () => new Element('#fragment'),
       getSelection: () => selection,
       createRange: () => ({
         setStart(node, offset) { this.startContainer = node; this.startOffset = offset; },
@@ -139,24 +156,15 @@ export function loadPage(name, {
     setTimeout,
     clearTimeout,
   });
-  const treeSource = readFileSync(new URL('../../src/shared/json-tree.js', import.meta.url), 'utf8')
-    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
-  vm.runInContext(treeSource, context);
-  const virtualTreeSource = readFileSync(new URL('../../src/shared/virtual-tree.js', import.meta.url), 'utf8')
-    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
-  vm.runInContext(virtualTreeSource, context);
-  const remoteTreeSource = readFileSync(new URL('../../src/shared/remote-tree.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
-  vm.runInContext('(function () {' + remoteTreeSource + '\nglobalThis.createRemoteTree = createRemoteTree; })()', context);
-  const virtualTextSource = readFileSync(new URL('../../src/shared/virtual-text.js', import.meta.url), 'utf8')
-    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
-  vm.runInContext(virtualTextSource, context);
-  const textInputSource = readFileSync(new URL('../../src/shared/text-input.js', import.meta.url), 'utf8')
-    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
-  vm.runInContext(textInputSource, context);
-  const feedbackSource = readFileSync(new URL('../../src/shared/feedback.js', import.meta.url), 'utf8')
-    .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
-  vm.runInContext(feedbackSource, context);
+  for (const module of ['json-tree', 'virtual-tree', 'remote-tree', 'virtual-text', 'text-input', 'feedback']) {
+    let source = readFileSync(new URL(`../../src/shared/${module}.js`, import.meta.url), 'utf8')
+      .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
+    // Remote and local tree modules intentionally have private names in common.
+    if (module === 'remote-tree') {
+      source = '(function () {' + source + '\nglobalThis.createRemoteTree = createRemoteTree; })()';
+    }
+    vm.runInContext(source, context, { filename: `${module}.js` });
+  }
   const source = readFileSync(new URL(`../../src/pages/${name}.js`, import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '');
   vm.runInContext(source + `\nglobalThis.page = ${expose};`, context);

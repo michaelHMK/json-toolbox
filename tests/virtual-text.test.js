@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTextLineIndex, createTextLines, createPlainTextRows, createDiffTextRows, safeTextWindow } from '../src/core/text-lines.js';
+import { Element, loadPage } from './helpers/page-dom.js';
 
 const textOf = (row) => row.prefix + row.text.slice(row.start, row.end);
 
@@ -51,8 +52,7 @@ test('unchanged diff segments retain three context lines at either end and gap t
   assert.equal(rows.getRow(3).className, 'gap');
 });
 
-test('the real text component keeps a bounded viewport, reaches the end and copies its whole source', async () => {
-  const { loadPage } = await import('./helpers/page-dom.js');
+test('the real text component keeps a bounded viewport, reaches the end and copies its whole source', () => {
   const page = loadPage('formatter', { expose: '{ outputView }' });
   const element = page.get('output-text');
   const source = 'ordinary\n'.repeat(60000) + 'FINAL';
@@ -79,8 +79,7 @@ test('the real text component keeps a bounded viewport, reaches the end and copi
   page.outputView.destroy();
 });
 
-test('position reveal handles horizontal windows, surrogate pairs, CRLF and EOF in bounded DOM', async () => {
-  const { loadPage } = await import('./helpers/page-dom.js');
+test('position reveal handles horizontal windows, surrogate pairs, CRLF and EOF in bounded DOM', () => {
   const page = loadPage('formatter', { expose: '{ outputView }' });
   const element = page.get('output-text');
   const prefix = 'ordinary\r\n'.repeat(10000) + 'x'.repeat(10000);
@@ -109,8 +108,7 @@ test('position reveal handles horizontal windows, surrogate pairs, CRLF and EOF 
   page.outputView.destroy();
 });
 
-test('switching between virtual and native output preserves its named focusable region', async () => {
-  const { loadPage, Element } = await import('./helpers/page-dom.js');
+test('switching between virtual and native output preserves its named focusable region', () => {
   const page = loadPage('formatter', { expose: '{ createVirtualTextView }' });
   const element = new Element('pre');
   element.setAttribute('role', 'region');
@@ -179,8 +177,7 @@ test('diff rows reuse Worker indexes and preserve context, changes and copied te
   assert.equal(actual.copyText(), expected.copyText());
 });
 
-test('the text view consumes a supplied large-output index and reaches its final line', async (t) => {
-  const { loadPage } = await import('./helpers/page-dom.js');
+test('the text view consumes a supplied large-output index and reaches its final line', (t) => {
   const page = loadPage('formatter', { expose: '{ outputView }' });
   const element = page.get('output-text');
   const source = 'ordinary\n'.repeat(60000) + 'FINAL';

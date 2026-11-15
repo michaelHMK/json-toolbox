@@ -126,16 +126,6 @@ test('search cache belongs to each session and survives omitted data and invalid
   assert.deepEqual(run('search', 'null', {}, handler).highlights, ['']);
 });
 
-test('search ignores array indexes and caps details while counting every match', () => {
-  const handler = createTaskHandler();
-  run('parse', JSON.stringify(Array(600).fill('needle')), {}, handler);
-  const result = run('search', 'needle', {}, handler);
-  assert.equal(result.matchCount, 600);
-  assert.equal(result.highlights.length, 500);
-  assert.equal(result.truncated, true);
-  assert.equal(run('search', '0', {}, handler).matchCount, 0);
-});
-
 test('clear releases worker search data and leaves the session reusable', () => {
   const handler = createTaskHandler();
   run('parse', '{"value":"needle"}', {}, handler);
@@ -186,14 +176,17 @@ test('unescape errors refer to original input after wrapping and control expansi
   }
 });
 
-test('worker errors have locale-neutral codes and actionable JSON locations', () => {
+test('worker errors preserve request ids, locale-neutral codes and JSON locations', () => {
   const handler = createTaskHandler();
   for (const [text, position, line, column] of [
     ['{"a":1,"b":}', 11, 1, 12],
     ['{"a":tru}', 8, 1, 9],
     ['{\n  "a":tru\n}', 11, 2, 10],
+    ['{\n  a:1}', 4, 2, 3],
   ]) {
-    const response = handler({ action: 'parse', text });
+    const response = handler({ id: 42, action: 'parse', text });
+    assert.equal(response.id, 42);
+    assert.match(response.error, /JSON/);
     assert.equal(response.ok, false);
     assert.equal(response.code, 'INVALID_JSON');
     assert.deepEqual([response.position, response.line, response.column], [position, line, column]);
@@ -201,6 +194,7 @@ test('worker errors have locale-neutral codes and actionable JSON locations', ()
   assert.equal(handler({ action: 'search', text: 'x' }).code, 'SEARCH_NOT_READY');
   assert.equal(handler({ action: 'parseSnapshot', snapshotId: 42 }).code, 'SNAPSHOT_UNAVAILABLE');
   const unknown = handler({ action: 'unknown', text: '{' });
+  assert.equal(unknown.ok, false);
   assert.equal(unknown.code, 'UNKNOWN_ACTION');
   assert.equal(unknown.position, null);
 });
@@ -218,19 +212,6 @@ test('search retains displayed numeric literals through every parsing route', ()
   run('clear', undefined, {}, handler);
   run('parse', '{"value":1.2}', {}, handler);
   assert.equal(run('search', '1.20', {}, handler).matchCount, 0);
-});
-
-test('task errors preserve ids, error locations and unknown-action failure', () => {
-  const handler = createTaskHandler();
-  const error = handler({ id: 42, action: 'parse', text: '{\n  a:1}' });
-  assert.equal(error.id, 42);
-  assert.equal(error.ok, false);
-  assert.match(error.error, /JSON/);
-  assert.equal(error.position, 4);
-  assert.equal(error.line, 2);
-  assert.equal(error.column, 3);
-  assert.equal(handler({ action: 'unknown' }).ok, false);
-  assert.equal(handler({ action: 'unescape', text: '\\x' }).ok, false);
 });
 
 test('structural diff keeps escaped paths, previews and all change categories', () => {
@@ -257,15 +238,6 @@ test('keyed arrays support reordering, ignored fields and index fallback', () =>
   assert.equal(fallback.total, 1);
 });
 
-test('structural diff caps details without losing total counts', () => {
-  const result = run('diff', JSON.stringify(Array(5001).fill(0)), {
-    text2: JSON.stringify(Array(5001).fill(1)),
-  });
-  assert.equal(result.total, 5001);
-  assert.equal(result.diffs.length, 5000);
-  assert.equal(result.truncated, true);
-});
-
 test('diff reports which input is invalid', () => {
   const handler = createTaskHandler();
   for (const action of ['diff', 'textDiff']) {
@@ -280,39 +252,13 @@ test('diff reports which input is invalid', () => {
   }
 });
 
-function assertTextDiffReconstructs(result) {
-  const a = result.aText.split('\n');
-  const b = result.bText.split('\n');
-  const reconstructedA = [];
-  const reconstructedB = [];
-  for (const op of result.ops) {
-    if (op.type !== 'add') reconstructedA.push(...a.slice(op.aStart, op.aStart + op.count));
-    if (op.type !== 'del') reconstructedB.push(...b.slice(op.bStart, op.bStart + op.count));
-    if (op.type === 'same') {
-      assert.deepEqual(a.slice(op.aStart, op.aStart + op.count), b.slice(op.bStart, op.bStart + op.count));
-    }
-  }
-  assert.deepEqual(reconstructedA, a);
-  assert.deepEqual(reconstructedB, b);
-}
-
-test('text diff preserves literals and reconstructs equal and changed inputs', () => {
-  for (const [left, right] of [
-    ['{"x":1.00}', '{"x":2.00}'],
-    ['[1,2,3]', '[1,4,3,5]'],
-    ['{}', '{}'],
-    ['{"x":1}', ' { "x" : 1 } '],
-  ]) {
-    const result = run('textDiff', left, { text2: right, indent: '2' });
-    assert.equal(result.blocky, false);
-    assertTextDiffReconstructs(result);
-  }
-});
-
-test('large text diff uses bounded block replacement', () => {
-  const result = run('textDiff', JSON.stringify(Array(1600).fill(1)), {
-    text2: JSON.stringify(Array(1600).fill(2)),
-  });
-  assert.equal(result.blocky, true);
-  assertTextDiffReconstructs(result);
+test('text diff forwards indentation and preserves numeric literals in its result', () => {
+  const result = run('textDiff', '{"x":1.00}', { text2: '{"x":2.00}', indent: 'tab' });
+  assert.equal(result.aText, '{\n\t"x": 1.00\n}');
+  assert.equal(result.bText, '{\n\t"x": 2.00\n}');
+  assert.deepEqual(result.totalLines, [3, 3]);
+  assert.equal(result.blocky, false);
+  const counts = { same: 0, del: 0, add: 0 };
+  for (const op of result.ops) counts[op.type] += op.count;
+  assert.deepEqual(counts, { same: 2, del: 1, add: 1 });
 });

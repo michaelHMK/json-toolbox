@@ -28,6 +28,27 @@ function checkCoverage(result) {
   return counts;
 }
 
+test('identical formatted text reports one complete same range', () => {
+  const value = Array.from({ length: 2000 }, (_, i) => ({ id: i, text: 'line\\ntext' }));
+  const left = JSON.stringify(value);
+  for (const right of [left, JSON.stringify(value, null, 4)]) {
+    const result = makeTextDiff(left, right, '2');
+    assert.equal(result.ops.length, 1);
+    assert.deepEqual(checkCoverage(result), { same: result.ops[0].count, del: 0, add: 0 });
+    assert.deepEqual(result.totalLines, [result.ops[0].count, result.ops[0].count]);
+  }
+});
+
+test('text diff handles worst-case exact diff and the block replacement boundary', () => {
+  for (const size of [1500, 1501]) {
+    const left = JSON.stringify(Array.from({ length: size }, (_, i) => `left ${i}`));
+    const right = JSON.stringify(Array.from({ length: size }, (_, i) => `right ${i}`));
+    const result = makeTextDiff(left, right, '2');
+    assert.equal(result.blocky, size > 1500);
+    assert.deepEqual(checkCoverage(result), { same: 2, del: size, add: size });
+  }
+});
+
 test('large JSON with changes at both ends keeps its unchanged middle', () => {
   const left = Array.from({ length: 3604 }, (_, i) => i);
   const right = [...left];
@@ -102,16 +123,26 @@ test('line indexes preserve LF boundaries, trailing empties, CR and UTF-16 conte
   }
 });
 
-test('randomized indexed diff matches an independent shortest-edit oracle', () => {
+test('numeric JSON and varied lines match an independent shortest-edit oracle', () => {
   const alphabet = ['', 'same', '\r', '一', '😀', 'declinate', 'macallums'];
   let seed = 19017;
   const random = (max) => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed % max;
+    return (seed >>> 16) % max;
   };
-  for (let sample = 0; sample < 300; sample++) {
-    const left = Array.from({ length: 1 + random(20) }, () => alphabet[random(alphabet.length)]);
-    const right = Array.from({ length: 1 + random(20) }, () => alphabet[random(alphabet.length)]);
+  for (let sample = 0; sample < 500; sample++) {
+    const numericJson = sample < 200;
+    const input = () => Array.from({ length: random(20) + (numericJson ? 0 : 1) },
+      () => numericJson ? random(6) : alphabet[random(alphabet.length)]);
+    const a = input();
+    const b = input();
+    const result = numericJson
+      ? makeTextDiff(JSON.stringify(a), JSON.stringify(b), '2')
+      : diffFormattedText(a.join('\n'), b.join('\n'));
+    assert.equal(result.aText, numericJson ? JSON.stringify(a, null, 2) : a.join('\n'));
+    assert.equal(result.bText, numericJson ? JSON.stringify(b, null, 2) : b.join('\n'));
+    const left = result.aText.split('\n');
+    const right = result.bText.split('\n');
     let previous = Array.from({ length: right.length + 1 }, (_, i) => i);
     for (let a = 1; a <= left.length; a++) {
       const current = [a];
@@ -121,7 +152,6 @@ test('randomized indexed diff matches an independent shortest-edit oracle', () =
       }
       previous = current;
     }
-    const result = diffFormattedText(left.join('\n'), right.join('\n'));
     const counts = checkCoverage(result);
     assert.equal(result.blocky, false);
     assert.equal(counts.del + counts.add, previous[right.length]);

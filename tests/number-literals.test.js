@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { performance } from 'node:perf_hooks';
 import { collectNumberLiterals, formatJson, parseJsonPreservingNumberLiterals } from '../src/core/json.js';
 import { diffData } from '../src/core/structural-diff.js';
 
@@ -113,4 +114,17 @@ test('identical retained documents skip scanning their shared literal table', ()
     leftNumberLiterals: unneededLiterals, rightNumberLiterals: unneededLiterals,
   });
   assert.equal(result.total, 0);
+});
+
+test('duplicate keys do not rescan unrelated numeric literal paths', () => {
+  const count = 20_000;
+  const text = '{"n":[' + Array(count).fill('1.0').join(',') + '],"o":{'
+    + Array.from({ length: count }, (_, i) => '"k":' + i).join(',') + '}}';
+  const started = performance.now();
+  const literals = collectNumberLiterals(text);
+  const elapsed = performance.now() - started;
+  assert.equal(Object.keys(literals).length, count);
+  assert.equal(literals['/n/0'], '1.0');
+  assert.equal(literals['/n/' + (count - 1)], '1.0');
+  assert.ok(elapsed < 2000, `literal scan took ${elapsed.toFixed(0)} ms`);
 });

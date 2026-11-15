@@ -48,6 +48,8 @@ for (const type of ['paste', 'drop']) {
     assert.equal(page.textInput.getText(), '[' + largeText + ']');
     assert.equal(input.value, '');
     assert.equal(input.hidden, true);
+    assert.equal(page.textInput.isLarge(), true);
+    assert.ok(preview.textContent.length < 10000);
     assert.equal(page.document.activeElement, preview);
     assert.deepEqual(page.focusCalls.at(-1), { id: 'input-view', options: { preventScroll: true } });
     preview.events.keydown({ key: 'Enter', ctrlKey: true, preventDefault() {} });
@@ -76,6 +78,16 @@ for (const type of ['paste', 'drop']) {
     assert.equal(page.requests.at(-1).text, '{"small":true}');
   });
 }
+
+test('file drops remain available to the file importer when virtual input is active', () => {
+  const page = setup();
+  page.textInput.setText(largeText);
+  const event = transfer('ignored', 'drop');
+  event.dataTransfer.types.push('Files');
+  page.get('input-view').events.drop(event);
+  assert.equal(event.prevented, false);
+  assert.equal(page.textInput.getText(), largeText);
+});
 
 test('input mode changes do not take focus from another control', () => {
   const page = setup();

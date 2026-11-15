@@ -2,23 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTreeModel, createVirtualTree } from '../src/shared/virtual-tree.js';
 import { createChildPathIndex } from '../src/shared/json-tree.js';
-import { Element } from './helpers/page-dom.js';
+import { Element, withDom } from './helpers/page-dom.js';
 
 const rows = (model) => Array.from({ length: model.rowCount }, (_, index) => model.rowAt(index));
 const entryPaths = (model) => rows(model).filter((row) => row.kind === 'entry').map((row) => row.path);
-
-function withDom(run) {
-  const previous = globalThis.document;
-  globalThis.document = {
-    createElement: (tag) => new Element(tag),
-    createDocumentFragment: () => new Element('#fragment'),
-  };
-  try { run(); }
-  finally {
-    if (previous === undefined) delete globalThis.document;
-    else globalThis.document = previous;
-  }
-}
 
 test('a million-element array is one lazy range with direct access to its final value', () => {
   let reads = 0;

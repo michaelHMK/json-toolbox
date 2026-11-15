@@ -1,41 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadPage } from './helpers/page-dom.js';
-import { createTaskHandler } from '../src/worker/tasks.js';
-import { createTaskRunner } from '../src/shared/worker-client.js';
+import { createSessionWorker } from './helpers/session-worker.js';
 import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
 
 const settle = () => new Promise(setImmediate);
 function setup(name) {
-  const workers = [];
-  let heldAction = null;
+  const worker = createSessionWorker();
   const page = loadPage(name, {
     expose: name === 'formatter'
       ? '{ state, textInput, doFormat, setView, runSearch, doClear, getTree: () => treeView }'
       : '{ state, textInputs, doCompare, setCompareView, doClear, treeViews }',
-    createTaskRunner(options) {
-      return createTaskRunner({ ...options, createWorker() {
-        const handle = createTaskHandler();
-        const worker = {
-          requests: [], terminated: false,
-          terminate() { this.terminated = true; },
-          postMessage(request) {
-            this.requests.push(request);
-            if (heldAction !== request.action) this.complete(request);
-          },
-          complete(request) {
-            queueMicrotask(() => {
-              if (!this.terminated) this.onmessage({ data: structuredClone(handle(structuredClone(request))) });
-            });
-          },
-          crash() { this.onerror({ message: 'test crash', preventDefault() {} }); },
-        };
-        workers.push(worker);
-        return worker;
-      } });
-    },
+    createTaskRunner: worker.createRunner,
   });
-  return { page, workers, hold(action) { heldAction = action; } };
+  return { page, ...worker };
 }
 
 test('large formatter retains no UI object graph and restores windows and search after Worker reset', async () => {
