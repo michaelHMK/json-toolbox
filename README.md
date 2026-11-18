@@ -194,7 +194,7 @@ npm ci --prefix scripts/vendor-codemirror --include=dev --ignore-scripts
 npm run build --prefix scripts/vendor-codemirror
 ```
 
-The lockfile pins the packages and esbuild. The build writes `src/vendor/codemirror.js` and the accompanying license notices. When updating editor dependencies, review and commit the lockfile and both generated files together. [Package versions and licenses](src/vendor/codemirror.LICENSE.txt)
+The lockfile pins the packages and esbuild. The build applies `scripts/vendor-codemirror/long-line-scroll.patch` to `@codemirror/view` and writes `src/vendor/codemirror.js` and the accompanying license notices. When updating editor dependencies, review the patch and commit the lockfile and both generated files together. [Package versions and licenses](src/vendor/codemirror.LICENSE.txt)
 
 ## Regenerate Icons
 

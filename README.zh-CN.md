@@ -194,7 +194,7 @@ npm ci --prefix scripts/vendor-codemirror --include=dev --ignore-scripts
 npm run build --prefix scripts/vendor-codemirror
 ```
 
-锁文件固定了所有依赖和 esbuild 的版本。构建脚本生成 `src/vendor/codemirror.js` 及配套的许可证文件。更新编辑器依赖时，请一起审查并提交锁文件和这两份产物。[依赖包版本与许可证](src/vendor/codemirror.LICENSE.txt)
+锁文件固定了所有依赖和 esbuild 的版本。构建脚本先将 `scripts/vendor-codemirror/long-line-scroll.patch` 应用到 `@codemirror/view`，再生成 `src/vendor/codemirror.js` 及配套的许可证文件。更新编辑器依赖时，请复核补丁，并一起提交锁文件和这两份产物。[依赖包版本与许可证](src/vendor/codemirror.LICENSE.txt)
 
 ## 重新生成图标
 
