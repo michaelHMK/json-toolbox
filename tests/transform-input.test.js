@@ -7,9 +7,9 @@ import { loadPage } from './helpers/page-dom.js';
 const largeText = '原文 "first"\n' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '\nlast';
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function transfer(text, type = 'paste') {
+function transfer(text) {
   const event = { prevented: false, preventDefault() { this.prevented = true; } };
-  event[type === 'paste' ? 'clipboardData' : 'dataTransfer'] = { types: ['text/plain'], getData: () => text };
+  event.clipboardData = { types: ['text/plain'], getData: () => text };
   return event;
 }
 
@@ -38,23 +38,21 @@ for (const action of ['escape', 'unescape']) {
   const source = action === 'escape' ? largeText : JSON.stringify(largeText);
   const expected = action === 'escape' ? JSON.stringify(largeText).slice(1, -1) : largeText;
 
-  test(`${action} previews large paste and text drops, preserving full source for shortcuts and copy`, async () => {
+  test(`${action} runs from the large editor and copies the complete source or result`, async () => {
     const page = setup(action);
     const input = page.get('input');
-    const preview = page.get('input-view');
+    const host = page.get('input-editor');
     const paste = transfer(source);
     input.events.paste(paste);
     assert.equal(paste.prevented, true);
     assert.equal(input.hidden, true);
     assert.equal(input.value, '');
-    assert.equal(preview.hidden, false);
-    assert.ok(preview.textContent.includes(source.slice(0, 10)));
-    assert.ok(preview.textContent.length < 10000);
+    assert.equal(host.hidden, false);
     assert.equal(page.textInput.getText(), source);
     await page.get('btn-copy').click();
     assert.equal(page.copied.at(-1), source);
 
-    preview.events.keydown({ key: 'Enter', ctrlKey: true, preventDefault() {} });
+    host.events.keydown({ key: 'Enter', ctrlKey: true, preventDefault() {} });
     await flush();
     assert.equal(page.requests.at(-1).action, action);
     assert.equal(page.requests.at(-1).text, source);
@@ -62,27 +60,16 @@ for (const action of ['escape', 'unescape']) {
     await page.get('btn-copy').click();
     assert.equal(page.copied.at(-1), expected);
 
-    const replacement = action === 'escape' ? 'replacement\n' + largeText : JSON.stringify('replacement\n' + largeText);
-    const drop = transfer(replacement, 'drop');
-    preview.events.drop(drop);
-    assert.equal(drop.prevented, true);
-    assert.equal(page.textInput.getText(), replacement);
-    assert.match(preview.textContent, /replacement/);
-
     const small = action === 'escape' ? 'small\ntext' : '"small\\ntext"';
-    const smallPaste = transfer(small);
-    preview.events.paste(smallPaste);
-    assert.equal(smallPaste.prevented, true);
-    assert.equal(input.hidden, false);
-    assert.equal(input.value, small);
-    assert.equal(preview.hidden, true);
-    input.events.keydown({ key: 'Enter', metaKey: true, preventDefault() {} });
+    host.editor.replace(0, host.editor.length, small);
+    assert.equal(page.textInput.getText(), small);
+    host.events.keydown({ key: 'Enter', metaKey: true, preventDefault() {} });
     await flush();
     assert.equal(page.requests.at(-1).text, small);
     assert.equal(page.getOutput(), action === 'escape' ? 'small\\ntext' : 'small\ntext');
     page.doClear();
     assert.equal(page.textInput.getText(), '');
-    assert.equal(preview.hidden, true);
+    assert.equal(host.hidden, true);
     assert.equal(page.get('output-text').textContent, '');
   });
 
@@ -91,7 +78,7 @@ for (const action of ['escape', 'unescape']) {
     page.importText(source);
     assert.equal(page.get('input').hidden, true);
     assert.equal(page.get('input').value, '');
-    assert.equal(page.get('input-view').hidden, false);
+    assert.equal(page.get('input-editor').hidden, false);
     assert.equal(page.textInput.getText(), source);
     await flush();
     assert.deepEqual(page.requests.map((request) => request.action), ['clear', action]);
@@ -125,25 +112,20 @@ for (const action of ['escape', 'unescape']) {
     await pending;
     assert.equal(page.getOutput(), '');
     assert.equal(page.textInput.getText(), '');
-    assert.equal(page.get('input-view').hidden, true);
+    assert.equal(page.get('input-editor').hidden, true);
   });
 }
 
-test('unescape locates an invalid escape in the original large input preview', async () => {
+test('unescape selects the invalid character in the editable large input', async () => {
   const page = setup('unescape');
   const source = 'line\n'.repeat(Math.ceil(LARGE_INPUT_THRESHOLD / 5)) + '\\x';
   page.get('input').events.paste(transfer(source));
   await page.runTransform();
-  const preview = page.get('input-view');
-  assert.equal(page.get('input').hidden, true);
-  assert.equal(page.get('input').value, '');
+  const host = page.get('input-editor');
   assert.equal(page.textInput.getText(), source);
-  assert.equal(preview.hidden, false);
-  assert.equal(preview.focused, true);
-  assert.ok(preview.scrollTop > 0);
-  assert.match(preview.textContent, /\\x/);
-  const [range] = page.selection.ranges;
-  assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, source.length - 1);
-  assert.equal(range.startContainer.textContent.slice(range.startOffset, range.endOffset), 'x');
+  assert.equal(host.hidden, false);
+  assert.equal(host.focused, true);
+  assert.equal(host.selectionStart, source.length - 1);
+  assert.equal(host.value.slice(host.selectionStart, host.selectionEnd), 'x');
   assert.equal(page.get('error').hidden, false);
 });

@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "JSON yapıştırın veya buraya bir .json dosyası bırakın… (Biçimlendirmek için Cmd/Ctrl + Enter)"
   },
-  "largeInputTitle": {
-    "message": "Salt okunur büyük dosya önizlemesi"
-  },
   "btnImportFile": {
     "message": "Dosya içe aktar"
   },

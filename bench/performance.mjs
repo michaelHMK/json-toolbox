@@ -59,7 +59,7 @@ export function createTextLineIndex(...args) {
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
 const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
-const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
 page.setDefaultTimeout(60000);
 const errors = [];
 const results = [];
@@ -183,17 +183,22 @@ try {
             : new DragEvent(type, { dataTransfer: benchTransfer, bubbles: true, cancelable: true });
           const start = performance.now();
           textarea.dispatchEvent(event);
-          const preview = document.querySelector('#input-view' + suffix);
-          void preview.scrollHeight;
+          const host = document.querySelector('#input-editor' + suffix);
+          void host.scrollHeight;
           return { inputMiB: benchSource.length / 1024 / 1024, dispatchLayoutMs: +(performance.now() - start).toFixed(2),
             prevented: event.defaultPrevented, textareaLength: textarea.value.length,
-            textareaHidden: textarea.hidden, previewHidden: preview.hidden,
-            renderedRows: preview.querySelectorAll('.virtual-text-row').length };
+            textareaHidden: textarea.hidden };
         }, { name, type });
-        const measurement = await collect(`${name}-${type}-10MiB-${shape}`, input);
-        assert.ok(input.prevented && input.textareaHidden && !input.previewHidden);
+        const editor = page.locator('.large-input-editor .cm-content');
+        await editor.locator('.cm-line').first().waitFor();
+        const rendered = await editor.evaluate((element) => ({
+          renderedRows: element.querySelectorAll('.cm-line').length, renderedChars: element.textContent.length,
+          editable: element.isContentEditable,
+        }));
+        const measurement = await collect(`${name}-${type}-10MiB-${shape}`, { ...input, ...rendered });
+        assert.ok(input.prevented && input.textareaHidden && rendered.editable);
         assert.equal(input.textareaLength, 0);
-        assert.ok(input.renderedRows < 150);
+        assert.ok(rendered.renderedRows < 150 && rendered.renderedChars > 0 && rendered.renderedChars < 100000);
         if (input.dispatchLayoutMs >= inputBudget || measurement.longestTaskMs >= inputBudget) violations.push(`${measurement.scenario}: input task exceeded ${inputBudget}ms`);
       }
     }
@@ -207,37 +212,42 @@ try {
     const event = new ClipboardEvent('paste', { clipboardData: benchTransfer, bubbles: true, cancelable: true });
     const start = performance.now();
     document.querySelector('#input').dispatchEvent(event);
-    const preview = document.querySelector('#input-view');
-    void preview.scrollWidth;
+    void document.querySelector('#input-editor').scrollWidth;
     return +(performance.now() - start).toFixed(2);
   });
-  // Drag to the current right edge while the exact width is still growing.
-  await page.locator('#input-view').evaluate((view) => { view.scrollLeft = view.scrollWidth; });
-  await page.waitForFunction(() => document.querySelector('#input-view').textContent.includes('末尾🙂'));
+  // Scroll all the way across the line as a reader would, then verify the
+  // tail's actual screen coordinates before moving the selection to it.
+  const unicodeEditor = page.locator('#input-editor .cm-content');
+  await page.locator('#input-editor .cm-scroller').evaluate((view) => { view.scrollLeft = view.scrollWidth; });
+  await page.waitForFunction(() => document.querySelector('#input-editor .cm-content').textContent.includes('末尾🙂'));
   const unicode = await collect('escape-unicode-emoji-tab-line', { dispatchLayoutMs: unicodeLayoutMs });
   if (unicodeLayoutMs >= inputBudget || unicode.longestTaskMs >= inputBudget) violations.push(`${unicode.scenario}: input or width indexing task exceeded ${inputBudget}ms`);
-  const copy = await page.locator('#input-view').evaluate((view) => {
-    const node = view.querySelector('.virtual-text-row span').firstChild;
+  const visible = await unicodeEditor.evaluate((editor) => {
     const marker = '末尾🙂';
-    const at = node.textContent.indexOf(marker);
-    const range = new Range();
-    range.setStart(node, at);
-    range.setEnd(node, at + marker.length);
-    const rect = range.getBoundingClientRect();
-    const viewport = view.getBoundingClientRect();
-    document.getSelection().removeAllRanges();
-    document.getSelection().addRange(range);
-    const readCopy = () => {
-      const clipboardData = new DataTransfer();
-      view.dispatchEvent(new ClipboardEvent('copy', { clipboardData, bubbles: true, cancelable: true }));
-      return clipboardData.getData('text/plain');
-    };
-    const selected = readCopy();
-    view.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }));
-    return { visible: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1,
-      selected, complete: readCopy() === benchSource };
+    const nodes = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+    const viewport = editor.closest('.cm-scroller').getBoundingClientRect();
+    for (let node = nodes.nextNode(); node; node = nodes.nextNode()) {
+      const at = node.data.indexOf(marker);
+      if (at === -1) continue;
+      const range = new Range();
+      range.setStart(node, at);
+      range.setEnd(node, at + marker.length);
+      const rect = range.getBoundingClientRect();
+      return rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1
+        && rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1;
+    }
+    return false;
   });
-  assert.deepEqual(copy, { visible: true, selected: '末尾🙂', complete: true });
+  assert.ok(visible, 'Unicode tail should be visible at the rightmost scroll position');
+  await unicodeEditor.press('ControlOrMeta+End');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowLeft');
+  await page.keyboard.press('ControlOrMeta+C');
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '末尾🙂');
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.press('ControlOrMeta+C');
+  assert.ok(await page.evaluate(async () => await navigator.clipboard.readText() === benchSource));
 
   await page.goto(base + '/formatter.html');
   await page.locator('#auto-format').uncheck();

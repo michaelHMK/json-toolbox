@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "在此粘贴 JSON 或拖入 .json 文件…（Cmd/Ctrl + Enter 格式化）"
   },
-  "largeInputTitle": {
-    "message": "大文件只读预览"
-  },
   "btnImportFile": {
     "message": "导入文件"
   },

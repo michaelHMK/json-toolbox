@@ -16,7 +16,7 @@ Formatear y explorar
 Importar archivos locales
 - En cualquiera de las cinco herramientas, selecciona un archivo o arrástralo al panel de entrada.
 - Importa un archivo .json en UTF-8 cada vez, de hasta 50 MiB. La herramienta se ejecuta automáticamente tras la importación. La comparación comienza cuando ambas entradas contienen texto.
-- Los archivos grandes se abren en una vista previa virtual de solo lectura. La herramienta procesa el contenido completo.
+- Al importar un archivo grande, pegar un texto extenso o arrastrarlo al campo de entrada, el contenido se abre directamente en el editor. Puedes editar y copiar todo el texto.
 
 Minificar, escapar y quitar escapes
 - Cambia entre las herramientas desde la barra lateral.

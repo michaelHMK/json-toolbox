@@ -1,6 +1,7 @@
-// Optional browser check: PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/browser.mjs [repo] [--verify]
+// Optional browser check: PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/browser.mjs [repo] [--verify] [--large-edit [file.json]]
 // Uses a local HTTP server; extension installation/i18n are outside this benchmark.
 import { resolveExtension } from './extension-root.mjs';
+import { measureLargeEdits } from './large-edit.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -110,12 +111,22 @@ try {
     await page.locator('#input').fill('{"edited":true}');
     assert.equal(await page.locator('#file-name').isHidden(), true);
 
-    await page.evaluate(() => {
+    const largeFile = '{ "editable": true }' + ' '.repeat(256 * 1024);
+    await page.locator('#file-input').setInputFiles({
+      name: 'editable.json', mimeType: 'application/json', buffer: Buffer.from(largeFile),
+    });
+    await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('"editable": true'));
+    const editor = page.locator('.large-input-editor .cm-content');
+    assert.equal(await editor.isEditable(), true);
+    assert.equal(await page.locator('#input').isHidden(), true);
+    assert.equal(await page.locator('#input').inputValue(), '');
+    assert.match(await page.locator('#file-name').textContent(), /^editable\.json/);
+
+    await editor.evaluate((content) => {
       const transfer = new DataTransfer();
       transfer.items.add(new File(['{ "dropped": [1, true] }'], 'drop.json', { type: 'application/json' }));
-      const pane = document.querySelector('#input-pane');
       for (const type of ['dragenter', 'dragover', 'drop']) {
-        pane.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
+        content.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
       }
     });
     await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('"dropped": ['));
@@ -200,13 +211,20 @@ try {
           clipboardData.setData('text/plain', 'x'.repeat(300000));
           input.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
         });
-        await page.locator('#input-view').press('Control+a');
-        await page.locator('#input-view').press('Control+c');
+        await page.locator('#btn-run').click();
+        await page.waitForSelector('#output-text.virtual-text');
+        await page.locator('#output-text').press('Control+a');
+        await page.locator('#output-text').press('Control+c');
       }
       await page.waitForFunction(() => document.querySelector('#error').textContent === 'errCopyFailed');
       assert.equal(await page.locator('#status').textContent(), '');
       assert.equal(await page.locator('body > textarea').count(), 0, 'fallback textarea must be removed');
     }
+  }
+  const largeEditOption = process.argv.indexOf('--large-edit');
+  if (largeEditOption !== -1) {
+    const file = process.argv[largeEditOption + 1];
+    rows.push(...await measureLargeEdits(browser, base, file?.startsWith('--') ? undefined : file));
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.version(), root: pathToFileURL(root).href, verify, results: rows }, null, 2));

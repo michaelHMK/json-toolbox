@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 **Built for large JSON. All processing stays local.**
 
-JSON Toolbox is a Chrome extension (Manifest V3) built around performance and privacy, with tools to format, minify, escape, and compare JSON. Zero permissions, uploads, or tracking. No ads or third-party runtime dependencies. Works offline after installation.
+JSON Toolbox is a Chrome extension (Manifest V3) built around performance and privacy, with tools to format, minify, escape, and compare JSON. Zero permissions, uploads, or tracking. It works offline after installation and includes no ads.
 
 See the `version` field in [`src/manifest.json`](src/manifest.json) for the current version.
 
@@ -12,14 +12,14 @@ See the `version` field in [`src/manifest.json`](src/manifest.json) for the curr
 
 - **Responsive interactions**: Web Workers handle parsing, search, and comparison, reducing computation on the main thread.
 - **Lightweight browsing**: trees and long text render only around the visible area, avoiding a DOM node for every result while supporting tree search navigation and full copying.
-- **Large-input virtualization**: inputs above 262,144 UTF-16 code units (about 256 KiB for ASCII text) use a read-only virtual preview, avoiding full native textarea layout.
+- **Large inputs** open directly in the bundled CodeMirror 6 editor when an import, paste, or text drop brings the input above 262,144 UTF-16 code units (about 256 KiB of ASCII text). The entire document stays editable while the editor renders the visible portion.
 - **Less repeated work**: ordinary documents reuse parsed data and results; large text-only operations choose native or direct serialization for the data, fall back to iteration for deep nesting, and release unused Worker document caches.
 
 See [Performance Checks](#performance-checks) below for verification commands and large-output limitations.
 
 ## Privacy
 
-- **No uploads or tracking**: the extension makes no network requests, loads no remote code, and includes no telemetry, ads, or third-party SDKs.
+- **No uploads or tracking**: the extension makes no network requests, loads no remote code, and includes no telemetry, ads, or tracking SDKs.
 - **No extra extension permissions**: no website access or storage permissions, and no reading of website content, browsing history, cookies, or account information. See [`src/manifest.json`](src/manifest.json).
 - **No saved input history**: inputs and results are processed only in the memory of the tool page and its local Worker. The extension does not write them to browser storage, files, or cloud services; it writes to the system clipboard only when you copy.
 - **Local theme preference**: only your theme choice is saved in `localStorage` on your device. This does not save input content or require additional extension permissions.
@@ -35,7 +35,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 | **JSON Escape / Unescape** | Convert between plain text and escaped JSON string content, with one-click copying |
 | **JSON Compare** | Compare JSON structures for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
 
-Formatter, Minifier, Escape, Unescape, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation; Compare runs once both inputs are present. Large pastes and plain-text drops also use the virtual preview. Large inputs remain in a read-only virtual preview, including syntax-error navigation when the browser provides a position. Pasting into the preview replaces the original text; small replacements return to an editable text box.
+Formatter, Minifier, Escape, Unescape, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation. Compare runs once both inputs are present. You can edit or copy the entire input, including large files and pasted text, and jump to a syntax error when the browser provides its position.
 
 Use the sidebar to switch between tools. The interface includes 20 locale catalogs in `src/_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`) and Latin American Spanish (`es_419`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), Arabic (`ar`), Indonesian (`id`), Vietnamese (`vi`), Italian (`it`), Romanian (`ro`), Turkish (`tr`), and Polish (`pl`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
@@ -64,6 +64,7 @@ src/                   # Complete extension; load this directory in Chrome
     compare.js
     transform.js       # Shared page logic for minify, escape, and unescape
   shared/              # Browser UI, document/comparison sessions, and Worker transport
+  vendor/              # Bundled CodeMirror editor and third-party licenses
   core/                # Pure algorithms: JSON formatting, paths, search, structural/text diff
   worker/
     index.js           # Web Worker message entry point
@@ -81,9 +82,10 @@ scripts/
   build_release.py     # Release validation and allowlist packaging using Python's standard library
   gen_icons.py         # Regenerate PNG files in src/icons/ (optional)
   store-assets/        # Store screenshot and promotional image generators
+  vendor-codemirror/   # Locked dependencies and build script for the editor bundle
 tests/                 # Algorithm and messaging contracts, release validation
 bench/                 # Formatting/search/diff benchmarks and optional browser checks
-package.json           # Native ES modules and development commands; no third-party dependencies
+package.json           # Native ES modules and development commands
 STORE_LISTING.md       # Chrome Web Store listing copy and submission guidance
 PRIVACY.md             # English and Chinese privacy policy hosted in the public repository
 store-assets/          # Store screenshots, promotional images, and listing copy; excluded from the extension ZIP
@@ -146,6 +148,8 @@ node bench/theme.mjs
 
 Browser check directory arguments such as `.` refer to a checkout; the scripts load its `src/` extension directory and also recognize the root layout of older checkouts. You can pass an extension directory directly.
 
+Run `node bench/browser.mjs --large-edit` to test all five tools with a generated 10 MiB single-line JSON file. To reproduce a case with your own file, run `node bench/browser.mjs --large-edit path/to/large.min.json` with valid UTF-8 JSON above the large-input threshold and no line breaks. The report measures from the file input’s change event through reading, decoding, and the first opportunity to paint the editor. It also measures keystroke latency, verifies full copying, and checks each tool’s result after editing.
+
 CI also verifies the release ZIP checksum, unpacks the extension, starts its background worker, and runs one operation on each of the five tool pages. To run this locally, use Playwright's full Chromium browser or set `CHROMIUM_EXECUTABLE` to Chromium or Chrome for Testing. Pass the ZIP produced by the build.
 
 ```bash
@@ -156,7 +160,7 @@ node bench/release-smoke.mjs "dist/json-toolbox-${version}.zip"
 
 These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, focus, view switching, state recovery, and deeply nested Worker transfers. `performance.mjs` uses local HTTP pages and real Workers; its timings exclude extension installation, startup, and system clipboard access. Paste/drop events are synthesized to measure application event handling.
 
-`native-paste.mjs` uses Chromium's clipboard and the real paste shortcut to verify large source previews and complete copying on Escape and Unescape. The default input is about 20 MiB, adjustable with `BENCH_PASTE_MIB`. Timing starts at the paste event and ends after two animation frames; fixture construction and clipboard writing are excluded. Set `BENCH_SCREENSHOT_DIR` to save screenshots, or use `BENCH_VERIFY=0` with an older checkout to record a baseline. It measures each page once; compare timings by running serially in the same environment.
+`native-paste.mjs` uses Chromium's clipboard and the real paste shortcut to verify direct editing, selection replacement, and full copying of large inputs on Escape and Unescape. The default input is about 20 MiB, adjustable with `BENCH_PASTE_MIB`. Timing starts at the paste event and ends after two animation frames; fixture construction and clipboard writing are excluded. Set `BENCH_SCREENSHOT_DIR` to save screenshots, or use `BENCH_VERIFY=0` with an older checkout to record a baseline. It measures each page once; compare timings by running serially in the same environment.
 
 `TREE_TOGGLE_BUDGET_MS`, `PERF_INPUT_BUDGET_MS`, and `PERF_FRAME_BUDGET_MS` adjust the synchronous tree-toggle p50, input-processing/layout, and scrolling-frame p95 budgets (defaults: 16, 50, and 35 ms). The dense-diff check in `remote-state.mjs` enforces a scrolling budget; initial comparison and Worker recovery are reported separately.
 
@@ -177,9 +181,20 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 `BENCH_FILE_MIB` changes the ordinary/invalid file size (default `50`). `BENCH_VERIFY=0` still records correctness failures. Optional `BENCH_MAX_MS` and `BENCH_MAX_LONG_TASK_MS` enforce budgets against the median total time and median longest task respectively; both are disabled by default because hardware and browser versions vary. Run baseline and updated checkouts sequentially with identical settings.
 
-Large inputs and outputs use virtual rendering, so native browser Find covers only the visible window. Tree search and full copying remain available. Complete input and result text stays in page memory, while parsed object graphs and tree indexes for large documents stay in the Worker. Large text diffs use block replacement.
+The editor for large inputs and the large output views use virtual rendering. Native browser Find covers only the rendered portion in these views. Tree search and full copying remain available. Complete input and result text stays in page memory, while parsed object graphs and tree indexes for large documents stay in the Worker. Large text diffs use block replacement.
 
 For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000 --directory src` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
+
+## Rebuild the Bundled Editor
+
+The extension ships with a readable ES module for CodeMirror 6. Normal development, testing, packaging, and loading the extension use the checked-in files. To regenerate the editor, run these commands from the repository root.
+
+```bash
+npm ci --prefix scripts/vendor-codemirror --include=dev --ignore-scripts
+npm run build --prefix scripts/vendor-codemirror
+```
+
+The lockfile pins the packages and esbuild. The build writes `src/vendor/codemirror.js` and the accompanying license notices. When updating editor dependencies, review and commit the lockfile and both generated files together. [Package versions and licenses](src/vendor/codemirror.LICENSE.txt)
 
 ## Regenerate Icons
 

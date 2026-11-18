@@ -157,6 +157,30 @@ export function loadPage(name, {
     createDocumentSession: (options) => createDocumentSession({ ...options, createRunner }),
     createComparisonSession: (options) => createComparisonSession({ ...options, createRunner }),
     createFileImport,
+    // Browser checks exercise CodeMirror's layout, clipboard, and history.
+    // The page tests only need its text and change notifications.
+    createLargeInputEditor(host, { text, onChange }) {
+      host.editor = {
+        setDocument(text) {
+          host.value = text.replace(/\r\n?/g, '\n');
+          host.setSelectionRange(0, 0);
+        },
+        getText: () => host.value,
+        get length() { return host.value.length; },
+        getSelection: () => ({ start: host.selectionStart, end: host.selectionEnd }),
+        select: (start, end) => host.setSelectionRange(start, end),
+        replace(start, end, text) {
+          text = text.replace(/\r\n?/g, '\n');
+          host.value = host.value.slice(0, start) + text + host.value.slice(end);
+          host.setSelectionRange(start + text.length, start + text.length);
+          onChange();
+        },
+        focus: () => host.focus(),
+        destroy() { delete host.editor; },
+      };
+      host.editor.setDocument(text);
+      return host.editor;
+    },
     t: translate,
     appendJsonPath, createChildPathIndex, createTreeModel,
     PATH_SEP,

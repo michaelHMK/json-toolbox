@@ -16,7 +16,7 @@ Formattare ed esplorare
 Importare file locali
 - In ciascuno dei cinque strumenti, scegli un file o trascinalo nel riquadro di input.
 - Importa un file .json UTF-8 alla volta, fino a 50 MiB per file. Lo strumento si avvia automaticamente dopo l’importazione. Il confronto inizia quando entrambi i riquadri contengono del testo.
-- I file di grandi dimensioni si aprono in un’anteprima virtuale in sola lettura. Lo strumento elabora l’intero contenuto.
+- Quando importi un file di grandi dimensioni, incolli un testo lungo o lo trascini nel campo di input, il contenuto si apre direttamente nell’editor. Puoi modificare e copiare l’intero testo.
 
 Minificare, applicare e rimuovere escape
 - Passa da uno strumento all’altro tramite la barra laterale.

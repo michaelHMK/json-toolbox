@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "JSON einfügen oder eine .json-Datei hier ablegen… (Cmd/Ctrl + Enter zum Formatieren)"
   },
-  "largeInputTitle": {
-    "message": "Schreibgeschützte Vorschau großer Dateien"
-  },
   "btnImportFile": {
     "message": "Datei importieren"
   },

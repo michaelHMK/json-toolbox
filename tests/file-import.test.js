@@ -313,46 +313,64 @@ for (const { action, source, output } of [
   });
 }
 
-test('large formatter imports use virtual input and release document caches', async () => {
-  const source = '{"payload":"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"}';
+test('large formatter imports keep the original file text and label until the first edit', async () => {
+  const source = '{\r\n  "payload": "' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"\r\n}';
   const actions = [];
-  const imported = importPage('format', async (action, payload) => {
-    actions.push({ action, payload });
-    if (action === 'format') return { ok: true, result: { text: '{"payload":"formatted"}' }, duration: 1 };
-    return { ok: true, result: {} };
+  let finish;
+  const formatted = new Promise((resolve) => { finish = resolve; });
+  const page = loadPage('formatter', {
+    expose: '{ textInput }',
+    createFileImport,
+    runTask: async (action, payload) => {
+      actions.push({ action, payload });
+      if (action === 'format') {
+        finish();
+        return { ok: true, result: { text: '{"payload":"formatted"}' }, duration: 1 };
+      }
+      return { ok: true, result: {} };
+    },
   });
-  imported.importText(source);
-  await flush();
-  assert.equal(imported.page.get('input').hidden, true);
-  assert.equal(imported.page.get('input-view').hidden, false);
+  const picker = page.get('file-input');
+  const file = jsonFile(source);
+  picker.files = [file];
+  picker.events.change();
+  await formatted;
+
+  const host = page.get('input-editor');
+  assert.equal(page.get('input').hidden, true);
+  assert.equal(page.get('input').value, '');
+  assert.equal(host.hidden, false);
+  assert.equal(page.textInput.getText(), source);
+  assert.deepEqual(actions.map(({ action }) => action), ['clear', 'format']);
   assert.equal(actions[1].payload.text, source);
   assert.equal(actions[1].payload.retainSnapshot, false);
   assert.equal(actions[1].payload.retainSearch, false);
+  const fileName = page.get('file-name');
+  assert.equal(fileName.textContent, 'data.json · ' + formatFileSize(file.size));
+  assert.equal(fileName.hidden, false);
+
+  host.editor.replace(0, 0, ' ');
+  assert.equal(page.textInput.getText(), ' ' + source.replaceAll('\r\n', '\n'));
+  assert.equal(fileName.hidden, true);
 });
 
 for (const action of ['format', 'minify']) {
-  test(`${action} locates large parse errors in the virtual input without restoring a textarea`, async () => {
-    const prefix = '[\r\n' + ('  "' + 'x'.repeat(40) + '",\r\n').repeat(60000);
+  test(`${action} selects the original CRLF parse error in the large editor`, async () => {
+    const prefix = '[\r\n  "' + 'x'.repeat(LARGE_INPUT_THRESHOLD) + '",\r\n';
     const source = prefix + '  INVALID_TOKEN,\r\n  1\r\n]';
     const position = prefix.length + 2;
     const { page, importText } = importPage(action, async (task) => task === action ? {
-      ok: false, error: 'Invalid JSON token', position, line: 60002, column: 3,
+      ok: false, error: 'Invalid JSON token', position, line: 3, column: 3,
     } : { ok: true, result: {} });
     importText(source);
     await flush();
-    const preview = page.get('input-view');
+    const host = page.get('input-editor');
     assert.equal(page.get('input').hidden, true);
-    assert.equal(page.get('input').value, '');
-    assert.equal(preview.hidden, false);
-    assert.equal(preview.focused, true);
-    assert.ok(preview.scrollTop > 0);
-    assert.match(preview.textContent, /INVALID_TOKEN/);
-    assert.ok(preview.querySelectorAll('.virtual-text-row').length < 60);
+    assert.equal(host.hidden, false);
+    assert.equal(host.focused, true);
     assert.equal(page.textInput.getText(), source);
-    assert.equal(page.textInput.isLarge(), true);
-    const [range] = page.selection.ranges;
-    assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, position);
-    assert.equal(range.startContainer.textContent.slice(range.startOffset, range.endOffset), 'I');
+    assert.equal(host.selectionStart, host.value.indexOf('INVALID_TOKEN'));
+    assert.equal(host.value.slice(host.selectionStart, host.selectionEnd), 'I');
     assert.equal(page.get('error').hidden, false);
     assert.match(page.get('error').textContent, /Invalid JSON token/);
   });
@@ -372,12 +390,12 @@ for (const action of ['format', 'minify']) {
     assert.equal(input.selectionStart, position);
     assert.equal(input.selectionEnd, position + 1);
     assert.equal(input.scrollTop, 21);
-    assert.equal(page.get('input-view').hidden, true);
+    assert.equal(page.get('input-editor').hidden, true);
     assert.equal(page.selection.ranges.length, 0);
   });
 }
 
-test('large minify imports use virtual input without affecting the original source', async () => {
+test('large minify imports use the large editor without affecting the original source', async () => {
   const source = '{ "payload": "' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '" }';
   let taskText = '';
   const { page, importText } = importPage('minify', async (action, payload) => {
@@ -392,7 +410,7 @@ test('large minify imports use virtual input without affecting the original sour
   assert.equal(taskText, source);
   assert.equal(page.getOutput(), '{"payload":"minified"}');
   assert.equal(page.get('input').hidden, true);
-  assert.equal(page.get('input-view').hidden, false);
+  assert.equal(page.get('input-editor').hidden, false);
 });
 
 function comparisonImportPage(runTask) {
@@ -405,20 +423,22 @@ function comparisonImportPage(runTask) {
   return { page, imports };
 }
 
-test('comparison imports, swaps and clears virtual input without losing original source', () => {
+test('comparison moves large and small input to the appropriate editors on swap', () => {
   const { page, imports } = comparisonImportPage();
   const text = '"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"';
   imports[0].onImport({ text });
   assert.equal(page.textInputs.left.getText(), text);
   assert.equal(page.get('input-left').value, '');
-  assert.equal(page.get('input-view-left').hidden, false);
+  assert.equal(page.get('input-editor-left').hidden, false);
   page.get('input-right').value = '{}';
   page.doSwap();
   assert.equal(page.textInputs.right.getText(), text);
+  assert.equal(page.get('input-editor-right').hidden, false);
   assert.equal(page.textInputs.left.getText(), '{}');
+  assert.equal(page.get('input-editor-left').hidden, true);
   page.doClear();
   assert.equal(page.textInputs.right.getText(), '');
-  assert.equal(page.get('input-view-right').hidden, true);
+  assert.equal(page.get('input-editor-right').hidden, true);
 });
 
 test('clearing or editing after file import supersedes the deferred automatic comparison', async () => {
@@ -452,6 +472,6 @@ test('clearing a deferred large file import prevents its page from restarting', 
     await flush();
     assert.ok(!requests.includes(action));
     assert.equal(page.get('input').value, '');
-    assert.equal(page.get('input-view').hidden, true);
+    assert.equal(page.get('input-editor').hidden, true);
   }
 });

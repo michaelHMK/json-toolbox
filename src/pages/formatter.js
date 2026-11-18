@@ -63,7 +63,7 @@ const session = createDocumentSession({
 const { setStatus, showError, hideError, showParseError, copyWithFeedback } = createFeedback({
   statusEl, errorEl, selectInputPosition: (position, line) => textInput.selectPosition(position, line),
 });
-const textInput = createTextInput(inputEl, $('input-view'), { copy: copyWithFeedback });
+const textInput = createTextInput(inputEl, $('input-editor'));
 const outputView = createVirtualTextView(outputTextEl, { copy: copyWithFeedback });
 
 const fileImport = createFileImport({
@@ -75,7 +75,7 @@ const fileImport = createFileImport({
   onImport: ({ text }) => {
     resetDocument();
     textInput.setText(text);
-    if (textInput.isLarge()) {
+    if (text.length > LARGE_INPUT_THRESHOLD) {
       state.view = 'text';
       updateViewButtons();
       session.defer(() => { void doFormat(); });
@@ -425,38 +425,14 @@ searchInput.addEventListener('keydown', (e) => {
   }
 });
 
-inputEl.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-    e.preventDefault();
-    doFormat();
-  }
+textInput.bindEvents({
+  onChange() {
+    fileImport.reset();
+    invalidateViewRequest();
+    session.cancel({ onlyIfBusy: true });
+  },
+  onRun: doFormat,
+  afterTransfer() {
+    if (autoFormatChk.checked) session.defer(() => { void doFormat(); });
+  },
 });
-
-$('input-view').addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-    e.preventDefault();
-    doFormat();
-  }
-});
-
-function inputChanged() {
-  fileImport.reset();
-  invalidateViewRequest();
-  session.cancel({ onlyIfBusy: true });
-}
-inputEl.addEventListener('input', inputChanged);
-for (const element of [inputEl, $('input-view')]) {
-  element.addEventListener('paste', (event) => {
-    if (textInput.acceptTransfer(event)) inputChanged();
-    if (autoFormatChk.checked) setTimeout(doFormat, 0);
-  });
-  element.addEventListener('dragover', (event) => {
-    if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
-  });
-  element.addEventListener('drop', (event) => {
-    if (textInput.acceptTransfer(event)) {
-      inputChanged();
-      if (autoFormatChk.checked) void doFormat();
-    }
-  });
-}

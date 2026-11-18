@@ -16,7 +16,7 @@ Format dan telusuri
 Impor file lokal
 - Di kelima halaman alat, pilih file atau seret dan lepaskan file ke panel masukan.
 - Impor satu file .json UTF-8 dalam satu waktu, hingga 50 MiB per file. Alat berjalan otomatis setelah impor. Perbandingan dimulai jika kedua panel masukan berisi teks.
-- File besar ditampilkan dalam pratinjau virtual hanya-baca. Alat tetap memproses seluruh isi file.
+- Saat Anda mengimpor file besar, menempelkan teks panjang, atau menyeretnya ke kolom masukan, isinya langsung terbuka di editor. Anda dapat mengedit dan menyalin seluruh teks.
 
 Minifikasi, escape, dan hapus escape
 - Beralih antaralat melalui bilah samping.

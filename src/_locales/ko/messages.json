@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "JSON을 붙여넣거나 .json 파일을 여기에 놓으세요… (Cmd/Ctrl + Enter로 포맷)"
   },
-  "largeInputTitle": {
-    "message": "대용량 파일 읽기 전용 미리보기"
-  },
   "btnImportFile": {
     "message": "파일 가져오기"
   },

@@ -16,7 +16,7 @@ JSON Toolbox giúp bạn định dạng, duyệt và so sánh JSON trong một t
 Nhập tệp cục bộ
 - Trên cả năm trang công cụ, bạn có thể chọn tệp hoặc kéo thả tệp vào khung đầu vào.
 - Mỗi lần nhập một tệp .json mã hóa UTF-8, tối đa 50 MiB. Công cụ tự động chạy sau khi nhập. Công cụ so sánh bắt đầu khi cả hai khung đầu vào đều có văn bản.
-- Tệp lớn mở trong bản xem trước ảo chỉ đọc. Công cụ vẫn xử lý toàn bộ nội dung.
+- Khi bạn nhập tệp lớn, dán hoặc kéo thả một đoạn văn bản dài, nội dung sẽ mở ngay trong trình chỉnh sửa. Bạn có thể chỉnh sửa và sao chép toàn bộ văn bản.
 
 Rút gọn, thêm escape và bỏ escape
 - Chuyển giữa các công cụ chuyên biệt bằng thanh bên.

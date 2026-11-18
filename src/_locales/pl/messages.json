@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Wklej JSON lub upuść tu plik .json… (Cmd/Ctrl + Enter, aby sformatować)"
   },
-  "largeInputTitle": {
-    "message": "Podgląd dużego pliku tylko do odczytu"
-  },
   "btnImportFile": {
     "message": "Importuj plik"
   },

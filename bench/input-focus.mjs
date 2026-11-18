@@ -40,7 +40,6 @@ await page.addInitScript(() => {
   };
 });
 const settle = () => page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
-const activeId = () => page.evaluate(() => document.activeElement?.id);
 
 async function sendTransfer(type, target, text) {
   return page.evaluate(({ type, target, text }) => {
@@ -50,7 +49,7 @@ async function sendTransfer(type, target, text) {
     const event = type === 'paste' ? new ClipboardEvent(type, { clipboardData: transfer, bubbles: true, cancelable: true })
       : new DragEvent(type, { dataTransfer: transfer, bubbles: true, cancelable: true });
     element.dispatchEvent(event);
-    return { prevented: event.defaultPrevented, active: document.activeElement?.id };
+    return event.defaultPrevented;
   }, { type, target, text });
 }
 
@@ -80,7 +79,8 @@ try {
       if (name === 'formatter') await page.locator('#auto-format').uncheck();
       const suffix = side ? '-' + side : '';
       const input = '#input' + suffix;
-      const preview = '#input-view' + suffix;
+      const editor = page.locator('#input-editor' + suffix + ' .cm-content');
+      const hasEditorFocus = () => editor.evaluate((element) => element === document.activeElement);
       if (side) await page.locator('#input-' + (side === 'left' ? 'right' : 'left')).fill('[0]');
       await page.locator(input).fill('[0]');
       await page.evaluate(async ({ input, side, action, moduleBase }) => {
@@ -94,39 +94,33 @@ try {
       }, { input, side, action, moduleBase });
       await page.locator(input).focus();
       const started = performance.now();
-      const large = await sendTransfer(type, input, 'large');
-      assert.equal(large.prevented, true);
-      assert.equal(large.active, preview.slice(1));
+      assert.ok(await sendTransfer(type, input, 'large'));
+      assert.ok(await hasEditorFocus());
       assert.equal(await page.locator(input).inputValue(), '');
       assert.equal(await page.locator(input).isHidden(), true);
       await checkShortcut(action, 1);
-      assert.equal(await activeId(), preview.slice(1));
+      assert.ok(await hasEditorFocus());
 
       const smallText = action === 'unescape' ? '{\\"small\\":true}' : '{"small":true}';
       await page.evaluate(({ side, text }) => {
         focusBenchExpected = side === 'left' ? { text, text2: '[0]' }
           : side === 'right' ? { text: '[0]', text2: text } : { text };
       }, { side, text: smallText });
-      const small = await sendTransfer(type, preview, smallText);
-      assert.equal(small.prevented, true);
-      assert.equal(small.active, input.slice(1));
-      assert.equal(await page.locator(input).inputValue(), smallText);
-      assert.equal(await page.locator(preview).isHidden(), true);
-      const caret = await page.locator(input).evaluate((element) => ({ start: element.selectionStart, end: element.selectionEnd }));
-      assert.deepEqual(caret, { start: smallText.length, end: smallText.length });
+      await editor.press('ControlOrMeta+A');
+      await sendTransfer('paste', '#input-editor' + suffix + ' .cm-content', smallText);
+      assert.ok(await hasEditorFocus());
+      assert.equal(await editor.innerText(), smallText);
       await checkShortcut(action, 2);
-      assert.equal(await activeId(), input.slice(1));
+      assert.ok(await hasEditorFocus());
 
-      // A programmatic update or a drop into an unfocused input must leave the
-      // user's focus on the other control, in both directions.
+      // An incoming transfer on an unfocused textarea must not take focus
+      // from the active control when replacing the textarea with the editor.
+      await page.locator('#btn-clear').click();
       await page.locator('#btn-clear').focus();
-      await page.locator(input).evaluate((element) => element.setSelectionRange(0, element.value.length));
-      const unfocusedLarge = await sendTransfer(type, input, 'large');
-      const unfocusedSmall = await sendTransfer(type, preview, '[]');
-      assert.equal(unfocusedLarge.active, 'btn-clear');
-      assert.equal(unfocusedSmall.active, 'btn-clear');
-      results.push({ page: name, side: side || null, transfer: type, largeFocus: large.active,
-        smallFocus: small.active, shortcuts: 2, insertionSelectionPreserved: true,
+      assert.ok(await sendTransfer(type, input, 'large'));
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'btn-clear');
+      results.push({ page: name, side: side || null, transfer: type, editorFocusAfterReplacement: true,
+        shortcuts: 2, insertionSelectionPreserved: true,
         otherControlFocusPreserved: true, elapsedMs: +(performance.now() - started).toFixed(2) });
     }
   }

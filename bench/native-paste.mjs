@@ -36,70 +36,105 @@ try {
   for (const action of ['escape', 'unescape']) {
     await page.goto(`${base}/${action}.html`);
     // Construct the document and populate the browser's clipboard before timing.
-    await page.evaluate(async ({ sizeMiB, action }) => {
+    await page.evaluate(async ({ sizeMiB, action, verify }) => {
       const json = '{"first":"large-paste-source","value":"' + 'x'.repeat(Math.round(sizeMiB * 1024 * 1024)) + '","last":"end-of-source"}';
       const source = action === 'unescape' ? JSON.stringify(json).slice(1, -1) : json;
       await navigator.clipboard.writeText(source);
       const bench = window.pasteBench = { source, tasks: [] };
       bench.observer = new PerformanceObserver((list) => bench.tasks.push(...list.getEntries()));
       bench.observer.observe({ type: 'longtask' });
-      bench.done = new Promise((done) => {
-        document.addEventListener('paste', (event) => {
-          bench.started = performance.now();
-          requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.addEventListener('paste', (event) => {
+        bench.started = performance.now();
+        function ready() {
+          const editor = document.querySelector('.large-input-editor .cm-content');
+          if (verify && !editor?.textContent) {
+            requestAnimationFrame(ready);
+            return;
+          }
+          requestAnimationFrame(() => {
             bench.completed = performance.now();
             const input = document.querySelector('#input');
-            const preview = document.querySelector('#input-view');
-            done({
+            const visibleText = editor?.textContent ?? (input.hidden ? document.activeElement.textContent : input.value);
+            bench.measurement = {
               sourceChars: source.length, elapsedMs: +(bench.completed - bench.started).toFixed(2),
               prevented: event.defaultPrevented, textareaChars: input.value.length,
-              textareaHidden: input.hidden, previewVisible: !!preview && !preview.hidden,
-              renderedChars: preview?.textContent.length || 0,
-              visibleSource: preview?.textContent.includes('large-paste-source') || false,
-            });
-          }));
-        }, { once: true, capture: true });
-      });
-    }, { sizeMiB, action });
+              textareaHidden: input.hidden, editorFocused: !!editor && editor === document.activeElement,
+              renderedChars: visibleText.length, visibleSource: visibleText.includes('end-of-source') || visibleText.includes('large-paste-source'),
+            };
+          });
+        }
+        requestAnimationFrame(ready);
+      }, { once: true, capture: true });
+    }, { sizeMiB, action, verify });
     await page.locator('#input').focus();
     await page.keyboard.press('ControlOrMeta+V');
-    const measurement = await page.evaluate(() => pasteBench.done);
+    await page.waitForFunction(() => pasteBench.measurement);
+    const measurement = await page.evaluate(() => pasteBench.measurement);
     if (screenshotDir) await page.screenshot({ path: resolve(screenshotDir, `${action}.png`) });
-    const verification = await page.evaluate(() => {
+    // Clear the clipboard before copying; leaving the pasted source there
+    // would also pass this check if the editor copied nothing.
+    await page.evaluate(() => navigator.clipboard.writeText(''));
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('ControlOrMeta+C');
+    const verification = await page.evaluate(async () => {
       const bench = pasteBench;
       bench.tasks.push(...bench.observer.takeRecords());
       bench.observer.disconnect();
       const durations = bench.tasks.filter((task) => task.startTime + task.duration >= bench.started && task.startTime < bench.completed).map((task) => task.duration);
-      const input = document.querySelector('#input');
-      let copied = input.value;
-      if (input.hidden) {
-        const preview = document.querySelector('#input-view');
-        preview.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }));
-        const clipboardData = new DataTransfer();
-        preview.dispatchEvent(new ClipboardEvent('copy', { clipboardData, bubbles: true, cancelable: true }));
-        copied = clipboardData.getData('text/plain');
-      }
-      return { maxLongTaskMs: Math.max(0, ...durations), completeInputCopy: copied === bench.source };
+      return { maxLongTaskMs: Math.max(0, ...durations), completeInputCopy: await navigator.clipboard.readText() === bench.source };
     });
-    // Native paste must also work on the focused, read-only preview. This is a
-    // separate correctness check, outside the large-paste measurement.
+    // The full-document selection survives copying. Pasting should replace
+    // that selection and preserve focus in the editable document.
     let smallPasteReplacedDocument = false;
-    if (measurement.previewVisible) {
+    if (measurement.editorFocused) {
       const replacement = 'replacement text';
       await page.evaluate((text) => navigator.clipboard.writeText(text), replacement);
       await page.keyboard.press('ControlOrMeta+V');
-      smallPasteReplacedDocument = await page.locator('#input').inputValue() === replacement
-        && await page.locator('#input-view').isHidden()
-        && await page.locator('#input').evaluate((element) => element === document.activeElement);
+      smallPasteReplacedDocument = await page.locator('.large-input-editor .cm-content').evaluate((element, value) =>
+        element === document.activeElement && element.textContent === value, replacement);
     }
     results.push({ action, ...measurement, ...verification, smallPasteReplacedDocument });
     if (verify) {
-      assert.ok(measurement.prevented && measurement.textareaHidden && measurement.previewVisible);
+      assert.ok(measurement.prevented && measurement.textareaHidden && measurement.editorFocused);
       assert.equal(measurement.textareaChars, 0);
-      assert.ok(measurement.visibleSource && measurement.renderedChars < 1000);
+      assert.ok(measurement.visibleSource && measurement.renderedChars < measurement.sourceChars / 2);
       assert.equal(verification.completeInputCopy, true);
       assert.equal(smallPasteReplacedDocument, true);
     }
+  }
+  if (verify) {
+    // Pasting over the textarea selection must preserve both its suffix and
+    // one-step undo after moving the document into the large editor.
+    await page.goto(`${base}/escape.html`);
+    const input = page.locator('#input');
+    await input.fill('[0]');
+    await input.evaluate(async (element) => {
+      element.setSelectionRange(1, 2);
+      const row = '  "' + 'x'.repeat(60) + '",\n';
+      window.editablePaste = '[\n' + row.repeat(4096) + '  "end"\n]';
+      await navigator.clipboard.writeText(editablePaste);
+    });
+    await page.keyboard.press('ControlOrMeta+V');
+    const editor = page.locator('.large-input-editor .cm-content');
+    await editor.waitFor();
+    assert.ok(await editor.evaluate((element) => element === document.activeElement && element.isContentEditable));
+    assert.equal(await input.inputValue(), '');
+    await page.keyboard.press('Shift+ArrowRight');
+    await page.keyboard.press('ControlOrMeta+C');
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), ']', 'paste leaves the caret before the suffix');
+    await page.keyboard.press('ControlOrMeta+Z');
+    assert.equal(await editor.innerText(), '[0]');
+    await page.keyboard.press('ControlOrMeta+Shift+Z');
+    await page.keyboard.press('ControlOrMeta+End');
+    await page.keyboard.press('ArrowLeft');
+    await page.evaluate(() => navigator.clipboard.writeText('!'));
+    await page.keyboard.press('ControlOrMeta+V');
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('ControlOrMeta+C');
+    assert.ok(await page.evaluate(async () => await navigator.clipboard.readText() === '[' + editablePaste + '!]'));
+    await page.evaluate(() => navigator.clipboard.writeText('replacement'));
+    await page.keyboard.press('ControlOrMeta+V');
+    assert.equal(await editor.innerText(), 'replacement');
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.version(), root, sizeMiB, verify, results }, null, 2));

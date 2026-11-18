@@ -16,7 +16,7 @@ Formatowanie i przeglądanie
 Importowanie lokalnych plików
 - W każdym z pięciu narzędzi wybierz plik lub przeciągnij go do pola danych wejściowych.
 - Importuj po jednym pliku .json w kodowaniu UTF-8 o rozmiarze do 50 MiB. Narzędzie uruchamia się automatycznie po imporcie. Porównanie rozpoczyna się, gdy oba pola zawierają tekst.
-- Duże pliki otwierają się w wirtualnym podglądzie tylko do odczytu. Narzędzie przetwarza całą zawartość.
+- Po zaimportowaniu dużego pliku, wklejeniu długiego tekstu lub przeciągnięciu go do pola wejściowego treść otwiera się bezpośrednio w edytorze. Możesz edytować i kopiować cały tekst.
 
 Minifikacja, escapowanie i cofanie escapowania
 - Przełączaj narzędzia za pomocą paska bocznego.

@@ -22,7 +22,7 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 本地文件导入：
 - 五个工具页均可通过文件选择器导入文件，也可将文件拖放到输入区
 - 每次导入一个 UTF-8 编码的 `.json` 文件，最大 50 MiB。导入后自动执行当前操作，对比页在两侧都有输入时开始对比
-- 大文件导入后使用只读虚拟预览，工具仍处理完整内容
+- 导入大文件、粘贴或拖入大段文本后，编辑器自动打开全文，可直接修改和复制
 
 压缩、转义与去转义页面：
 - 每个功能使用独立页面，通过统一侧边导航切换
@@ -42,7 +42,7 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 
 隐私：所有处理在浏览器本地完成，不收集或上传数据，不发起网络请求，不加载远程代码，无广告或追踪。不保存输入历史。执行复制时，扩展会将选中的文本、输入内容或处理结果写入系统剪贴板。粘贴时只处理你粘贴的文本。
 
-大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖已渲染的部分，可使用树搜索或复制完整结果。输入与结果仍完整保留在内存中；差异较多时，未匹配的文本区间可能按整块展示。
+大文本编辑器和大结果视图都会随滚动渲染可见内容。浏览器原生查找仅覆盖已渲染部分。需要查找其他内容时，可使用树搜索或复制完整结果。输入与结果仍完整保留在内存中。差异较多时，未匹配的文本区间可能按整块展示。
 
 ## English
 
@@ -64,7 +64,7 @@ Formatter page:
 Local file import:
 - On any of the five tool pages, choose a file or drop it into an input pane
 - Import one UTF-8 `.json` file at a time, up to 50 MiB each. The tool runs automatically after import. Compare runs when both inputs contain text
-- Large imports open in a read-only virtual preview. The tool still processes the full input
+- Import a large file or paste or drop a large block of text to open it directly in the editor. You can edit and copy the entire input
 
 Minify, escape and unescape pages:
 - A separate page for each tool, connected by consistent sidebar navigation
@@ -84,7 +84,7 @@ Appearance:
 
 Privacy: all processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. When you copy, the extension writes the selected text, input or result to the system clipboard. When you paste, it processes only the text you provide.
 
-Large inputs and results use virtual rendering, so native browser Find covers only the rendered portion. Tree search and copying complete results remain available. Complete inputs and results stay in memory; for extensive text differences, unmatched sections may be shown as whole blocks.
+The editor for large inputs and the large result views render text as you scroll. Native browser Find covers only the rendered portion in these views. Tree search and copying complete results remain available. Complete inputs and results stay in memory. For extensive text differences, unmatched sections may be shown as whole blocks.
 
 ## 上架表单
 
@@ -176,7 +176,7 @@ node scripts/store-assets/generate.mjs --promos-only
 
 `listing.txt` 是供上架时复制的独立文案，不会随图片生成自动翻译；修改功能或 `src/_locales/` 中的名称、简介后，应同步检查对应文案。
 
-维护说明：每个导入文件的上限为 50 MiB。导入文本超过 262,144 个 UTF-16 码元（`text.length > 256 * 1024`）时切换为只读虚拟预览。
+每个导入文件的上限为 50 MiB。导入、粘贴或拖放后的输入超过 262,144 个 UTF-16 码元（`text.length > 256 * 1024`）时，会自动在大文本编辑器中打开，全文都可修改。
 
 ## 审核测试说明
 
@@ -185,7 +185,7 @@ No account, credentials or network connection are needed.
 1. Install the extension, then click its toolbar icon to open the JSON Toolbox tab.
 2. On JSON Formatter, click Sample and then Format. Switch to Tree to expand nodes and search keys or values.
 3. Open JSON Minify, JSON Escape and JSON Unescape from the sidebar. Each page has a Sample button and an action button to produce a local result. Click Copy to copy the result, or select some input text and use the copy shortcut.
-4. On any of the five tool pages, use Import file or drop one UTF-8 `.json` file of up to 50 MiB into an input pane. Processing starts automatically after import. On Compare, fill both inputs to start the comparison. Large imports open in a read-only virtual preview and processing uses the full input.
+4. On any of the five tool pages, use Import file or drop one UTF-8 `.json` file of up to 50 MiB into an input pane. Processing starts automatically after import. On Compare, fill both inputs to start the comparison. A large file opens directly in the editor. Type at the start or end, then select all and copy to check the edited input. You can also paste or drop a large block of text into the input pane.
 5. Open JSON Compare and click Sample, then Compare. Inspect the structural differences and switch to the text comparison view. Array key matching and ignored paths are optional controls.
 6. Open Appearance in the sidebar. Check the three thumbnail previews, select Eye comfort or Dark, then switch tools or reopen the page to confirm the selection is remembered. Normal is the default before a selection is saved. Press Escape or click outside to close the picker.
 7. All operations run locally. Only the theme preference is saved locally; input and results are not saved. No host permissions, remote code, analytics or user-data uploads are used.

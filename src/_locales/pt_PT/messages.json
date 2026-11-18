@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Cole o JSON ou largue um ficheiro .json aqui… (Cmd/Ctrl + Enter para formatar)"
   },
-  "largeInputTitle": {
-    "message": "Pré-visualização de ficheiro grande em modo só de leitura"
-  },
   "btnImportFile": {
     "message": "Importar ficheiro"
   },

@@ -16,7 +16,7 @@ Formatare și explorare
 Importul fișierelor locale
 - În oricare dintre cele cinci instrumente, alege un fișier sau trage-l în câmpul de intrare.
 - Importă câte un fișier .json UTF-8, de cel mult 50 MiB. Instrumentul pornește automat după import. Compararea începe când ambele câmpuri conțin text.
-- Fișierele mari se deschid într-o previzualizare virtuală doar pentru citire. Instrumentul procesează întregul conținut.
+- Când imporți un fișier mare, lipești un text lung sau îl tragi în câmpul de introducere, conținutul se deschide direct în editor. Poți edita și copia întregul text.
 
 Minificare, adăugare și eliminare de secvențe escape
 - Comută între instrumente folosind bara laterală.

@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Pega JSON o suelta un archivo .json aquí… (Cmd/Ctrl + Enter para formatear)"
   },
-  "largeInputTitle": {
-    "message": "Vista previa de archivos grandes de solo lectura"
-  },
   "btnImportFile": {
     "message": "Importar archivo"
   },

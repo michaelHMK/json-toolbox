@@ -72,8 +72,8 @@ const { setStatus, showError, hideError, showParseError, copyWithFeedback } = cr
   selectInputPosition: (position, line, side) => textInputs[side === 'right' ? 'right' : 'left'].selectPosition(position, line),
 });
 const textInputs = {
-  left: createTextInput(inputLeft, $('input-view-left'), { copy: copyWithFeedback }),
-  right: createTextInput(inputRight, $('input-view-right'), { copy: copyWithFeedback }),
+  left: createTextInput(inputLeft, $('input-editor-left')),
+  right: createTextInput(inputRight, $('input-editor-right')),
 };
 const textRenderer = createVirtualTextView(textView, { copy: copyWithFeedback });
 
@@ -87,7 +87,7 @@ for (const side of ['left', 'right']) {
       session.cancel({ onlyIfBusy: true });
       textInputs[side].setText(text);
       if (textInputs.left.getText().trim() && textInputs.right.getText().trim()) {
-        // File decoding/preview and cloning both inputs must not share one
+        // Preparing the editor and cloning both inputs must not share one
         // long UI task. A later edit, clear or manual compare supersedes this.
         session.defer(() => { void doCompare(); });
       }
@@ -385,9 +385,9 @@ async function setCompareView(view) {
 /* ================= 其他操作 ================= */
 function doSwap() {
   session.cancel({ onlyIfBusy: true });
-  const t2 = textInputs.left.getText();
+  const leftText = textInputs.left.getText();
   textInputs.left.setText(textInputs.right.getText());
-  textInputs.right.setText(t2);
+  textInputs.right.setText(leftText);
   fileImports.left.reset();
   fileImports.right.reset();
   if (state.result) doCompare();
@@ -498,30 +498,11 @@ onlyDiffChk.addEventListener('change', () => {
 });
 
 for (const side of ['left', 'right']) {
-  const el = side === 'left' ? inputLeft : inputRight;
-  const changed = () => {
-    fileImports[side].reset();
-    session.cancel({ onlyIfBusy: true });
-  };
-  el.addEventListener('input', changed);
-  for (const target of [el, $('input-view-' + side)]) {
-    for (const type of ['paste', 'drop']) target.addEventListener(type, (event) => {
-      if (textInputs[side].acceptTransfer(event)) changed();
-    });
-    target.addEventListener('dragover', (event) => {
-      if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
-    });
-    if (target !== el) target.addEventListener('keydown', (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-        event.preventDefault();
-        void doCompare();
-      }
-    });
-  }
-  el.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      doCompare();
-    }
+  textInputs[side].bindEvents({
+    onChange() {
+      fileImports[side].reset();
+      session.cancel({ onlyIfBusy: true });
+    },
+    onRun: doCompare,
   });
 }
