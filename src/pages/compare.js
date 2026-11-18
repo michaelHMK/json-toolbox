@@ -51,11 +51,12 @@ const state = {
   collapsed: { left: new Set(), right: new Set() },
   force: { left: new Set(), right: new Set() },        // 差异祖先，自动展开
   diffMap: { left: new Map(), right: new Map() },      // path → diff 记录
-  pairLR: new Map(),   // 主键配对导致的左路径 → 右路径，null 表示单侧记录
+  pairLR: new Map(),   // 主键配对导致的左路径 → 右路径
   pairRL: new Map(),
 };
 
 const treeViews = { left: null, right: null };
+const pendingToggles = new Set();
 let comparison = null;
 
 const session = createComparisonSession({
@@ -167,6 +168,7 @@ async function ensureComparisonData(displayed = comparison, onReady = () => {}) 
 
 function clearIndexes() {
   state.indexesReady = false;
+  pendingToggles.clear();
   for (const side of ['left', 'right']) {
     state.diffMap[side].clear();
     state.force[side].clear();
@@ -181,8 +183,8 @@ function clearIndexes() {
 function buildIndexes() {
   const r = state.result;
   for (const [left, right] of r.pairs) {
-    if (left !== null) state.pairLR.set(left, right);
-    if (right !== null) state.pairRL.set(right, left);
+    state.pairLR.set(left, right);
+    state.pairRL.set(right, left);
   }
   for (const d of r.diffs) {
     if (d.leftPath !== null) state.diffMap.left.set(d.leftPath, d);
@@ -227,20 +229,46 @@ function destroyTrees() {
   }
 }
 
-function pairedPath(side, path) {
+function containsIndex(ranges, index) {
+  let low = 0;
+  let high = ranges.length / 2;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (ranges[mid * 2 + 1] < index) low = mid + 1;
+    else high = mid;
+  }
+  return ranges[low * 2] <= index;
+}
+
+async function syncToggle(displayed, side, path, open) {
+  for (const pending of pendingToggles) {
+    if (pending[side] === path) pendingToggles.delete(pending);
+  }
   const pairs = side === 'left' ? state.pairLR : state.pairRL;
   let ancestor = path;
   while (ancestor !== '') {
-    const paired = pairs.get(ancestor);
-    if (paired === null) return null;
-    if (paired !== undefined) return paired + path.slice(ancestor.length);
+    if (pairs.has(ancestor)) break;
     const slash = ancestor.lastIndexOf('/');
-    // A missing array index may have been omitted at the mapping cap. Its
-    // descendants cannot safely inherit the path of a more distant ancestor.
-    if (state.result.pairsTruncated && /^\d+$/.test(ancestor.slice(slash + 1))) return undefined;
-    ancestor = ancestor.slice(0, slash);
+    const parent = ancestor.slice(0, slash);
+    const ranges = state.result.unpaired?.[side].get(parent);
+    if (ranges && containsIndex(ranges, Number(ancestor.slice(slash + 1)))) return;
+    ancestor = parent;
   }
-  return path;
+  const target = (pairs.get(ancestor) ?? '') + path.slice(ancestor.length);
+  const other = side === 'left' ? 'right' : 'left';
+  if (state.result.pairsTruncated && path !== ancestor) {
+    const pending = { [side]: path, [other]: target };
+    pendingToggles.add(pending);
+    const response = await displayed.checkPair(side, path, ancestor);
+    if (!pendingToggles.delete(pending)) return;
+    let update;
+    session.apply(response, () => {
+      if (!response.ok) showError(taskErrorMessage(response));
+      else if (response.result.allowed) update = treeViews[other]?.setOpen(target, open);
+    });
+    return update;
+  }
+  return treeViews[other]?.setOpen(target, open);
 }
 
 function renderTrees() {
@@ -256,9 +284,7 @@ function renderTrees() {
       onlyRequired: state.onlyDiff,
       decorations: state.diffMap[side],
       onToggle(path, open) {
-        const other = side === 'left' ? 'right' : 'left';
-        const paired = pairedPath(side, path);
-        if (paired != null) suspendScrollSync(treeViews[other]?.setOpen(paired, open));
+        suspendScrollSync(syncToggle(displayed, side, path, open));
       },
     };
     if (!state.remote) {

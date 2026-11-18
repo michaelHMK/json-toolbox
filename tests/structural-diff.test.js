@@ -48,8 +48,9 @@ test('keyed arrays keep unique-key matching, nested pairs and exact ignore seman
     ['/list/0', '/list/1'],
     ['/list/0/child/0', '/list/1/child/1'],
     ['/list/0/child/1', '/list/1/child/0'],
-    ['/list/1', null], [null, '/list/0'], [null, '/list/2'],
   ]);
+  assert.deepEqual(result.unpaired.left.get('/list'), [1, 1]);
+  assert.deepEqual(result.unpaired.right.get('/list'), [0, 0, 2, 2]);
   assert.equal(result.pairsTruncated, false);
   assert.deepEqual(result.diffs.map(({ type, leftPath, rightPath }) => [type, leftPath, rightPath]), [
     ['removed', '/list/1', null],
@@ -60,13 +61,17 @@ test('keyed arrays keep unique-key matching, nested pairs and exact ignore seman
   assert.equal(result.keyFallback, false);
 });
 
-test('the keyed mapping cap is reported even when no differences are recorded', () => {
-  const left = Array.from({ length: 100001 }, (_, id) => ({ id }));
-  const right = [...left.slice(1), left[0]];
+test('large consecutive additions and removals use one range per array side', () => {
+  let left = Array.from({ length: 100000 }, (_, id) => ({ id }));
+  let right = left.map(({ id }) => ({ id: id + left.length }));
+  for (let i = 0; i < 20; i++) { left = { nested: left }; right = { nested: right }; }
   const result = diffData(left, right, { keyField: 'id' });
-  assert.equal(result.total, 0);
-  assert.equal(result.pairs.length, 100000);
-  assert.equal(result.pairsTruncated, true);
+  const parent = '/nested'.repeat(20);
+  assert.deepEqual(result.unpaired.left, new Map([[parent, [0, 99999]]]));
+  assert.deepEqual(result.unpaired.right, new Map([[parent, [0, 99999]]]));
+  assert.equal(result.pairs.length, 0);
+  assert.equal(result.pairsTruncated, false);
+  assert.deepEqual(result.stats, { added: 100000, removed: 100000, changed: 0, typeChanged: 0 });
 });
 
 test('identical references report key fallback without duplicate-key differences', () => {

@@ -118,6 +118,8 @@ export function diffData(left, right, options) {
     .filter((s) => s.length > 0);
   const diffs = [];
   const pairs = [];
+  const unpaired = { left: new Map(), right: new Map() };
+  let mappingCount = 0;
   const stats = { added: 0, removed: 0, changed: 0, typeChanged: 0 };
   let truncated = false;
   let pairsTruncated = false;
@@ -141,11 +143,29 @@ export function diffData(left, right, options) {
     return path;
   }
 
-  // Identity is implicit. Store exceptions independently of ignored paths and
-  // the detail cap, including an explicit null for a record with no partner.
-  function recordPair(left, right) {
-    if (pairs.length < MAX_PAIRS) pairs.push([left && toPath(left), right && toPath(right)]);
-    else pairsTruncated = true;
+  function omitMapping(array) {
+    pairsTruncated = true;
+    options?.onTruncatedArray?.(array);
+  }
+
+  // Single-sided rows arrive in increasing order on each side of an array.
+  // Keep one parent pointer and inclusive index ranges, independent of which
+  // differences were ignored or included in the displayed detail list.
+  function recordUnpaired(frame, side, index, segments) {
+    const field = side === 'left' ? 'removedRanges' : 'addedRanges';
+    let ranges = frame[field];
+    if (ranges && ranges.at(-1) === index - 1) {
+      ranges[ranges.length - 1] = index;
+    } else if (mappingCount < MAX_PAIRS) {
+      if (!ranges) {
+        ranges = frame[field] = [];
+        unpaired[side].set(toPath(segments.slice(0, -1)), ranges);
+      }
+      ranges.push(index, index);
+      mappingCount++;
+    } else {
+      omitMapping(frame[side]);
+    }
   }
 
   function record(type, leftSegs, rightSegs, lv, rv) {
@@ -298,11 +318,19 @@ export function diffData(left, right, options) {
         if (j !== undefined && !frame.matched[j]) {
           frame.matched[j] = 1;
           rightSegs.push(String(j));
-          if (i !== j) recordPair(leftSegs, rightSegs);
+          if (i !== j) {
+            if (mappingCount < MAX_PAIRS) {
+              pairs.push([toPath(leftSegs), toPath(rightSegs)]);
+              mappingCount++;
+            } else {
+              omitMapping(lv);
+              omitMapping(rv);
+            }
+          }
           if (enter(lv[i], rv[j], depth + 1, frame.leftNumbers?.get(String(i)), frame.rightNumbers?.get(String(j)))) depth++;
           else { leftSegs.pop(); rightSegs.pop(); }
         } else {
-          recordPair(leftSegs, null);
+          recordUnpaired(frame, 'left', i, leftSegs);
           record('removed', leftSegs, null, lv[i]);
           leftSegs.pop();
         }
@@ -311,7 +339,7 @@ export function diffData(left, right, options) {
       for (let j = 0; j < rv.length; j++) {
         if (!frame.matched[j]) {
           rightSegs.push(String(j));
-          recordPair(null, rightSegs);
+          recordUnpaired(frame, 'right', j, rightSegs);
           record('added', null, rightSegs, undefined, rv[j]);
           rightSegs.pop();
         }
@@ -323,6 +351,8 @@ export function diffData(left, right, options) {
     frame.rightByKey = null;
     frame.leftKeys = null;
     frame.matched = null;
+    frame.removedRanges = null;
+    frame.addedRanges = null;
     leftSegs.pop();
     rightSegs.pop();
     depth--;
@@ -331,6 +361,7 @@ export function diffData(left, right, options) {
   return {
     diffs,
     pairs,
+    unpaired,
     pairsTruncated,
     stats,
     truncated,

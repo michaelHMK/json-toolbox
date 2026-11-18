@@ -65,6 +65,24 @@ test('Worker comparison owns both trees and rejects stale snapshots after cleari
   assert.equal(request('left').code, 'SNAPSHOT_UNAVAILABLE');
 });
 
+test('a truncated root array still pairs the root and recorded moves', () => {
+  const handle = createTaskHandler();
+  const rows = Array.from({ length: 100001 }, (_, id) => ({ id }));
+  const { result } = handle({
+    action: 'diff', text: JSON.stringify(rows), text2: JSON.stringify([...rows.slice(1), rows[0]]),
+    keyField: 'id', retainSnapshot: true, includeData: false,
+  });
+  assert.equal(result.total, 0);
+  assert.equal(result.pairs.length, 100000);
+  assert.equal(result.pairsTruncated, true);
+  const check = (path, knownAncestor) => handle({
+    action: 'comparisonPair', snapshotId: result.snapshotId, side: 'left', path, knownAncestor,
+  }).result.allowed;
+  assert.equal(check('', ''), true);
+  assert.equal(check('/0/id', '/0'), true);
+  assert.equal(check('/100000', ''), false);
+});
+
 test('a missing Worker tree explicitly requests configuration before accepting small operation messages', () => {
   const { request } = session('{"branch":{"n":1},"next":2}');
   assert.equal(request({ operation: 'rows', start: 0, count: 10 }).code, 'TREE_MODEL_UNAVAILABLE');

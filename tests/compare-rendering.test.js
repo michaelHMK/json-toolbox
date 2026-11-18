@@ -262,31 +262,66 @@ test('added and removed keyed records expand only on their own side', async () =
   }
 });
 
-test('an omitted keyed record never inherits its paired ancestor after truncation', async () => {
+test('truncated keyed arrays isolate unknown records and still sync unrelated paths and newer gestures', async () => {
   const handler = createTaskHandler();
+  const checks = [];
+  let hold = false;
+  let fail = false;
   const page = loadCompare(async (action, payload) => {
+    if (action === 'comparisonPair' && fail) return { ok: false, code: 'WORKER_FAILED' };
     const response = handler({ action, ...payload });
-    // Keep the outer move, just as if it had used the last mapping slot.
-    if (action === 'diff') {
-      response.result.pairs = response.result.pairs.slice(0, 1);
-      response.result.pairsTruncated = true;
-    }
+    if (action === 'comparisonPair' && hold) await new Promise((resolve) => checks.push(resolve));
     return response;
   });
   page.get('array-mode').value = 'key';
   page.get('key-field').value = 'id';
-  setInputs(page,
-    '[{"id":1,"rows":[{"id":1},{"id":2}]},{"id":2}]',
-    '[{"id":2},{"id":1,"rows":[{"id":2},{"id":1}]}]');
+  // The outer move is retained in the last slot, the nested moves are omitted.
+  const full = Array.from({ length: 99999 }, (_, id) => ({ id }));
+  const common = { '2026': { year: 1 }, '': { empty: 1 }, fallback: [{ id: 1 }, { id: 1 }] };
+  const left = { ...common, full, rows: [{ id: 1, inner: [{ id: 1 }, { id: 2 }] }, { id: 2 }] };
+  const right = { ...common, full: [...full.slice(1), full[0]], rows: [{ id: 2 }, { id: 1, inner: [{ id: 2 }, { id: 1 }] }] };
+  setInputs(page, JSON.stringify(left), JSON.stringify(right));
   await page.doCompare();
-  function toggle(path) {
-    const entry = page.get('tree-left').querySelectorAll('.entry').find((item) => item.dataset.path === path);
+  const settle = () => new Promise(setImmediate);
+  await settle();
+  assert.equal(page.state.result.pairsTruncated, true);
+  async function toggle(side, path) {
+    const entry = page.get('tree-' + side).querySelectorAll('.entry').find((item) => item.dataset.path === path);
     entry.querySelector('.toggle').click();
+    await settle();
   }
-  toggle('/0');
-  toggle('/0/rows');
-  assert.ok(visiblePaths(page, 'right').includes('/1/rows/0'));
-  toggle('/0/rows/0');
-  assert.ok(visiblePaths(page).includes('/0/rows/0/id'));
-  assert.ok(!visiblePaths(page, 'right').includes('/1/rows/0/id'));
+  for (const path of ['/2026', '/', '/fallback', '/fallback/0', '/rows', '/rows/0', '/rows/0/inner']) {
+    await toggle('left', path);
+  }
+  const peerPaths = visiblePaths(page, 'right');
+  for (const path of ['/2026/year', '//empty', '/fallback/0/id', '/rows/1/inner/0']) {
+    assert.ok(peerPaths.includes(path), path);
+  }
+  await toggle('left', '/rows/0/inner/0');
+  assert.ok(visiblePaths(page).includes('/rows/0/inner/0/id'));
+  assert.ok(!visiblePaths(page, 'right').includes('/rows/1/inner/0/id'));
+
+  hold = true;
+  await toggle('left', '/2026');
+  await toggle('right', '/2026');
+  await toggle('right', '/2026');
+  assert.equal(checks.length, 3);
+  for (const resume of checks.reverse()) { resume(); await settle(); }
+  for (const side of ['left', 'right']) assert.ok(visiblePaths(page, side).includes('/2026/year'));
+
+  fail = true;
+  await toggle('left', '/fallback/0');
+  assert.equal(page.get('error').textContent, 'errWorkerFailed');
+  assert.ok(visiblePaths(page, 'right').includes('/fallback/0/id'));
+  fail = false;
+  checks.length = 0;
+  await toggle('left', '/2026');
+  page.doClear();
+  setInputs(page, '{"2026":{"year":1}}', '{"2026":{"year":1}}');
+  await page.doCompare();
+  await toggle('right', '/2026');
+  checks[0]();
+  await settle();
+  for (const side of ['left', 'right']) assert.ok(visiblePaths(page, side).includes('/2026/year'));
+  page.doClear();
 });
