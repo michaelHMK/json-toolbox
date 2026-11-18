@@ -167,11 +167,17 @@ try {
       assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}-drop.json`));
       assert.equal(await page.locator('#file-drop-hint').isHidden(), true);
     }
+    // The HTTP preview normally shows bare i18n keys. Expose the line and
+    // column substitutions supplied by the page for the imported file.
+    await page.addInitScript(() => {
+      chrome.i18n = { getMessage: (key, args) => key === 'errLineCol' ? `(line ${args[0]}, column ${args[1]})` : key };
+    });
     await page.goto(base + '/minify.html');
     await page.locator('#file-input').setInputFiles({
-      name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{\r\n"a": 0,\r\n"b": ]}'),
+      name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{\r\n"a":0,\r"b":]}'),
     });
     await page.locator('#error').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#error').textContent(), /\(line 3, column 5\)/);
     assert.equal(await page.locator('#input').evaluate((el) => el.value.slice(el.selectionStart, el.selectionEnd)), ']');
 
     await page.goto(base + '/escape.html');

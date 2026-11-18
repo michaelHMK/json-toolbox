@@ -12,11 +12,12 @@ for (const [text, position] of [
   ['"\\u12x4"', 5], ['"\\u12', 5], ['[01]', 2], ['[-]', 2],
   ['[1.]', 3], ['[1e+]', 4], ['[nul]', 4], ['true false', 5],
   ['{\n "a":false,\n "b":}', 19],
+  ['{\r"a":0,\r"b":]}', 13], ['[\r\r\n\n,]', 5],
 ]) {
   test(`fallback locates invalid input ${JSON.stringify(text)}`, () => {
     assert.throws(() => JSON.parse(text), SyntaxError);
     const before = text.slice(0, position);
-    const lines = before.split('\n');
+    const lines = before.split(/\r\n|\r|\n/);
     assert.deepEqual(parseErrorLocation(genericMessage, text), {
       position, line: lines.length, column: lines.at(-1).length + 1,
     });
