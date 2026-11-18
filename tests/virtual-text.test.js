@@ -105,6 +105,13 @@ test('position reveal handles horizontal windows, surrogate pairs, CRLF and EOF 
   assert.ok(element.scrollLeft > 0);
   const [range] = page.selection.ranges;
   assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, prefix.length + 2);
+
+  const singleLine = '中'.repeat(15000) + '😀' + '末'.repeat(9000);
+  page.outputView.setText(singleLine);
+  page.outputView.revealPosition(15001);
+  const [emoji] = page.selection.ranges;
+  assert.equal(emoji.startContainer.textContent.slice(emoji.startOffset, emoji.endOffset), '😀');
+  assert.equal(Number(emoji.startContainer.parentElement.dataset.textOffset) + emoji.startOffset, 15000);
   page.outputView.destroy();
 });
 
