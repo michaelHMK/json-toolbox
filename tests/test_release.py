@@ -1,5 +1,7 @@
 import contextlib
+import hashlib
 import io
+import json
 from pathlib import Path
 import shutil
 import tempfile
@@ -7,7 +9,7 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from scripts import build_release
+from scripts import build_release, upload_release
 
 
 class ReleaseTests(unittest.TestCase):
@@ -25,7 +27,15 @@ class ReleaseTests(unittest.TestCase):
     def test_archive_is_loadable_from_its_root_and_written_to_project_dist(self):
         with tempfile.TemporaryDirectory() as directory:
             project = Path(directory)
+            root = project / 'src'
+            shutil.copytree(build_release.ROOT, root)
+            manifest_path = root / 'manifest.json'
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+            manifest['action']['default_icon']['16'] = 'icons/action16.png'
+            manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+            shutil.copyfile(root / 'icons/icon16.png', root / 'icons/action16.png')
             with patch.object(build_release, 'PROJECT_ROOT', project), \
+                    patch.object(build_release, 'ROOT', root), \
                     patch('sys.argv', ['build_release.py']), \
                     contextlib.redirect_stdout(io.StringIO()):
                 build_release.main()
@@ -38,7 +48,53 @@ class ReleaseTests(unittest.TestCase):
                 self.assertIn('worker/index.js', names)
                 self.assertIn('formatter.html', names)
                 self.assertFalse(any(name.startswith(('src/', 'scripts/', 'tests/', 'bench/')) for name in names))
-                self.assertEqual(archive.read('manifest.json'), (build_release.ROOT / 'manifest.json').read_bytes())
+                self.assertEqual(archive.read('manifest.json'), manifest_path.read_bytes())
+                for name in ['icons/icon16.png', 'icons/action16.png']:
+                    self.assertEqual(archive.read(name), (root / name).read_bytes())
+
+    def test_icon_must_be_a_regular_file_inside_the_extension(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'src'
+            shutil.copytree(build_release.ROOT, root)
+            outside = Path(directory) / 'external-icons'
+            outside.mkdir()
+            shutil.copyfile(root / 'icons/icon16.png', outside / 'icon16.png')
+            (root / 'linked-icons').symlink_to(outside, target_is_directory=True)
+            manifest_path = root / 'manifest.json'
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+            for name in ['../external-icons/icon16.png', str(outside / 'icon16.png'), 'linked-icons/icon16.png']:
+                with self.subTest(name=name), patch.object(build_release, 'ROOT', root):
+                    manifest['icons']['16'] = name
+                    manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+                    with self.assertRaisesRegex(ValueError, '包内相对路径|符号链接'):
+                        self.check()
+
+    def test_upload_preserves_existing_assets_and_fills_gaps(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / 'package.zip'
+            checksum = Path(directory) / 'package.zip.sha256'
+            archive.write_bytes(b'zip')
+            checksum.write_bytes(b'checksum')
+            assets = [{'name': path.name, 'digest': 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest()}
+                      for path in (archive, checksum)]
+            for existing, missing in [([], [archive, checksum]), (assets, []),
+                                      (assets[:1], [checksum]), (assets[1:], [archive])]:
+                with self.subTest(existing=existing), \
+                        patch('subprocess.check_output', return_value=json.dumps([existing])), \
+                        patch('subprocess.run') as upload, contextlib.redirect_stdout(io.StringIO()):
+                    upload_release.upload_release('owner/repo', 1, 'v1', [archive, checksum])
+                    if missing:
+                        upload.assert_called_once_with(
+                            ['gh', 'release', 'upload', '--repo', 'owner/repo', '--', 'v1', *missing], check=True)
+                    else:
+                        upload.assert_not_called()
+
+            # A missing ZIP must not be uploaded alongside a conflicting legacy checksum.
+            legacy = {'name': checksum.name, 'id': 7}
+            with patch('subprocess.check_output', side_effect=[json.dumps([[legacy]]), b'old']), \
+                    patch('subprocess.run') as upload, self.assertRaisesRegex(ValueError, checksum.name):
+                upload_release.upload_release('owner/repo', 1, 'v1', [archive, checksum])
+            upload.assert_not_called()
 
     def test_omitted_import_and_worker_entry_are_rejected(self):
         for omitted in ['core/json.js', 'worker/index.js']:

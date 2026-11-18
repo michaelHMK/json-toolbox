@@ -52,8 +52,18 @@ def check_css_references(name, source, files):
         check_reference(name, ref, files)
 
 
+def release_file(name):
+    if (not isinstance(name, str) or '\\' in name or ':' in name
+            or any(part in ('', '.', '..') for part in name.split('/'))):
+        raise ValueError(f'发布文件必须使用包内相对路径: {name}')
+    path = ROOT.resolve() / name
+    if path.resolve() != path or not path.is_file():
+        raise ValueError(f'发布文件缺失或为符号链接: {name}')
+    return path
+
+
 def check_release():
-    manifest = json.loads((ROOT / 'manifest.json').read_text(encoding='utf-8'))
+    manifest = json.loads(release_file('manifest.json').read_text(encoding='utf-8'))
     if manifest.get('manifest_version') != 3:
         raise ValueError('发布包必须使用 Manifest V3')
     version = manifest['version']
@@ -66,8 +76,9 @@ def check_release():
     files = set(RUNTIME_FILES)
     catalogs = {}
     for path in sorted((ROOT / '_locales').glob('*/messages.json')):
-        catalogs[path.parent.name] = json.loads(path.read_text(encoding='utf-8'))
-        files.add(path.relative_to(ROOT).as_posix())
+        name = path.relative_to(ROOT).as_posix()
+        catalogs[path.parent.name] = json.loads(release_file(name).read_text(encoding='utf-8'))
+        files.add(name)
     default = catalogs[manifest['default_locale']]
     for locale, catalog in catalogs.items():
         if catalog.keys() != default.keys():
@@ -84,20 +95,17 @@ def check_release():
                 raise ValueError(f'{locale}: {field} 长度为 {len(value)}，上限 {limit}')
         print(f'✓ {locale}: 名称、简介和 {len(catalog)} 个翻译键检查通过')
 
-    icons = dict(manifest['icons'])
-    icons.update(manifest.get('action', {}).get('default_icon', {}))
-    for size, name in icons.items():
-        data = (ROOT / name).read_bytes()
-        if data[:8] != b'\x89PNG\r\n\x1a\n' or struct.unpack('>II', data[16:24]) != (int(size), int(size)):
-            raise ValueError(f'{name}: PNG 尺寸不匹配')
-        files.add(name)
+    for icons in (manifest['icons'], manifest.get('action', {}).get('default_icon', {})):
+        for size, name in icons.items():
+            data = release_file(name).read_bytes()
+            if data[:8] != b'\x89PNG\r\n\x1a\n' or struct.unpack('>II', data[16:24]) != (int(size), int(size)):
+                raise ValueError(f'{name}: PNG 尺寸不匹配')
+            files.add(name)
 
     if manifest['background']['service_worker'] not in files:
         raise ValueError('发布清单未包含 Service Worker')
     for name in sorted(files):
-        path = ROOT / name
-        if not path.is_file() or path.is_symlink():
-            raise ValueError(f'发布文件缺失或为符号链接: {name}')
+        path = release_file(name)
         if path.suffix == '.html':
             source = path.read_text(encoding='utf-8')
             for ref in re.findall(r'(?:src|href)=[\"\']([^\"\']+)', source):
@@ -142,7 +150,7 @@ def main():
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.create_system = 3
                 info.external_attr = 0o100644 << 16
-                archive.writestr(info, (ROOT / name).read_bytes())
+                archive.writestr(info, release_file(name).read_bytes())
         with zipfile.ZipFile(output) as archive:
             if archive.testzip() is not None:
                 raise ValueError('ZIP 完整性校验失败')
