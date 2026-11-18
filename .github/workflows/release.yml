@@ -4,6 +4,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: extension-package-${{ github.event.release.id }}
+  cancel-in-progress: false
+
 jobs:
   package:
     runs-on: ubuntu-latest

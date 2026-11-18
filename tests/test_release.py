@@ -4,9 +4,10 @@ import io
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 import zipfile
 
 from scripts import build_release, upload_release
@@ -75,7 +76,8 @@ class ReleaseTests(unittest.TestCase):
             checksum = Path(directory) / 'package.zip.sha256'
             archive.write_bytes(b'zip')
             checksum.write_bytes(b'checksum')
-            assets = [{'name': path.name, 'digest': 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest()}
+            assets = [{'name': path.name, 'state': 'uploaded',
+                       'digest': 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest()}
                       for path in (archive, checksum)]
             for existing, missing in [([], [archive, checksum]), (assets, []),
                                       (assets[:1], [checksum]), (assets[1:], [archive])]:
@@ -90,11 +92,45 @@ class ReleaseTests(unittest.TestCase):
                         upload.assert_not_called()
 
             # A missing ZIP must not be uploaded alongside a conflicting legacy checksum.
-            legacy = {'name': checksum.name, 'id': 7}
+            legacy = {'name': checksum.name, 'id': 7, 'state': 'uploaded'}
             with patch('subprocess.check_output', side_effect=[json.dumps([[legacy]]), b'old']), \
                     patch('subprocess.run') as upload, self.assertRaisesRegex(ValueError, checksum.name):
                 upload_release.upload_release('owner/repo', 1, 'v1', [archive, checksum])
             upload.assert_not_called()
+
+    def test_retry_recovers_a_failed_upload_without_deleting_other_uploads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / 'package.zip'
+            archive.write_bytes(b'zip')
+            args = ('owner/repo', 1, 'v1', [archive])
+            upload = ['gh', 'release', 'upload', '--repo', 'owner/repo', '--', 'v1', archive]
+            failed = subprocess.CalledProcessError(1, upload, stderr='HTTP 502')
+            with patch('subprocess.check_output', return_value='[[]]'), \
+                    patch('subprocess.run', side_effect=failed), self.assertRaises(subprocess.CalledProcessError):
+                upload_release.upload_release(*args)
+
+            starter = {'id': 8, 'name': archive.name, 'state': 'starter', 'size': 0,
+                       'uploader': {'login': 'github-actions[bot]'}}
+            listed = json.dumps([[starter]])
+            for digest in [None, 'sha256:' + hashlib.sha256(b'').hexdigest()]:
+                empty = {**starter, 'digest': digest}
+                with self.subTest(digest=digest), \
+                        patch('subprocess.check_output', side_effect=[json.dumps([[empty]]), json.dumps(empty)]), \
+                        patch('subprocess.run') as mutate:
+                    upload_release.upload_release(*args)
+                self.assertEqual(mutate.call_args_list, [
+                    call(['gh', 'api', '--method', 'DELETE', 'repos/owner/repo/releases/assets/8'], check=True),
+                    call(upload, check=True),
+                ])
+
+            for change in [{'state': 'uploaded'}, {'name': 'renamed'}, {'size': 42},
+                           {'digest': 'sha256:' + hashlib.sha256(b'data').hexdigest()},
+                           {'uploader': None}, {'uploader': {'login': 'maintainer'}}]:
+                with self.subTest(change=change), \
+                        patch('subprocess.check_output', side_effect=[listed, json.dumps({**starter, **change})]), \
+                        patch('subprocess.run') as mutate, self.assertRaises(ValueError):
+                    upload_release.upload_release(*args)
+                mutate.assert_not_called()
 
     def test_omitted_import_and_worker_entry_are_rejected(self):
         for omitted in ['core/json.js', 'worker/index.js']:
