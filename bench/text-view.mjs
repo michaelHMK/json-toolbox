@@ -100,12 +100,22 @@ try {
     'a\u0301'.repeat(10000) + 'FIRST_END\n' + 'e\u0301'.repeat(10000) + 'COMBINING_END',
     '👨‍👩‍👧‍👦'.repeat(10000) + 'COMBINING_END']) {
     await page.evaluate((text) => { textView.setText(text); output.scrollLeft = output.scrollWidth; }, text);
-    await settle();
+    await page.waitForFunction(() => output.textContent.includes('COMBINING_END'));
     await visibleMarker('#output-text', 'COMBINING_END');
     await page.evaluate(() => textView.refresh());
     await settle();
     await visibleMarker('#output-text', 'COMBINING_END');
   }
+  // The first 1024 code units take only a few pixels. Later frames must
+  // fill the viewport and keep an explicitly revealed selection at its offset.
+  await page.evaluate(() => {
+    const prefix = ('a' + '\u0301'.repeat(31)).repeat(1024);
+    textView.setText(prefix + '選' + '中'.repeat(2000000) + '\n' + prefix + 'NEXT_ROW');
+    textView.revealPosition(prefix.length);
+  });
+  await page.waitForFunction(() => output.textContent.includes('NEXT_ROW'));
+  await visibleMarker('#output-text', 'NEXT_ROW');
+  assert.equal(await page.evaluate(() => document.getSelection().toString()), '選');
   await page.evaluate(() => { output.hidden = true; textView.setText('a\n'.repeat(5000) + 'HIDDENEND'); });
   assert.equal(await page.locator('.virtual-text-row').count(), 0);
   await page.evaluate(() => { output.hidden = false; textView.refresh(); });

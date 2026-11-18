@@ -16,10 +16,16 @@ const inputBudget = Number(process.env.PERF_INPUT_BUDGET_MS || 50);
 const frameBudget = Number(process.env.PERF_FRAME_BUDGET_MS || 35);
 const fixtures = new Map();
 const fixture = (kind) => {
-  if (!fixtures.has(kind)) fixtures.set(kind, kind === 'tree' ? createFormatSource('tz', treeMiB)
-    : kind === 'single' ? '"' + 'x'.repeat(10 * 1024 * 1024 - 2) + '"'
-      : '[' + ('{"id":1,"label":"multiline record for local input measurement","amount":19.90},\n').repeat(Math.ceil(10 * 1024 * 1024 / 80)) + 'null]');
-  return fixtures.get(kind);
+  if (fixtures.has(kind)) return fixtures.get(kind);
+  let source;
+  if (kind === 'tree') source = createFormatSource('tz', treeMiB);
+  else if (kind === 'single') source = '"' + 'x'.repeat(10 * 1024 * 1024 - 2) + '"';
+  else if (kind === 'unicode') {
+    const item = '"' + '中'.repeat(250) + '🙂",\t';
+    source = '[' + item.repeat(8192) + '"末尾🙂"]';
+  } else source = '[' + ('{"id":1,"label":"multiline record for local input measurement","amount":19.90},\n').repeat(Math.ceil(10 * 1024 * 1024 / 80)) + 'null]';
+  fixtures.set(kind, source);
+  return source;
 };
 const server = createServer(async (request, response) => {
   try {
@@ -192,6 +198,46 @@ try {
       }
     }
   }
+
+  await page.goto(base + '/escape.html');
+  await prepareTransfer('unicode');
+  await settle();
+  await mark();
+  const unicodeLayoutMs = await page.evaluate(() => {
+    const event = new ClipboardEvent('paste', { clipboardData: benchTransfer, bubbles: true, cancelable: true });
+    const start = performance.now();
+    document.querySelector('#input').dispatchEvent(event);
+    const preview = document.querySelector('#input-view');
+    void preview.scrollWidth;
+    return +(performance.now() - start).toFixed(2);
+  });
+  // Drag to the current right edge while the exact width is still growing.
+  await page.locator('#input-view').evaluate((view) => { view.scrollLeft = view.scrollWidth; });
+  await page.waitForFunction(() => document.querySelector('#input-view').textContent.includes('末尾🙂'));
+  const unicode = await collect('escape-unicode-emoji-tab-line', { dispatchLayoutMs: unicodeLayoutMs });
+  if (unicodeLayoutMs >= inputBudget || unicode.longestTaskMs >= inputBudget) violations.push(`${unicode.scenario}: input or width indexing task exceeded ${inputBudget}ms`);
+  const copy = await page.locator('#input-view').evaluate((view) => {
+    const node = view.querySelector('.virtual-text-row span').firstChild;
+    const marker = '末尾🙂';
+    const at = node.textContent.indexOf(marker);
+    const range = new Range();
+    range.setStart(node, at);
+    range.setEnd(node, at + marker.length);
+    const rect = range.getBoundingClientRect();
+    const viewport = view.getBoundingClientRect();
+    document.getSelection().removeAllRanges();
+    document.getSelection().addRange(range);
+    const readCopy = () => {
+      const clipboardData = new DataTransfer();
+      view.dispatchEvent(new ClipboardEvent('copy', { clipboardData, bubbles: true, cancelable: true }));
+      return clipboardData.getData('text/plain');
+    };
+    const selected = readCopy();
+    view.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }));
+    return { visible: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1,
+      selected, complete: readCopy() === benchSource };
+  });
+  assert.deepEqual(copy, { visible: true, selected: '末尾🙂', complete: true });
 
   await page.goto(base + '/formatter.html');
   await page.locator('#auto-format').uncheck();

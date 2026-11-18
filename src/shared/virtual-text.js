@@ -8,6 +8,7 @@ const LONG_LINE_LIMIT = 8000;
 const MAX_SCROLL_SIZE = 8000000;
 const OVERSCAN = 8;
 const COLUMN_CHUNK = 1024;
+const WIDTH_INDEX_FRAME_MS = 4;
 
 // Keep ordinary outputs as native text/DOM so browser selection and Find work.
 // Large outputs retain their complete source and index only rows in the viewport.
@@ -31,6 +32,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   let logicalWidth = 0;
   let physicalHeight = 0;
   let physicalWidth = 0;
+  let horizontalAnchor = null;
   let selectAll = false;
   const originalTabIndex = element.getAttribute('tabindex');
   const originalRole = element.getAttribute('role');
@@ -58,30 +60,8 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     if (ascii) {
       info = { text, width: text.length * characterWidth, ascii: true };
     } else {
-      // Measure bounded chunks instead of giving a multi-megabyte line to layout.
-      // A tab advances to the same two-character tab stop used by the viewer.
-      const offsets = [0];
-      const widths = [0];
-      let width = 0;
-      let from = 0;
-      while (from < text.length) {
-        const window = safeTextWindow(text, from, Math.min(text.length, from + COLUMN_CHUNK));
-        const chunk = text.slice(from, window.end);
-        let segmentStart = 0;
-        for (let at = chunk.indexOf('\t'); at !== -1; at = chunk.indexOf('\t', at + 1)) {
-          width += context.measureText(chunk.slice(segmentStart, at)).width;
-          const tab = characterWidth * 2;
-          const next = (Math.floor(width / tab) + 1) * tab;
-          // CSS advances another stop when the remaining gap is under half a space.
-          width = next - width < characterWidth / 2 ? next + tab : next;
-          segmentStart = at + 1;
-        }
-        width += context.measureText(chunk.slice(segmentStart)).width;
-        from = window.end;
-        offsets.push(from);
-        widths.push(width);
-      }
-      info = { text, width, ascii: false, offsets, widths };
+      info = { text, width: 0, ascii: false, offsets: [0], widths: [0] };
+      extendWidthIndex(info);
     }
     geometry.set(index, info);
     logicalWidth = Math.max(logicalWidth, info.width + leftPadding + rightPadding);
@@ -102,10 +82,24 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     return width + context.measureText(text.slice(start)).width;
   }
 
+  function extendWidthIndex(info) {
+    const chunk = info.offsets.length - 1;
+    const from = info.offsets[chunk];
+    const end = safeTextWindow(info.text, from, from + COLUMN_CHUNK).end;
+    info.width = measuredPrefix(info, chunk, end);
+    info.offsets.push(end);
+    info.widths.push(info.width);
+    logicalWidth = Math.max(logicalWidth, info.width + leftPadding + rightPadding);
+  }
+
+  function needsWidthIndex(info) {
+    return !info.ascii && info.offsets.at(-1) < info.text.length;
+  }
+
   function columnAt(info, x) {
     if (info.ascii) return { offset: Math.max(0, Math.min(info.text.length, Math.floor(x / characterWidth))), x: Math.max(0, Math.floor(x / characterWidth)) * characterWidth };
     if (x <= 0) return { offset: 0, x: 0 };
-    if (x >= info.width) return { offset: info.text.length, x: info.width };
+    if (x >= info.width) return { offset: info.offsets.at(-1), x: info.width };
     let low = 0;
     let high = info.widths.length - 1;
     while (low + 1 < high) {
@@ -127,7 +121,9 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
 
   function xAtOffset(info, offset) {
     if (info.ascii) return offset * characterWidth;
-    if (offset >= info.text.length) return info.width;
+    // An explicit error-location or End jump needs the exact source coordinate.
+    while (info.offsets.at(-1) < offset) extendWidthIndex(info);
+    if (offset >= info.offsets.at(-1)) return info.width;
     let low = 0;
     let high = info.offsets.length - 1;
     while (low + 1 < high) {
@@ -149,32 +145,62 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     return physical <= viewport ? 0 : position * Math.max(0, logical - viewport) / (physical - viewport);
   }
 
-  function setLogicalScroll(x, y) {
+  function logicalLeft() {
     const width = element.clientWidth;
+    if (horizontalAnchor?.scrollLeft === element.scrollLeft) return Math.max(0, Math.min(horizontalAnchor.x, logicalWidth - width));
+    return toLogical(element.scrollLeft, logicalWidth, physicalWidth, width);
+  }
+
+  function setHorizontalScroll(x) {
+    const width = element.clientWidth;
+    x = Math.max(0, Math.min(logicalWidth - width, x));
+    element.scrollLeft = logicalWidth <= width ? 0 : x * (physicalWidth - width) / (logicalWidth - width);
+    // Native scrollLeft rounds to pixels. Preserve the source coordinate while
+    // the growing index rescales a capped scrollbar, including active selections.
+    horizontalAnchor = { x, scrollLeft: element.scrollLeft };
+  }
+
+  function setLogicalScroll(x, y) {
     const height = element.clientHeight;
-    element.scrollLeft = logicalWidth <= width ? 0 : Math.max(0, Math.min(logicalWidth - width, x)) * (physicalWidth - width) / (logicalWidth - width);
+    setHorizontalScroll(x);
     element.scrollTop = logicalHeight <= height ? 0 : Math.max(0, Math.min(logicalHeight - height, y)) * (physicalHeight - height) / (logicalHeight - height);
     render();
   }
 
-  function render() {
+  function render(advanceIndex = false) {
     if (!virtual || !model || destroyed || !element.clientHeight || !element.clientWidth) return;
     const height = element.clientHeight;
     const width = element.clientWidth;
     extents();
     let top = toLogical(element.scrollTop, logicalHeight, physicalHeight, height);
-    let left = toLogical(element.scrollLeft, logicalWidth, physicalWidth, width);
+    let left = logicalLeft();
     const first = Math.max(0, Math.floor((top - topPadding) / lineHeight) - OVERSCAN);
     const count = Math.min(model.count - first, Math.ceil(height / lineHeight) + OVERSCAN * 2);
-    // Resolve geometry first so a wider Unicode row adjusts the scroll range once.
+    const oldWidth = logicalWidth;
+    const atRightEdge = physicalWidth > width && element.scrollLeft >= physicalWidth - width - 1;
+    // Only the first chunk of a newly visible Unicode line is needed to paint.
+    // Grow its exact width in later frames even when the user does not scroll.
     const visible = [];
     for (let i = 0; i < count; i++) {
       const row = model.getRow(first + i);
       visible.push({ row, info: horizontalGeometry(first + i, row) });
     }
+    const pending = visible.filter(({ info }) => needsWidthIndex(info));
+    if (advanceIndex && pending.length) {
+      const deadline = Date.now() + WIDTH_INDEX_FRAME_MS;
+      // Combining marks can make a chunk narrower than the viewport. Finish
+      // the visible slice of each line before extending the offscreen index.
+      for (const target of [left + width + 100, Infinity]) {
+        for (const { info } of pending) {
+          while (needsWidthIndex(info) && info.width < target && Date.now() < deadline) extendWidthIndex(info);
+        }
+      }
+    }
+    if (pending.some(({ info }) => needsWidthIndex(info))) schedule();
     extents();
+    if (logicalWidth > oldWidth) setHorizontalScroll(atRightEdge ? logicalWidth : left);
     top = toLogical(element.scrollTop, logicalHeight, physicalHeight, height);
-    left = toLogical(element.scrollLeft, logicalWidth, physicalWidth, width);
+    left = logicalLeft();
     layer.style.width = `${width}px`;
     layer.style.height = `${height}px`;
     layer.style.transform = `translate(${element.scrollLeft}px, ${element.scrollTop}px)`;
@@ -214,7 +240,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   }
 
   function schedule() {
-    if (!frame && !destroyed) frame = requestAnimationFrame(() => { frame = 0; render(); });
+    if (!frame && !destroyed) frame = requestAnimationFrame(() => { frame = 0; render(true); });
   }
 
   function reset() {
@@ -234,6 +260,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     spacer = null;
     rows = [];
     geometry.clear();
+    horizontalAnchor = null;
     selectAll = false;
     virtual = false;
   }
@@ -288,6 +315,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     metrics();
     if (context.font !== previousFont || characterWidth !== previousCharacterWidth) {
       geometry.clear();
+      horizontalAnchor = null;
       logicalWidth = leftPadding + rightPadding;
     }
     logicalHeight = model.count * lineHeight + topPadding + bottomPadding;
@@ -316,8 +344,12 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
       // CR/LF positions belong to the end of the preceding displayed row.
       const rowOffset = Math.min(position, row.end) - row.start;
       const info = horizontalGeometry(low, row);
+      const x = xAtOffset(info, rowOffset);
+      // Leave room past the selection. Reaching a partially measured right edge
+      // otherwise makes background indexing scroll away from the selected text.
+      while (needsWidthIndex(info) && info.width < x + element.clientWidth) extendWidthIndex(info);
       extents();
-      setLogicalScroll(Math.max(0, xAtOffset(info, rowOffset) - element.clientWidth / 2),
+      setLogicalScroll(Math.max(0, x - element.clientWidth / 2),
         Math.max(0, (low - 2) * lineHeight + topPadding));
       const target = rows.find((node) => node.index === low)?.text;
       textNode = target?.firstChild || target;
@@ -350,14 +382,15 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
       void copy(model.copyText());
       return;
     }
-    let x = toLogical(element.scrollLeft, logicalWidth, physicalWidth, element.clientWidth);
+    let x = logicalLeft();
     let y = toLogical(element.scrollTop, logicalHeight, physicalHeight, element.clientHeight);
     if (event.key === 'End' && mod) {
       const last = model.getRow(model.count - 1);
       const info = horizontalGeometry(model.count - 1, last);
+      const endX = xAtOffset(info, info.text.length);
       extents();
       y = logicalHeight;
-      x = Math.max(0, info.width + leftPadding + rightPadding - element.clientWidth);
+      x = Math.max(0, endX + leftPadding + rightPadding - element.clientWidth);
     } else if (event.key === 'Home' && mod) { x = 0; y = 0; }
     else if (event.key === 'ArrowDown') y += lineHeight;
     else if (event.key === 'ArrowUp') y -= lineHeight;
