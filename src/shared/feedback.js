@@ -31,11 +31,15 @@ export function createBusyFeedback({ busyEl, cancelEl, onCancel }) {
 }
 
 export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
+  let feedbackVersion = 0;
+
   function setStatus(text) {
+    feedbackVersion++;
     statusEl.textContent = text;
   }
 
   function showError(text) {
+    feedbackVersion++;
     // Clear the previous node so repeating the same error is a new live-region update.
     errorEl.textContent = '';
     errorEl.textContent = text;
@@ -43,12 +47,17 @@ export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
   }
 
   function hideError() {
+    feedbackVersion++;
     errorEl.hidden = true;
     errorEl.textContent = '';
   }
 
   async function copyWithFeedback(text) {
-    if (await copyText(text)) {
+    // Clipboard permission prompts can outlive a newer copy or page operation.
+    const version = ++feedbackVersion;
+    const copied = await copyText(text);
+    if (version !== feedbackVersion) return;
+    if (copied) {
       hideError();
       setStatus(t('statusCopied', [text.length.toLocaleString()]));
     } else {

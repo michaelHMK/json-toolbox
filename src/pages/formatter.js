@@ -155,6 +155,7 @@ async function ensureTreeData() {
 }
 
 async function setView(view) {
+  if (view === 'text' && state.view === 'text' && pendingView === 'tree') destroyTree();
   const requestVersion = ++viewRequestVersion;
   pendingView = view;
   // Keep the rendered view visible until its replacement is ready. A pending
@@ -303,13 +304,15 @@ function renderTree(navigate = true) {
   else if (state.remote) {
     treeDocument = displayedDocument;
     const document = treeDocument;
-    treeView = createRemoteTree(treeEl, { ...options, request: async (payload) => {
+    const candidate = createRemoteTree(treeEl, { ...options, request: async (payload) => {
       const response = await document.requestTree(payload);
+      if (treeView !== candidate) return { ok: false, cancelled: true };
       const applied = session.apply(response, () => {
         if (!response.ok && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
       });
       return applied ? response : { ok: false, cancelled: true };
     } });
+    treeView = candidate;
   } else treeView = createVirtualTree(treeEl, options);
   if (navigate && state.searchQuery && state.matchCount > 0) updateMatchNav(0);
   else {

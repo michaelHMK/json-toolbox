@@ -150,7 +150,7 @@ test('a late tree parse cannot override a newer request to keep text visible', a
   page.doClear();
 });
 
-for (const outcome of ['worker error', 'cancel', 'return to text']) {
+for (const outcome of ['worker error', 'cancel', 'return to text', 'crash after returning to text']) {
   test(`first remote window keeps formatted text visible during ${outcome} and permits retry`, async () => {
     const { page, workers, held } = setup();
     page.get('input').value = JSON.stringify({ data: 'x'.repeat(LARGE_INPUT_THRESHOLD) });
@@ -167,12 +167,14 @@ for (const outcome of ['worker error', 'cancel', 'return to text']) {
     else if (outcome === 'cancel') await page.get('btn-cancel').click();
     else {
       await page.get('view-text').click();
-      workers[0].complete(firstWindow);
+      if (outcome === 'return to text') workers[0].complete(firstWindow);
+      else workers[0].crash();
     }
     await pending;
     assertView(page, 'text');
-    if (outcome !== 'return to text') assert.equal(page.getTree(), null);
+    assert.equal(page.getTree(), null);
     if (outcome === 'worker error') assert.equal(page.get('error').textContent, 'errWorkerFailed');
+    else assert.equal(page.get('error').hidden, true);
     held.clear();
     await showTree(page);
     assert.ok(page.get('tree').querySelectorAll('.key').some((entry) => entry.textContent.includes('data')));
