@@ -147,7 +147,8 @@ test('a text-only minify caller can release parsed data instead of retaining a s
 test('escape/unescape round-trip quotes, control characters and Unicode', () => {
   const text = '中😀\n\t\r\u0000"\\/\u2028';
   assert.equal(run('unescape', run('escape', text).text).text, text);
-  assert.equal(run('unescape', 'raw\nline\tend').text, 'raw\nline\tend');
+  const rawControls = Array.from({ length: 32 }, (_, code) => String.fromCharCode(code)).join('');
+  assert.equal(run('unescape', 'raw' + rawControls + 'end').text, 'raw' + rawControls + 'end');
 });
 
 test('unescape accepts complete JSON strings as well as their contents', () => {
