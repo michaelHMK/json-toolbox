@@ -128,7 +128,7 @@ export function loadPage(name, {
   createFileImport = () => ({ reset() {} }),
   createTaskRunner,
   translate = (key) => key,
-  copyText = async () => {},
+  copyText = async () => true,
 }) {
   const elements = new Map();
   const get = (id) => {

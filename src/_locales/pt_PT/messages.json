@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Nada para analisar — introduza primeiro o JSON"
   },
+  "errCopyFailed": {
+    "message": "Não foi possível copiar. Selecione o texto e use o comando Copiar do navegador."
+  },
   "errNothingToCopy": {
     "message": "Nada para copiar"
   },

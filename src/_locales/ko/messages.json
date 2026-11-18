@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "분석할 내용이 없습니다. 먼저 JSON을 입력하세요"
   },
+  "errCopyFailed": {
+    "message": "복사하지 못했습니다. 텍스트를 선택한 다음 브라우저의 복사 명령을 사용하세요."
+  },
   "errNothingToCopy": {
     "message": "복사할 내용이 없습니다"
   },

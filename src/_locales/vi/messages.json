@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Không có gì để phân tích — hãy nhập JSON trước"
   },
+  "errCopyFailed": {
+    "message": "Không thể sao chép. Hãy chọn văn bản và dùng lệnh Sao chép của trình duyệt."
+  },
   "errNothingToCopy": {
     "message": "Không có gì để sao chép"
   },

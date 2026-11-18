@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "解析する内容がありません。先に JSON を入力してください"
   },
+  "errCopyFailed": {
+    "message": "コピーできませんでした。テキストを選択し、ブラウザのコピー機能を使ってください。"
+  },
   "errNothingToCopy": {
     "message": "コピーする内容がありません"
   },

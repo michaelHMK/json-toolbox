@@ -16,17 +16,12 @@ const $ = (id) => document.getElementById(id);
 
 const inputLeft = $('input-left');
 const inputRight = $('input-right');
-const textInputs = {
-  left: createTextInput(inputLeft, $('input-view-left')),
-  right: createTextInput(inputRight, $('input-view-right')),
-};
 const errorEl = $('error');
 const statusEl = $('status');
 const busyEl = $('busy');
 const resultEl = $('result');
 const structView = $('struct-view');
 const textView = $('text-view');
-const textRenderer = createVirtualTextView(textView);
 const treeLeftEl = $('tree-left');
 const treeRightEl = $('tree-right');
 const arrayModeSel = $('array-mode');
@@ -71,10 +66,15 @@ const session = createComparisonSession({
 });
 
 /* ================= 状态展示 ================= */
-const { setStatus, showError, hideError, showParseError } = createFeedback({
+const { setStatus, showError, hideError, showParseError, copyWithFeedback } = createFeedback({
   statusEl, errorEl,
   selectInputPosition: (position, line, side) => textInputs[side === 'right' ? 'right' : 'left'].selectPosition(position, line),
 });
+const textInputs = {
+  left: createTextInput(inputLeft, $('input-view-left'), { copy: copyWithFeedback }),
+  right: createTextInput(inputRight, $('input-view-right'), { copy: copyWithFeedback }),
+};
+const textRenderer = createVirtualTextView(textView, { copy: copyWithFeedback });
 
 const fileImports = {};
 for (const side of ['left', 'right']) {

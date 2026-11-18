@@ -1,4 +1,5 @@
 import { t } from './i18n.js';
+import { copyText } from './clipboard.js';
 
 const ERROR_KEYS = {
   INVALID_JSON: 'errInvalidJson',
@@ -46,6 +47,16 @@ export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
     errorEl.textContent = '';
   }
 
+  async function copyWithFeedback(text) {
+    if (await copyText(text)) {
+      hideError();
+      setStatus(t('statusCopied', [text.length.toLocaleString()]));
+    } else {
+      setStatus('');
+      showError(t('errCopyFailed'));
+    }
+  }
+
   function showParseError(text, result, prefixKey = 'errParseFailed') {
     const detail = taskErrorMessage(result);
     let message = t(prefixKey);
@@ -59,5 +70,5 @@ export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
     }
   }
 
-  return { setStatus, showError, hideError, showParseError };
+  return { setStatus, showError, hideError, showParseError, copyWithFeedback };
 }

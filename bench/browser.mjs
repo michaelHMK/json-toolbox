@@ -173,6 +173,34 @@ try {
     });
     await page.locator('#error').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#input').evaluate((el) => el.value.slice(el.selectionStart, el.selectionEnd)), ']');
+
+    await page.goto(base + '/escape.html');
+    await page.locator('#input').fill('copy me');
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} }, configurable: true });
+    });
+    await page.locator('#btn-copy').click();
+    await page.waitForFunction(() => document.querySelector('#status').textContent === 'statusCopied');
+    await page.evaluate(() => {
+      navigator.clipboard.writeText = async () => { throw new Error('denied'); };
+      document.execCommand = () => false;
+    });
+    for (const entry of ['button', 'keyboard']) {
+      if (entry === 'button') await page.locator('#btn-copy').click();
+      else {
+        await page.locator('#btn-clear').click();
+        await page.locator('#input').evaluate((input) => {
+          const clipboardData = new DataTransfer();
+          clipboardData.setData('text/plain', 'x'.repeat(300000));
+          input.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
+        });
+        await page.locator('#input-view').press('Control+a');
+        await page.locator('#input-view').press('Control+c');
+      }
+      await page.waitForFunction(() => document.querySelector('#error').textContent === 'errCopyFailed');
+      assert.equal(await page.locator('#status').textContent(), '');
+      assert.equal(await page.locator('body > textarea').count(), 0, 'fallback textarea must be removed');
+    }
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.version(), root: pathToFileURL(root).href, verify, results: rows }, null, 2));

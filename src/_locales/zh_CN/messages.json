@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "没有可解析的内容，请先输入 JSON"
   },
+  "errCopyFailed": {
+    "message": "复制失败。请选中文本，使用浏览器的“复制”命令。"
+  },
   "errNothingToCopy": {
     "message": "没有可复制的内容"
   },

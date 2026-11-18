@@ -4,7 +4,6 @@ import { createDocumentSession } from '../shared/document-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
-import { copyText } from '../shared/clipboard.js';
 import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
@@ -15,9 +14,7 @@ initializePage();
 const $ = (id) => document.getElementById(id);
 
 const inputEl = $('input');
-const textInput = createTextInput(inputEl, $('input-view'));
 const outputTextEl = $('output-text');
-const outputView = createVirtualTextView(outputTextEl);
 const treeEl = $('tree');
 const statusEl = $('status');
 const busyEl = $('busy');
@@ -63,9 +60,11 @@ const session = createDocumentSession({
 });
 
 /* ================= 状态展示 ================= */
-const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
+const { setStatus, showError, hideError, showParseError, copyWithFeedback } = createFeedback({
+  statusEl, errorEl, selectInputPosition: (position, line) => textInput.selectPosition(position, line),
 });
+const textInput = createTextInput(inputEl, $('input-view'), { copy: copyWithFeedback });
+const outputView = createVirtualTextView(outputTextEl, { copy: copyWithFeedback });
 
 const fileImport = createFileImport({
   dropZone: $('input-pane'),
@@ -226,9 +225,7 @@ async function doCopy() {
     showError(t('errNothingToCopy'));
     return;
   }
-  hideError();
-  await copyText(text);
-  setStatus(t('statusCopied', [text.length.toLocaleString()]));
+  await copyWithFeedback(text);
 }
 
 function resetDocument() {

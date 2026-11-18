@@ -2,8 +2,8 @@ import { createVirtualTextView } from './virtual-text.js';
 
 export const LARGE_INPUT_THRESHOLD = 256 * 1024;
 
-export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THRESHOLD } = {}) {
-  const view = preview ? createVirtualTextView(preview) : null;
+export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THRESHOLD, copy } = {}) {
+  const view = preview ? createVirtualTextView(preview, { copy }) : null;
   let source = null;
   let large = false;
 

@@ -29,7 +29,7 @@ function setup(action, runTask) {
       importOptions = options;
       return { reset() {} };
     },
-    copyText: async (text) => { copied.push(text); },
+    copyText: async (text) => { copied.push(text); return true; },
   });
   return { ...page, copied, requests, importText: (text) => importOptions.onImport({ text }) };
 }

@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "لا يوجد محتوى لتحليله — أدخل JSON أولًا"
   },
+  "errCopyFailed": {
+    "message": "تعذّر النسخ. حدّد النص واستخدم أمر النسخ في المتصفح."
+  },
   "errNothingToCopy": {
     "message": "لا يوجد محتوى لنسخه"
   },

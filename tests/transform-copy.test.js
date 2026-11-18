@@ -10,7 +10,7 @@ function setup() {
     bodyDataset: { action: 'unescape' },
     expose: '{ runTransform, doClear }',
     runTask: async (action, payload) => handler({ action, ...payload }),
-    copyText: async (text) => { copied.push(text); },
+    copyText: async (text) => { copied.push(text); return true; },
   });
   return { page, copied };
 }

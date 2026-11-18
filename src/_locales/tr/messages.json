@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Ayrıştırılacak içerik yok — önce JSON girin"
   },
+  "errCopyFailed": {
+    "message": "Kopyalama başarısız oldu. Metni seçip tarayıcınızın Kopyala komutunu kullanın."
+  },
   "errNothingToCopy": {
     "message": "Kopyalanacak içerik yok"
   },

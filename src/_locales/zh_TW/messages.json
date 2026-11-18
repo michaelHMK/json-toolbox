@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "沒有可剖析的內容，請先輸入 JSON"
   },
+  "errCopyFailed": {
+    "message": "複製失敗。請選取文字，使用瀏覽器的「複製」指令。"
+  },
   "errNothingToCopy": {
     "message": "沒有可複製的內容"
   },

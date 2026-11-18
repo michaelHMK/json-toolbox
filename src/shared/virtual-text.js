@@ -11,7 +11,7 @@ const COLUMN_CHUNK = 1024;
 
 // Keep ordinary outputs as native text/DOM so browser selection and Find work.
 // Large outputs retain their complete source and index only rows in the viewport.
-export function createVirtualTextView(element) {
+export function createVirtualTextView(element, { copy = copyText } = {}) {
   let model = null;
   let diffResult = null;
   let virtual = false;
@@ -347,7 +347,7 @@ export function createVirtualTextView(element) {
     }
     if (mod && event.key.toLowerCase() === 'c' && selectAll) {
       event.preventDefault();
-      void copyText(model.copyText());
+      void copy(model.copyText());
       return;
     }
     let x = toLogical(element.scrollLeft, logicalWidth, physicalWidth, element.clientWidth);
