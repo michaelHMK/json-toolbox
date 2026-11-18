@@ -94,6 +94,11 @@ function previewValue(v, path, numberLiterals) {
   return '{' + Object.keys(v).length + ' 键}';
 }
 
+function jsonType(value) {
+  if (value === null) return 'null';
+  return Array.isArray(value) ? 'array' : typeof value;
+}
+
 /*
  * 结构 diff：深度优先对齐两棵树，产出 added / removed / changed / typeChanged 四类差异。
  * 数组默认按下标对齐；指定 keyField 且两边元素都是含该字段的对象时按主键配对，
@@ -113,8 +118,11 @@ export function diffData(left, right, options) {
     .filter((s) => s.length > 0);
   const diffs = [];
   const pairs = [];
+  const unpaired = { left: new Map(), right: new Map() };
+  let mappingCount = 0;
   const stats = { added: 0, removed: 0, changed: 0, typeChanged: 0 };
   let truncated = false;
+  let pairsTruncated = false;
   let keyFallback = false;
 
   const ignoreByDepth = new Map();
@@ -133,6 +141,31 @@ export function diffData(left, right, options) {
     let path = '';
     for (const seg of segs) path = appendJsonPath(path, seg);
     return path;
+  }
+
+  function omitMapping(array) {
+    pairsTruncated = true;
+    options?.onTruncatedArray?.(array);
+  }
+
+  // Single-sided rows arrive in increasing order on each side of an array.
+  // Keep one parent pointer and inclusive index ranges, independent of which
+  // differences were ignored or included in the displayed detail list.
+  function recordUnpaired(frame, side, index, segments) {
+    const field = side === 'left' ? 'removedRanges' : 'addedRanges';
+    let ranges = frame[field];
+    if (ranges && ranges.at(-1) === index - 1) {
+      ranges[ranges.length - 1] = index;
+    } else if (mappingCount < MAX_PAIRS) {
+      if (!ranges) {
+        ranges = frame[field] = [];
+        unpaired[side].set(toPath(segments.slice(0, -1)), ranges);
+      }
+      ranges.push(index, index);
+      mappingCount++;
+    } else {
+      omitMapping(frame[side]);
+    }
   }
 
   function record(type, leftSegs, rightSegs, lv, rv) {
@@ -190,18 +223,15 @@ export function diffData(left, right, options) {
 
   function enter(lv, rv, depth, leftNumbers, rightNumbers) {
     if (lv === rv && !keyField && leftNumbers === rightNumbers) return false;
-    const lObj = lv !== null && typeof lv === 'object';
-    const rObj = rv !== null && typeof rv === 'object';
-    if (!lObj || !rObj) {
-      if (lObj !== rObj) record('typeChanged', leftSegs, rightSegs, lv, rv);
-      else if (lv !== rv || (typeof lv === 'number' && typeof rv === 'number' && numbersDiffer(lv, rv, leftNumbers, rightNumbers))) {
-        record('changed', leftSegs, rightSegs, lv, rv);
-      }
+    const type = jsonType(lv);
+    if (type !== jsonType(rv)) {
+      record('typeChanged', leftSegs, rightSegs, lv, rv);
       return false;
     }
-    const lArr = Array.isArray(lv);
-    if (lArr !== Array.isArray(rv)) {
-      record('typeChanged', leftSegs, rightSegs, lv, rv);
+    if (type !== 'object' && type !== 'array') {
+      if (lv !== rv || (type === 'number' && numbersDiffer(lv, rv, leftNumbers, rightNumbers))) {
+        record('changed', leftSegs, rightSegs, lv, rv);
+      }
       return false;
     }
     let frame = frames[depth];
@@ -214,7 +244,7 @@ export function diffData(left, right, options) {
     frame.leftNumbers = leftNumbers;
     frame.rightNumbers = rightNumbers;
     frame.index = 0;
-    if (!lArr) {
+    if (type === 'object') {
       frame.type = 1;
       frame.keys = Object.keys(lv);
     } else {
@@ -288,10 +318,19 @@ export function diffData(left, right, options) {
         if (j !== undefined && !frame.matched[j]) {
           frame.matched[j] = 1;
           rightSegs.push(String(j));
-          if (i !== j && pairs.length < MAX_PAIRS) pairs.push([toPath(leftSegs), toPath(rightSegs)]);
+          if (i !== j) {
+            if (mappingCount < MAX_PAIRS) {
+              pairs.push([toPath(leftSegs), toPath(rightSegs)]);
+              mappingCount++;
+            } else {
+              omitMapping(lv);
+              omitMapping(rv);
+            }
+          }
           if (enter(lv[i], rv[j], depth + 1, frame.leftNumbers?.get(String(i)), frame.rightNumbers?.get(String(j)))) depth++;
           else { leftSegs.pop(); rightSegs.pop(); }
         } else {
+          recordUnpaired(frame, 'left', i, leftSegs);
           record('removed', leftSegs, null, lv[i]);
           leftSegs.pop();
         }
@@ -300,6 +339,7 @@ export function diffData(left, right, options) {
       for (let j = 0; j < rv.length; j++) {
         if (!frame.matched[j]) {
           rightSegs.push(String(j));
+          recordUnpaired(frame, 'right', j, rightSegs);
           record('added', null, rightSegs, undefined, rv[j]);
           rightSegs.pop();
         }
@@ -311,6 +351,8 @@ export function diffData(left, right, options) {
     frame.rightByKey = null;
     frame.leftKeys = null;
     frame.matched = null;
+    frame.removedRanges = null;
+    frame.addedRanges = null;
     leftSegs.pop();
     rightSegs.pop();
     depth--;
@@ -319,6 +361,8 @@ export function diffData(left, right, options) {
   return {
     diffs,
     pairs,
+    unpaired,
+    pairsTruncated,
     stats,
     truncated,
     keyFallback,

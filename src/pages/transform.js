@@ -4,7 +4,6 @@ import { createTaskRunner } from '../shared/worker-client.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput } from '../shared/text-input.js';
-import { copyText } from '../shared/clipboard.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
 initializePage();
@@ -12,12 +11,10 @@ initializePage();
 const inputEl = document.getElementById('input');
 const inputViewEl = document.getElementById('input-view');
 const outputEl = document.getElementById('output-text');
-const outputView = createVirtualTextView(outputEl);
 const statusEl = document.getElementById('status');
 const busyEl = document.getElementById('busy');
 const errorEl = document.getElementById('error');
 const action = document.body.dataset.action;
-const textInput = createTextInput(inputEl, inputViewEl);
 
 let outputText = '';
 let hasOutput = false;
@@ -31,9 +28,11 @@ const runTask = createTaskRunner({
   }),
 });
 
-const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
+const { setStatus, showError, hideError, showParseError, copyWithFeedback } = createFeedback({
+  statusEl, errorEl, selectInputPosition: (position, line) => textInput.selectPosition(position, line),
 });
+const textInput = createTextInput(inputEl, inputViewEl, { copy: copyWithFeedback });
+const outputView = createVirtualTextView(outputEl, { copy: copyWithFeedback });
 
 const fileImport = createFileImport({
   dropZone: document.getElementById('input-pane'),
@@ -88,9 +87,7 @@ async function doCopy() {
     showError(t('errNothingToCopy'));
     return;
   }
-  hideError();
-  await copyText(text);
-  setStatus(t('statusCopied', [text.length.toLocaleString()]));
+  await copyWithFeedback(text);
 }
 
 function resetDocument() {

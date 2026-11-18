@@ -146,6 +146,14 @@ node bench/theme.mjs
 
 浏览器验证命令中的 `.` 等目录参数指向仓库，脚本会加载其中的 `src/` 扩展目录，也兼容旧版本将扩展放在仓库根目录的布局；还可以直接传入扩展目录。
 
+CI 还会校验发布 ZIP 的摘要，解包加载扩展，启动后台 Worker，并在五个工具页各执行一次操作。本地复验可使用 Playwright 配套的完整版 Chromium，或将 `CHROMIUM_EXECUTABLE` 指向 Chromium 或 Chrome for Testing。将刚构建的 ZIP 传给脚本。
+
+```bash
+npm run build:release
+version=$(node -p "require('./src/manifest.json').version")
+node bench/release-smoke.mjs "dist/json-toolbox-${version}.zip"
+```
+
 这些检查覆盖大文件导入、虚拟输入、大文本与树、导航、复制、焦点、视图切换、状态恢复及深层 Worker 数据传输。`performance.mjs` 使用本地 HTTP 页面和真实 Worker；计时不包含扩展安装、启动和系统剪贴板获取。paste/drop 事件通过合成方式触发，用于测量应用的事件处理路径。
 
 `native-paste.mjs` 使用 Chromium 剪贴板和真实粘贴快捷键，检查转义、去转义页面的大文本原文显示与完整复制。默认输入约 20 MiB，可用 `BENCH_PASTE_MIB` 调整；计时从 paste 事件开始，到两次动画帧后结束，样本构造和剪贴板写入不计时。设置 `BENCH_SCREENSHOT_DIR` 可保存页面截图；用 `BENCH_VERIFY=0` 加旧版本目录可记录基线。它每页测量一次，比较耗时时应在同一环境串行运行。

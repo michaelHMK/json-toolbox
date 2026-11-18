@@ -14,9 +14,9 @@ Formatowanie i przeglądanie
 - Kopiuj cały wynik jednym kliknięciem.
 
 Importowanie lokalnych plików
-- Na stronach Formatowanie JSON i Minifikacja JSON wybierz plik lub przeciągnij go do panelu danych wejściowych.
-- Importuj po jednym pliku .json w kodowaniu UTF-8 o rozmiarze do 50 MiB. Formatowanie lub minifikacja rozpocznie się automatycznie po imporcie.
-- Dane wejściowe dłuższe niż około dwa miliony znaków są wyświetlane w wirtualnym podglądzie tylko do odczytu. Przetwarzanie i kopiowanie wyników nadal obejmują całą zawartość.
+- W każdym z pięciu narzędzi wybierz plik lub przeciągnij go do pola danych wejściowych.
+- Importuj po jednym pliku .json w kodowaniu UTF-8 o rozmiarze do 50 MiB. Narzędzie uruchamia się automatycznie po imporcie. Porównanie rozpoczyna się, gdy oba pola zawierają tekst.
+- Duże pliki otwierają się w wirtualnym podglądzie tylko do odczytu. Narzędzie przetwarza całą zawartość.
 
 Minifikacja, escapowanie i cofanie escapowania
 - Przełączaj narzędzia za pomocą paska bocznego.
@@ -35,6 +35,6 @@ Wygląd
 - Wybór motywu jest zapamiętywany lokalnie przy przełączaniu narzędzi i po ponownym otwarciu rozszerzenia. Dane wejściowe i wyniki nie są zapisywane.
 
 Prywatność
-Całe przetwarzanie odbywa się w przeglądarce. Bez zbierania ani przesyłania danych, żądań sieciowych, zdalnego kodu, reklam i śledzenia. Historia danych wejściowych nie jest zapisywana. Wyniki trafiają do schowka systemowego tylko wtedy, gdy je skopiujesz.
+Całe przetwarzanie odbywa się w przeglądarce. Bez zbierania ani przesyłania danych, żądań sieciowych, zdalnego kodu, reklam i śledzenia. Historia danych wejściowych nie jest zapisywana. Podczas kopiowania rozszerzenie zapisuje w schowku systemowym zaznaczony tekst, dane wejściowe lub wynik. Podczas wklejania przetwarza tylko wklejony tekst.
 
 Duże dane wejściowe i wyniki pozostają w pamięci; wydajność zależy od urządzenia i struktury danych. Widoki wirtualne renderują jednocześnie tylko część zawartości, dlatego wbudowane wyszukiwanie przeglądarki obejmuje wyłącznie wyrenderowaną część. W razie potrzeby użyj wyszukiwania w drzewie lub skopiuj cały wynik. Przy rozległych różnicach tekstowych niedopasowane fragmenty mogą być wyświetlane jako całe bloki.

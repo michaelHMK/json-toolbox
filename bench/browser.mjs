@@ -133,7 +133,7 @@ try {
 
     for (const action of ['minify', 'escape', 'unescape']) {
       await page.goto(`${base}/${action}.html`);
-      const original = '{ "a": 1, "b": [true, null] }';
+      const original = '{\r\n "a": 1, "b": [true, null]\r\n}';
       const source = action === 'unescape' ? JSON.stringify(original).slice(1, -1) : original;
       const expected = action === 'minify' ? '{"a":1,"b":[true,null]}'
         : action === 'escape' ? JSON.stringify(original).slice(1, -1) : original;
@@ -141,8 +141,17 @@ try {
         name: `${action}.json`, mimeType: 'application/json', buffer: Buffer.from('\uFEFF' + source),
       });
       await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, expected);
-      assert.equal(await page.locator('#input').inputValue(), source);
+      assert.equal(await page.locator('#input').inputValue(), source.replaceAll('\r\n', '\n'));
       assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}.json`));
+
+      if (action === 'escape') {
+        const input = page.locator('#input');
+        await input.press('Control+End');
+        await input.press('Space');
+        await input.press('Control+Enter');
+        const edited = JSON.stringify(await input.inputValue()).slice(1, -1);
+        await page.waitForFunction((value) => document.querySelector('#output-text').textContent === value, edited);
+      }
 
       await page.locator('#btn-clear').click();
       await page.evaluate(({ action, source }) => {
@@ -154,9 +163,49 @@ try {
         }
       }, { action, source });
       await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, expected);
-      assert.equal(await page.locator('#input').inputValue(), source);
+      assert.equal(await page.locator('#input').inputValue(), source.replaceAll('\r\n', '\n'));
       assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}-drop.json`));
       assert.equal(await page.locator('#file-drop-hint').isHidden(), true);
+    }
+    // The HTTP preview normally shows bare i18n keys. Expose the line and
+    // column substitutions supplied by the page for the imported file.
+    await page.addInitScript(() => {
+      chrome.i18n = { getMessage: (key, args) => key === 'errLineCol' ? `(line ${args[0]}, column ${args[1]})` : key };
+    });
+    await page.goto(base + '/minify.html');
+    await page.locator('#file-input').setInputFiles({
+      name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{\r\n"a":0,\r"b":]}'),
+    });
+    await page.locator('#error').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#error').textContent(), /\(line 3, column 5\)/);
+    assert.equal(await page.locator('#input').evaluate((el) => el.value.slice(el.selectionStart, el.selectionEnd)), ']');
+
+    await page.goto(base + '/escape.html');
+    await page.locator('#input').fill('copy me');
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} }, configurable: true });
+    });
+    await page.locator('#btn-copy').click();
+    await page.waitForFunction(() => document.querySelector('#status').textContent === 'statusCopied');
+    await page.evaluate(() => {
+      navigator.clipboard.writeText = async () => { throw new Error('denied'); };
+      document.execCommand = () => false;
+    });
+    for (const entry of ['button', 'keyboard']) {
+      if (entry === 'button') await page.locator('#btn-copy').click();
+      else {
+        await page.locator('#btn-clear').click();
+        await page.locator('#input').evaluate((input) => {
+          const clipboardData = new DataTransfer();
+          clipboardData.setData('text/plain', 'x'.repeat(300000));
+          input.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
+        });
+        await page.locator('#input-view').press('Control+a');
+        await page.locator('#input-view').press('Control+c');
+      }
+      await page.waitForFunction(() => document.querySelector('#error').textContent === 'errCopyFailed');
+      assert.equal(await page.locator('#status').textContent(), '');
+      assert.equal(await page.locator('body > textarea').count(), 0, 'fallback textarea must be removed');
     }
   }
   assert.deepEqual(errors, []);

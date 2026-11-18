@@ -1,4 +1,5 @@
 import { createTreeModel } from '../core/tree-model.js';
+import { createChildPathIndex } from '../core/json-path.js';
 
 const MAX_ROWS = 256;
 const PREVIEW_LIMIT = 2000;
@@ -20,7 +21,14 @@ export function createTreeTasks() {
     let model = models.get(side);
     if (!model) {
       if (!request.options) throw Object.assign(new Error('Tree model is no longer available'), { code: 'TREE_MODEL_UNAVAILABLE' });
-      model = createTreeModel({ ...request.options, data: document.data });
+      const options = { ...request.options, data: document.data };
+      if (snapshot.diffs) {
+        const pathKey = side === 'left' ? 'leftPath' : 'rightPath';
+        const paths = snapshot.diffs.map((diff) => diff[pathKey]).filter((path) => path !== null);
+        options.requiredChildren = createChildPathIndex(paths);
+        options.forceExpand = new Set(options.requiredChildren.keys());
+      }
+      model = createTreeModel(options);
       models.set(side, model);
     } else if (request.operation === 'update') {
       model.update(request.options || {});

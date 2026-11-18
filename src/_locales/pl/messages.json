@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Brak danych do parsowania — najpierw wprowadź JSON"
   },
+  "errCopyFailed": {
+    "message": "Nie udało się skopiować tekstu. Zaznacz go i użyj polecenia Kopiuj w przeglądarce."
+  },
   "errNothingToCopy": {
     "message": "Brak treści do skopiowania"
   },

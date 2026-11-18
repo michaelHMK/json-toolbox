@@ -14,9 +14,9 @@ Format dan telusuri
 - Salin hasil lengkap dengan sekali klik.
 
 Impor file lokal
-- Pada halaman Pemformat JSON dan Minifikasi JSON, pilih file atau seret ke panel masukan.
-- Impor satu file .json UTF-8 dalam satu waktu, hingga 50 MiB. Pemformatan atau minifikasi dimulai otomatis setelah impor.
-- Masukan yang lebih panjang dari sekitar dua juta karakter menggunakan pratinjau virtual hanya-baca. Konten lengkap tetap digunakan untuk pemrosesan dan penyalinan hasil.
+- Di kelima halaman alat, pilih file atau seret dan lepaskan file ke panel masukan.
+- Impor satu file .json UTF-8 dalam satu waktu, hingga 50 MiB per file. Alat berjalan otomatis setelah impor. Perbandingan dimulai jika kedua panel masukan berisi teks.
+- File besar ditampilkan dalam pratinjau virtual hanya-baca. Alat tetap memproses seluruh isi file.
 
 Minifikasi, escape, dan hapus escape
 - Beralih antaralat melalui bilah samping.
@@ -35,6 +35,6 @@ Tampilan
 - Pilihan tema disimpan secara lokal untuk semua alat dan tetap berlaku setelah dibuka kembali. Masukan dan hasil tidak disimpan.
 
 Privasi
-Semua pemrosesan berlangsung di browser Anda. Tidak ada pengumpulan atau pengunggahan data, permintaan jaringan, kode jarak jauh, iklan, maupun pelacakan. Riwayat masukan tidak disimpan. Hasil hanya ditulis ke papan klip sistem saat Anda menyalinnya.
+Semua pemrosesan berlangsung di browser Anda. Tidak ada pengumpulan atau pengunggahan data, permintaan jaringan, kode jarak jauh, iklan, maupun pelacakan. Riwayat masukan tidak disimpan. Saat Anda menyalin, ekstensi menulis teks yang dipilih, masukan, atau hasil ke papan klip sistem. Saat Anda menempelkan teks, ekstensi hanya memproses teks yang Anda tempelkan.
 
 Masukan dan hasil berukuran besar tetap berada di memori; kinerja bergantung pada perangkat dan struktur data Anda. Tampilan virtual hanya merender sebagian konten pada satu waktu, sehingga fitur Cari bawaan browser hanya mencakup bagian yang dirender. Gunakan pencarian pohon atau salin hasil lengkap bila diperlukan. Untuk perbedaan teks yang luas, bagian yang tidak cocok dapat ditampilkan sebagai blok utuh.

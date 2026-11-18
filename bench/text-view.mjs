@@ -100,12 +100,40 @@ try {
     'a\u0301'.repeat(10000) + 'FIRST_END\n' + 'e\u0301'.repeat(10000) + 'COMBINING_END',
     '👨‍👩‍👧‍👦'.repeat(10000) + 'COMBINING_END']) {
     await page.evaluate((text) => { textView.setText(text); output.scrollLeft = output.scrollWidth; }, text);
-    await settle();
+    await page.waitForFunction(() => output.textContent.includes('COMBINING_END'));
     await visibleMarker('#output-text', 'COMBINING_END');
     await page.evaluate(() => textView.refresh());
     await settle();
     await visibleMarker('#output-text', 'COMBINING_END');
   }
+  // Ctrl+End locates the end of the last row even as a wider row above it
+  // grows the scrollbar. A subsequent native scroll can still reach that row.
+  for (const jump of ['Ctrl+End', 'revealPosition']) {
+    const lastRowWidth = await page.evaluate((jump) => {
+      const source = '宽'.repeat(1000000) + 'WIDE_END\n' + '末'.repeat(100000) + 'LAST_END';
+      textView.clear();
+      textView.setText(source);
+      if (jump === 'Ctrl+End') output.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', ctrlKey: true, bubbles: true }));
+      else textView.revealPosition(source.length - 1);
+      return output.scrollWidth;
+    }, jump);
+    await page.waitForFunction((width) => output.scrollWidth > width * 2, lastRowWidth);
+    await visibleMarker('#output-text', 'LAST_END');
+    if (jump === 'revealPosition') assert.equal(await page.evaluate(() => document.getSelection().toString()), 'D');
+  }
+  await page.evaluate(() => { output.scrollLeft = output.scrollWidth; });
+  await page.waitForFunction(() => output.textContent.includes('WIDE_END'));
+  await visibleMarker('#output-text', 'WIDE_END');
+  // The first 1024 code units take only a few pixels. Later frames must
+  // fill the viewport and keep an explicitly revealed selection at its offset.
+  await page.evaluate(() => {
+    const prefix = ('a' + '\u0301'.repeat(31)).repeat(1024);
+    textView.setText(prefix + '選' + '中'.repeat(2000000) + '\n' + prefix + 'NEXT_ROW');
+    textView.revealPosition(prefix.length);
+  });
+  await page.waitForFunction(() => output.textContent.includes('NEXT_ROW'));
+  await visibleMarker('#output-text', 'NEXT_ROW');
+  assert.equal(await page.evaluate(() => document.getSelection().toString()), '選');
   await page.evaluate(() => { output.hidden = true; textView.setText('a\n'.repeat(5000) + 'HIDDENEND'); });
   assert.equal(await page.locator('.virtual-text-row').count(), 0);
   await page.evaluate(() => { output.hidden = false; textView.refresh(); });

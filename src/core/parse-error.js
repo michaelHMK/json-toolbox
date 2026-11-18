@@ -1,9 +1,13 @@
 export function errorLocationAtPosition(text, position) {
   const before = text.slice(0, position);
-  const newline = before.lastIndexOf('\n');
+  const lineBreaks = /\r\n?|\n/g;
   let line = 1;
-  for (let i = 0; i < before.length; i++) if (before.charCodeAt(i) === 10) line++;
-  return { position, line, column: position - newline };
+  let lineStart = 0;
+  while (lineBreaks.test(before)) {
+    line++;
+    lineStart = lineBreaks.lastIndex;
+  }
+  return { position, line, column: position - lineStart + 1 };
 }
 
 // Only used after native parsing fails without an offset. Validate iteratively

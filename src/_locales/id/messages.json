@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Tidak ada yang dapat diurai — masukkan JSON terlebih dahulu"
   },
+  "errCopyFailed": {
+    "message": "Gagal menyalin. Pilih teks dan gunakan perintah Salin di browser."
+  },
   "errNothingToCopy": {
     "message": "Tidak ada yang dapat disalin"
   },

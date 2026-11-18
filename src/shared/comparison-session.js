@@ -108,17 +108,21 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
       return textRequest.promise;
     }
 
-    async function requestTree(side, payload) {
+    async function requestSnapshot(action, payload) {
       const version = generation;
       const ready = await ensureData(true);
       if (!isCurrent(comparison, version)) return cancelled();
       if (!ready.ok) return ready;
-      const response = await run('tree', { ...payload, kind: 'comparison', side, snapshotId });
+      const response = await run(action, { ...payload, snapshotId });
       if (!isCurrent(comparison, version)) return cancelled();
       return remember(response, version, comparison);
     }
 
-    comparison.handle = { ensureData: () => ensureData(), textDiff, requestTree };
+    comparison.handle = {
+      ensureData: () => ensureData(), textDiff,
+      requestTree: (side, payload) => requestSnapshot('tree', { ...payload, kind: 'comparison', side }),
+      checkPair: (side, path, knownAncestor) => requestSnapshot('comparisonPair', { side, path, knownAncestor }),
+    };
     return comparison;
   }
 

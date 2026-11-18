@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Nothing to parse — enter JSON first"
   },
+  "errCopyFailed": {
+    "message": "Copy failed. Select the text and use your browser’s Copy command."
+  },
   "errNothingToCopy": {
     "message": "Nothing to copy"
   },

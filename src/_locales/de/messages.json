@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Kein Inhalt zum Parsen — bitte zuerst JSON eingeben"
   },
+  "errCopyFailed": {
+    "message": "Kopieren fehlgeschlagen. Wählen Sie den Text aus und verwenden Sie den Kopierbefehl Ihres Browsers."
+  },
   "errNothingToCopy": {
     "message": "Kein Inhalt zum Kopieren"
   },

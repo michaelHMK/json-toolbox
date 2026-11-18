@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSessionWorker } from './helpers/session-worker.js';
 import { loadPage } from './helpers/page-dom.js';
+import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
 
 function setup() {
   const worker = createSessionWorker();
@@ -148,6 +149,38 @@ test('a late tree parse cannot override a newer request to keep text visible', a
   assert.equal(page.state.data.value, 1);
   page.doClear();
 });
+
+for (const outcome of ['worker error', 'cancel', 'return to text', 'crash after returning to text']) {
+  test(`first remote window keeps formatted text visible during ${outcome} and permits retry`, async () => {
+    const { page, workers, held } = setup();
+    page.get('input').value = JSON.stringify({ data: 'x'.repeat(LARGE_INPUT_THRESHOLD) });
+    await page.doFormat();
+    held.add('tree');
+    const pending = page.get('view-tree').click();
+    await new Promise(setImmediate);
+    const firstWindow = workers[0].requests.at(-1);
+    assert.equal(firstWindow.action, 'tree');
+    assertView(page, 'text');
+    assert.equal(page.get('output-text').hidden, false);
+    assert.match(page.get('output-text').textContent, /"data"/);
+    if (outcome === 'worker error') workers[0].crash();
+    else if (outcome === 'cancel') await page.get('btn-cancel').click();
+    else {
+      await page.get('view-text').click();
+      if (outcome === 'return to text') workers[0].complete(firstWindow);
+      else workers[0].crash();
+    }
+    await pending;
+    assertView(page, 'text');
+    assert.equal(page.getTree(), null);
+    if (outcome === 'worker error') assert.equal(page.get('error').textContent, 'errWorkerFailed');
+    else assert.equal(page.get('error').hidden, true);
+    held.clear();
+    await showTree(page);
+    assert.ok(page.get('tree').querySelectorAll('.key').some((entry) => entry.textContent.includes('data')));
+    page.doClear();
+  });
+}
 
 test('cancelling a search after switching views leaves a built and usable tree', async () => {
   const { page, held } = setup();

@@ -120,6 +120,21 @@ export function createTaskHandler() {
         return options.includeData === false
           ? { snapshotId: requireSnapshot(comparison, options.snapshotId).id }
           : comparisonData(requireSnapshot(comparison, options.snapshotId));
+      case 'comparisonPair': {
+        const snapshot = requireSnapshot(comparison, options.snapshotId);
+        if (options.side !== 'left' && options.side !== 'right') throw taskError('TASK_FAILED', 'Invalid tree side');
+        if (options.path === options.knownAncestor) return { allowed: true };
+        let value = snapshot[options.side].data;
+        let offset = 0;
+        // A recorded move proves its full path. Below it, only an actual
+        // keyed array with omitted mappings makes an implicit index unsafe.
+        for (const segment of options.path.slice(1).split('/')) {
+          if (offset >= options.knownAncestor.length && snapshot.truncatedArrays?.has(value)) return { allowed: false };
+          offset += segment.length + 1;
+          value = value?.[segment.replace(/~1/g, '/').replace(/~0/g, '~')];
+        }
+        return { allowed: true };
+      }
       case 'tree': {
         if (options.kind === 'comparison') {
           const snapshot = requireSnapshot(comparison, options.snapshotId);
@@ -150,12 +165,14 @@ export function createTaskHandler() {
       case 'diff': {
         const left = parseComparison(text, 'left');
         const right = options.text2 === text ? left : parseComparison(options.text2, 'right');
+        const truncatedArrays = new WeakSet();
         const result = diffData(left.data, right.data, {
           ...options,
+          onTruncatedArray: (array) => truncatedArrays.add(array),
           leftNumberLiterals: left.numberLiterals,
           rightNumberLiterals: right.numberLiterals,
         });
-        const snapshot = { id: ++snapshotSequence, left, right, textDiff: null };
+        const snapshot = { id: ++snapshotSequence, left, right, diffs: result.diffs, truncatedArrays, textDiff: null };
         if (options.includeData !== false) Object.assign(result, comparisonData(snapshot));
         comparison = options.retainSnapshot ? snapshot : null;
         if (comparison) result.snapshotId = comparison.id;

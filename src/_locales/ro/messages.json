@@ -246,6 +246,9 @@
   "errNothingToParse": {
     "message": "Nu există conținut de analizat — introdu mai întâi JSON"
   },
+  "errCopyFailed": {
+    "message": "Copierea a eșuat. Selectează textul și folosește comanda Copiază din browser."
+  },
   "errNothingToCopy": {
     "message": "Nu există conținut de copiat"
   },

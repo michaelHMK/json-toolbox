@@ -35,18 +35,12 @@ export function unescapeJsonString(s) {
       throw error;
     }
   }
-  let out = '';
-  for (let i = 0; i < s.length; i++) {
-    const code = s.charCodeAt(i);
-    if (code < 0x20) {
-      if (code === 10) out += '\\n';
-      else if (code === 13) out += '\\r';
-      else if (code === 9) out += '\\t';
-      else out += '\\u' + code.toString(16).padStart(4, '0');
-    } else {
-      out += s[i];
-    }
-  }
+  const out = s.replace(/[\u0000-\u001f]/g, (control) => {
+    if (control === '\n') return '\\n';
+    if (control === '\r') return '\\r';
+    if (control === '\t') return '\\t';
+    return '\\u' + control.charCodeAt(0).toString(16).padStart(4, '0');
+  });
   const wrapped = '"' + out + '"';
   try {
     return JSON.parse(wrapped);

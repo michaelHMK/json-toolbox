@@ -14,9 +14,9 @@ JSON Toolbox giúp bạn định dạng, duyệt và so sánh JSON trong một t
 - Sao chép toàn bộ kết quả chỉ bằng một lần nhấp.
 
 Nhập tệp cục bộ
-- Trên trang Định dạng JSON và Rút gọn JSON, chọn tệp hoặc kéo tệp vào khung đầu vào.
-- Nhập mỗi lần một tệp .json mã hóa UTF-8, tối đa 50 MiB. Việc định dạng hoặc rút gọn tự động bắt đầu sau khi nhập.
-- Đầu vào dài hơn khoảng hai triệu ký tự sử dụng bản xem trước ảo chỉ đọc. Toàn bộ nội dung vẫn được dùng để xử lý và sao chép kết quả.
+- Trên cả năm trang công cụ, bạn có thể chọn tệp hoặc kéo thả tệp vào khung đầu vào.
+- Mỗi lần nhập một tệp .json mã hóa UTF-8, tối đa 50 MiB. Công cụ tự động chạy sau khi nhập. Công cụ so sánh bắt đầu khi cả hai khung đầu vào đều có văn bản.
+- Tệp lớn mở trong bản xem trước ảo chỉ đọc. Công cụ vẫn xử lý toàn bộ nội dung.
 
 Rút gọn, thêm escape và bỏ escape
 - Chuyển giữa các công cụ chuyên biệt bằng thanh bên.
@@ -35,6 +35,6 @@ Giao diện
 - Lựa chọn giao diện được ghi nhớ cục bộ giữa các công cụ và sau khi mở lại. Nội dung đầu vào và kết quả không được lưu.
 
 Quyền riêng tư
-Mọi xử lý đều diễn ra trong trình duyệt của bạn. Không thu thập hay tải dữ liệu lên, không gửi yêu cầu mạng, không có mã từ xa, quảng cáo hay theo dõi. Lịch sử đầu vào không được lưu. Kết quả chỉ được ghi vào bộ nhớ tạm của hệ thống khi bạn sao chép.
+Mọi xử lý đều diễn ra trong trình duyệt của bạn. Không thu thập hay tải dữ liệu lên, không gửi yêu cầu mạng, không có mã từ xa, quảng cáo hay theo dõi. Lịch sử đầu vào không được lưu. Khi bạn sao chép, tiện ích ghi văn bản đã chọn, nội dung đầu vào hoặc kết quả vào bộ nhớ tạm của hệ thống. Khi bạn dán, tiện ích chỉ xử lý văn bản bạn cung cấp.
 
 Đầu vào và kết quả lớn được giữ trong bộ nhớ; hiệu suất phụ thuộc vào thiết bị và cấu trúc dữ liệu của bạn. Chế độ xem ảo chỉ hiển thị một phần nội dung tại mỗi thời điểm, nên tính năng Tìm của trình duyệt chỉ tìm trong phần đã hiển thị. Hãy dùng tìm kiếm trong cây hoặc sao chép toàn bộ kết quả khi cần. Với các khác biệt văn bản lớn, những phần không khớp có thể được hiển thị thành khối nguyên vẹn.

@@ -20,9 +20,9 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 - 一键复制结果
 
 本地文件导入：
-- 格式化和压缩页面支持文件选择器，也可将文件拖放到输入区
-- 每次导入一个 UTF-8 编码的 `.json` 文件，最大 50 MiB；导入后自动执行格式化或压缩
-- 超过约 200 万字符的输入使用只读虚拟预览，处理和复制结果仍使用完整内容
+- 五个工具页均可通过文件选择器导入文件，也可将文件拖放到输入区
+- 每次导入一个 UTF-8 编码的 `.json` 文件，最大 50 MiB。导入后自动执行当前操作，对比页在两侧都有输入时开始对比
+- 大文件导入后使用只读虚拟预览，工具仍处理完整内容
 
 压缩、转义与去转义页面：
 - 每个功能使用独立页面，通过统一侧边导航切换
@@ -40,7 +40,7 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 - 在侧边栏查看缩略预览，选择正常、护眼或暗色模式；默认为正常模式
 - 主题选择仅保存在本地，切换工具页或重新打开后恢复，不保存输入和结果
 
-隐私：所有处理在浏览器本地完成，不收集或上传数据，不发起网络请求，不加载远程代码，无广告或追踪。不保存输入历史，仅在你执行复制时将结果写入系统剪贴板。
+隐私：所有处理在浏览器本地完成，不收集或上传数据，不发起网络请求，不加载远程代码，无广告或追踪。不保存输入历史。执行复制时，扩展会将选中的文本、输入内容或处理结果写入系统剪贴板。粘贴时只处理你粘贴的文本。
 
 大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖已渲染的部分，可使用树搜索或复制完整结果。输入与结果仍完整保留在内存中；差异较多时，未匹配的文本区间可能按整块展示。
 
@@ -62,9 +62,9 @@ Formatter page:
 - One-click copy
 
 Local file import:
-- On the Formatter and Minify pages, choose a file or drag it into the input pane
-- Import one UTF-8 `.json` file at a time, up to 50 MiB; formatting or minification starts automatically after import
-- Inputs longer than about two million characters use a read-only virtual preview; processing and copying results still use the complete content
+- On any of the five tool pages, choose a file or drop it into an input pane
+- Import one UTF-8 `.json` file at a time, up to 50 MiB each. The tool runs automatically after import. Compare runs when both inputs contain text
+- Large imports open in a read-only virtual preview. The tool still processes the full input
 
 Minify, escape and unescape pages:
 - A separate page for each tool, connected by consistent sidebar navigation
@@ -82,7 +82,7 @@ Appearance:
 - Choose Normal, Eye comfort or Dark from the sidebar, with thumbnail previews; Normal is the default
 - Only the theme choice is saved locally and restored across tools and after reopening; input and results are not saved
 
-Privacy: all processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved, and results are written to the system clipboard only when you copy.
+Privacy: all processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. When you copy, the extension writes the selected text, input or result to the system clipboard. When you paste, it processes only the text you provide.
 
 Large inputs and results use virtual rendering, so native browser Find covers only the rendered portion. Tree search and copying complete results remain available. Complete inputs and results stay in memory; for extensive text differences, unmatched sections may be shown as whole blocks.
 
@@ -176,7 +176,7 @@ node scripts/store-assets/generate.mjs --promos-only
 
 `listing.txt` 是供上架时复制的独立文案，不会随图片生成自动翻译；修改功能或 `src/_locales/` 中的名称、简介后，应同步检查对应文案。
 
-维护说明：文件导入上限为 `50 * 1024 * 1024` 字节。只读虚拟预览阈值按 `text.length > 2 * 1024 * 1024` 判断，即 UTF-16 代码单元数，不是文件字节数；上架文案因此使用“超过约 200 万字符”，避免误写成“超过 2 MiB 的文件”。
+维护说明：每个导入文件的上限为 50 MiB。导入文本超过 262,144 个 UTF-16 码元（`text.length > 256 * 1024`）时切换为只读虚拟预览。
 
 ## 审核测试说明
 
@@ -184,8 +184,8 @@ No account, credentials or network connection are needed.
 
 1. Install the extension, then click its toolbar icon to open the JSON Toolbox tab.
 2. On JSON Formatter, click Sample and then Format. Switch to Tree to expand nodes and search keys or values.
-3. Open JSON Minify, JSON Escape and JSON Unescape from the sidebar. Each page has a Sample button and an action button to produce a local result. Copy writes the result to the clipboard only when clicked.
-4. On Formatter or Minify, use Import file or drop one UTF-8 `.json` file of up to 50 MiB into the input pane. Formatting or minification runs automatically. Long input uses a read-only virtual preview while processing retains the full content.
+3. Open JSON Minify, JSON Escape and JSON Unescape from the sidebar. Each page has a Sample button and an action button to produce a local result. Click Copy to copy the result, or select some input text and use the copy shortcut.
+4. On any of the five tool pages, use Import file or drop one UTF-8 `.json` file of up to 50 MiB into an input pane. Processing starts automatically after import. On Compare, fill both inputs to start the comparison. Large imports open in a read-only virtual preview and processing uses the full input.
 5. Open JSON Compare and click Sample, then Compare. Inspect the structural differences and switch to the text comparison view. Array key matching and ignored paths are optional controls.
 6. Open Appearance in the sidebar. Check the three thumbnail previews, select Eye comfort or Dark, then switch tools or reopen the page to confirm the selection is remembered. Normal is the default before a selection is saved. Press Escape or click outside to close the picker.
 7. All operations run locally. Only the theme preference is saved locally; input and results are not saved. No host permissions, remote code, analytics or user-data uploads are used.

@@ -3,6 +3,18 @@ import assert from 'node:assert/strict';
 import { diffData } from '../src/core/structural-diff.js';
 import { performance } from 'node:perf_hooks';
 
+test('structural diff counts type changes across JSON primitives and containers', () => {
+  const result = diffData(
+    { qty: 7, flag: null, items: [], value: 'old', active: false, extra: {} },
+    { qty: '7', flag: false, items: {}, value: 'new', active: true, extra: null },
+  );
+  assert.deepEqual(result.stats, { added: 0, removed: 0, changed: 2, typeChanged: 4 });
+  assert.deepEqual(result.diffs.map(({ leftPath, type }) => [leftPath, type]), [
+    ['/qty', 'typeChanged'], ['/flag', 'typeChanged'], ['/items', 'typeChanged'],
+    ['/value', 'changed'], ['/active', 'changed'], ['/extra', 'typeChanged'],
+  ]);
+});
+
 test('structural diff retains independent escaped sibling paths and numeric previews', () => {
   const left = { 'a/b': { '~': [1, { value: 2 }] }, sibling: { gone: false } };
   const right = { 'a/b': { '~': [3, { value: 4, added: true }] }, sibling: { next: null } };
@@ -37,6 +49,9 @@ test('keyed arrays keep unique-key matching, nested pairs and exact ignore seman
     ['/list/0/child/0', '/list/1/child/1'],
     ['/list/0/child/1', '/list/1/child/0'],
   ]);
+  assert.deepEqual(result.unpaired.left.get('/list'), [1, 1]);
+  assert.deepEqual(result.unpaired.right.get('/list'), [0, 0, 2, 2]);
+  assert.equal(result.pairsTruncated, false);
   assert.deepEqual(result.diffs.map(({ type, leftPath, rightPath }) => [type, leftPath, rightPath]), [
     ['removed', '/list/1', null],
     ['added', null, '/list/0'],
@@ -44,6 +59,19 @@ test('keyed arrays keep unique-key matching, nested pairs and exact ignore seman
     ['changed', '/metadata/update', '/metadata/update'],
   ]);
   assert.equal(result.keyFallback, false);
+});
+
+test('large consecutive additions and removals use one range per array side', () => {
+  let left = Array.from({ length: 100000 }, (_, id) => ({ id }));
+  let right = left.map(({ id }) => ({ id: id + left.length }));
+  for (let i = 0; i < 20; i++) { left = { nested: left }; right = { nested: right }; }
+  const result = diffData(left, right, { keyField: 'id' });
+  const parent = '/nested'.repeat(20);
+  assert.deepEqual(result.unpaired.left, new Map([[parent, [0, 99999]]]));
+  assert.deepEqual(result.unpaired.right, new Map([[parent, [0, 99999]]]));
+  assert.equal(result.pairs.length, 0);
+  assert.equal(result.pairsTruncated, false);
+  assert.deepEqual(result.stats, { added: 100000, removed: 100000, changed: 0, typeChanged: 0 });
 });
 
 test('identical references report key fallback without duplicate-key differences', () => {

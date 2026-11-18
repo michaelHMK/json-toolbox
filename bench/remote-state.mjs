@@ -130,7 +130,15 @@ try {
   await page.waitForSelector('#tree-left .entry.current');
   await settle();
   const initial = await capture('initial-construction', started);
-  assert.ok(initial.messages.some((message) => message.requiredChildren === 105001), 'fixture must preserve the reviewed 105,001-entry filter index');
+  if (baseline) {
+    assert.ok(initial.messages.some((message) => message.requiredChildren === 105001), 'baseline must include the reviewed filter index');
+  } else {
+    for (const side of ['left', 'right']) {
+      // All ancestors must be open even before the first diff is revealed.
+      const reply = initial.replies.find((reply) => reply.side === side && reply.operation === 'update');
+      assert.equal(reply?.rowCount, 2 + differences * (2 * (depth + 1) + 1));
+    }
+  }
 
   started = await mark('dense-diff-scroll');
   for (let step = 1; step <= 5; step++) {
@@ -252,6 +260,8 @@ try {
     assert.equal(recovery.messages.filter((message) => message.hasOptions).length, 1, 'a replacement Worker receives one full-state recovery');
     for (const phase of phases) for (const message of phase.messages) {
       if (message.action === 'tree' && !fullStateOperations.has(message.operation)) assert.equal(message.hasOptions, false, `${message.operation} must carry only its incremental payload`);
+      assert.equal(message.requiredChildren, 0, 'comparison filter indexes stay in the Worker');
+      assert.equal(message.forceExpand, 0, 'comparison ancestor indexes stay in the Worker');
     }
     for (const message of recovery.messages) {
       if (message.hasOptions) assert.ok(fullStateOperations.has(message.operation));

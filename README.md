@@ -146,6 +146,14 @@ node bench/theme.mjs
 
 Browser check directory arguments such as `.` refer to a checkout; the scripts load its `src/` extension directory and also recognize the root layout of older checkouts. You can pass an extension directory directly.
 
+CI also verifies the release ZIP checksum, unpacks the extension, starts its background worker, and runs one operation on each of the five tool pages. To run this locally, use Playwright's full Chromium browser or set `CHROMIUM_EXECUTABLE` to Chromium or Chrome for Testing. Pass the ZIP produced by the build.
+
+```bash
+npm run build:release
+version=$(node -p "require('./src/manifest.json').version")
+node bench/release-smoke.mjs "dist/json-toolbox-${version}.zip"
+```
+
 These checks cover large file imports, virtual inputs, large text and trees, navigation, copying, focus, view switching, state recovery, and deeply nested Worker transfers. `performance.mjs` uses local HTTP pages and real Workers; its timings exclude extension installation, startup, and system clipboard access. Paste/drop events are synthesized to measure application event handling.
 
 `native-paste.mjs` uses Chromium's clipboard and the real paste shortcut to verify large source previews and complete copying on Escape and Unescape. The default input is about 20 MiB, adjustable with `BENCH_PASTE_MIB`. Timing starts at the paste event and ends after two animation frames; fixture construction and clipboard writing are excluded. Set `BENCH_SCREENSHOT_DIR` to save screenshots, or use `BENCH_VERIFY=0` with an older checkout to record a baseline. It measures each page once; compare timings by running serially in the same environment.

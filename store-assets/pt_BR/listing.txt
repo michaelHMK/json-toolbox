@@ -14,9 +14,9 @@ Formatar e explorar
 - Copie o resultado completo com um clique.
 
 Importar arquivos locais
-- Nas páginas de formatação e minificação, escolha um arquivo ou arraste-o para a área de entrada.
-- Importe um arquivo .json em UTF-8 por vez, de até 50 MiB. A formatação ou a minificação começa automaticamente após a importação.
-- Entradas com mais de cerca de dois milhões de caracteres usam uma prévia virtual somente leitura. O processamento e a cópia do resultado continuam usando o conteúdo completo.
+- Em qualquer uma das cinco ferramentas, escolha um arquivo ou arraste-o para a área de entrada.
+- Importe um arquivo .json em UTF-8 por vez, de até 50 MiB. A ferramenta é executada automaticamente após a importação. A comparação começa quando as duas entradas contêm texto.
+- Arquivos grandes abrem em uma prévia virtual somente leitura. A ferramenta processa todo o conteúdo.
 
 Minificar, escapar e remover escapes
 - Alterne entre as ferramentas pela barra lateral.
@@ -35,6 +35,6 @@ Aparência
 - Apenas a escolha do tema é salva localmente, para ser restaurada ao trocar de ferramenta ou reabrir a extensão. As entradas e os resultados não são salvos.
 
 Privacidade
-Todo o processamento acontece no navegador. Sem coleta ou envio de dados, solicitações de rede, código remoto, anúncios ou rastreamento. O histórico de entradas não é salvo. O resultado só é gravado na área de transferência do sistema quando você o copia.
+Todo o processamento acontece no navegador. Sem coleta ou envio de dados, solicitações de rede, código remoto, anúncios ou rastreamento. O histórico de entradas não é salvo. Quando você copia, a extensão grava o texto selecionado, a entrada ou o resultado na área de transferência do sistema. Quando você cola, ela processa apenas o texto que você fornece.
 
 As entradas e os resultados completos permanecem na memória; o desempenho depende do dispositivo e da estrutura dos dados. As visualizações virtuais renderizam apenas parte do conteúdo por vez, então a busca nativa do navegador cobre somente a parte renderizada. Use a busca na árvore ou copie o resultado completo quando necessário. Quando há muitas diferenças, os trechos de texto sem correspondência podem ser exibidos em blocos inteiros.

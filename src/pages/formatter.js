@@ -4,7 +4,6 @@ import { createDocumentSession } from '../shared/document-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
-import { copyText } from '../shared/clipboard.js';
 import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
@@ -15,9 +14,7 @@ initializePage();
 const $ = (id) => document.getElementById(id);
 
 const inputEl = $('input');
-const textInput = createTextInput(inputEl, $('input-view'));
 const outputTextEl = $('output-text');
-const outputView = createVirtualTextView(outputTextEl);
 const treeEl = $('tree');
 const statusEl = $('status');
 const busyEl = $('busy');
@@ -63,9 +60,11 @@ const session = createDocumentSession({
 });
 
 /* ================= 状态展示 ================= */
-const { setStatus, showError, hideError, showParseError } = createFeedback({
-  statusEl, errorEl, selectInputPosition: textInput.selectPosition,
+const { setStatus, showError, hideError, showParseError, copyWithFeedback } = createFeedback({
+  statusEl, errorEl, selectInputPosition: (position, line) => textInput.selectPosition(position, line),
 });
+const textInput = createTextInput(inputEl, $('input-view'), { copy: copyWithFeedback });
+const outputView = createVirtualTextView(outputTextEl, { copy: copyWithFeedback });
 
 const fileImport = createFileImport({
   dropZone: $('input-pane'),
@@ -111,11 +110,19 @@ function showText(text) {
   outputView.setText(text, state.outputLineIndex);
 }
 
-function showTree() {
-  renderTree();
+async function showTree(requestVersion) {
+  if (!treeView || !state.remote || treeDocument !== displayedDocument) renderTree(false);
+  const candidate = treeView;
+  if (candidate.ready && await candidate.ready === false) {
+    if (candidate === treeView) destroyTree();
+    return false;
+  }
+  if (requestVersion !== viewRequestVersion || candidate !== treeView) return false;
   state.view = 'tree';
   updateViewButtons();
+  candidate.refresh();
   if (searchInput.value.trim()) runSearch();
+  return true;
 }
 
 function currentText() {
@@ -148,6 +155,7 @@ async function ensureTreeData() {
 }
 
 async function setView(view) {
+  if (view === 'text' && state.view === 'text' && pendingView === 'tree') destroyTree();
   const requestVersion = ++viewRequestVersion;
   pendingView = view;
   // Keep the rendered view visible until its replacement is ready. A pending
@@ -160,9 +168,9 @@ async function setView(view) {
   if (view === 'tree') {
     const ready = await ensureTreeData();
     if (requestVersion !== viewRequestVersion) return false;
-    pendingView = null;
-    if (!ready) return false;
-    showTree();
+    const shown = ready && await showTree(requestVersion);
+    if (requestVersion === viewRequestVersion) pendingView = null;
+    return shown;
   } else {
     pendingView = null;
     showText(state.outputText);
@@ -190,9 +198,7 @@ async function doFormat() {
     }
     const nextView = pendingView ?? state.view;
     invalidateViewRequest();
-    treeView?.destroy();
-    treeView = null;
-    treeDocument = null;
+    destroyTree();
     outputView.clear();
     state.outputText = res.result.text;
     state.outputLineIndex = res.result.lineIndex ?? null;
@@ -201,11 +207,11 @@ async function doFormat() {
     state.numberLiterals = displayedDocument.numberLiterals;
     state.remote = displayedDocument.remote && displayedDocument.ready;
     state.matchIndex = -1;
-    if (nextView === 'tree' && displayedDocument.ready) {
-      showTree();
+    if (nextView === 'tree' && displayedDocument.ready && !state.remote) {
+      followup = showTree(viewRequestVersion);
     } else {
-      // A lazy tree still needs a snapshot transfer. Keep the available text
-      // usable if that follow-up is cancelled or fails.
+      // Keep the formatted text usable during both parsing and the first
+      // remote window request, including when formatting from the tree view.
       showText(state.outputText);
       if (nextView === 'tree') followup = setView('tree');
     }
@@ -220,9 +226,7 @@ async function doCopy() {
     showError(t('errNothingToCopy'));
     return;
   }
-  hideError();
-  await copyText(text);
-  setStatus(t('statusCopied', [text.length.toLocaleString()]));
+  await copyWithFeedback(text);
 }
 
 function resetDocument() {
@@ -230,9 +234,7 @@ function resetDocument() {
   clearTimeout(searchTimer);
   searchTimer = 0;
   session.clear();
-  treeView?.destroy();
-  treeView = null;
-  treeDocument = null;
+  destroyTree();
   displayedDocument = null;
   textInput.clear();
   state.outputText = '';
@@ -279,7 +281,13 @@ function fillSample() {
 }
 
 /* ================= 树形视图 ================= */
-function renderTree() {
+function destroyTree() {
+  treeView?.destroy();
+  treeView = null;
+  treeDocument = null;
+}
+
+function renderTree(navigate = true) {
   const options = {
     data: state.data,
     numberLiterals: state.numberLiterals,
@@ -290,23 +298,23 @@ function renderTree() {
     highlights: state.highlights,
   };
   if (treeView && (Boolean(treeDocument) !== state.remote || (treeDocument && treeDocument !== displayedDocument))) {
-    treeView.destroy();
-    treeView = null;
-    treeDocument = null;
+    destroyTree();
   }
   if (treeView) treeView.update(options);
   else if (state.remote) {
     treeDocument = displayedDocument;
     const document = treeDocument;
-    treeView = createRemoteTree(treeEl, { ...options, request: async (payload) => {
+    const candidate = createRemoteTree(treeEl, { ...options, request: async (payload) => {
       const response = await document.requestTree(payload);
+      if (treeView !== candidate) return { ok: false, cancelled: true };
       const applied = session.apply(response, () => {
         if (!response.ok && response.code !== 'TREE_MODEL_UNAVAILABLE') showError(taskErrorMessage(response));
       });
       return applied ? response : { ok: false, cancelled: true };
     } });
+    treeView = candidate;
   } else treeView = createVirtualTree(treeEl, options);
-  if (state.searchQuery && state.matchCount > 0) updateMatchNav(0);
+  if (navigate && state.searchQuery && state.matchCount > 0) updateMatchNav(0);
   else {
     treeView.setCurrent(null);
     updateMatchInfo();
