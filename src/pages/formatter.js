@@ -111,11 +111,19 @@ function showText(text) {
   outputView.setText(text, state.outputLineIndex);
 }
 
-function showTree() {
-  renderTree();
+async function showTree(requestVersion) {
+  if (!treeView || !state.remote || treeDocument !== displayedDocument) renderTree(false);
+  const candidate = treeView;
+  if (candidate.ready && await candidate.ready === false) {
+    if (candidate === treeView) destroyTree();
+    return false;
+  }
+  if (requestVersion !== viewRequestVersion || candidate !== treeView) return false;
   state.view = 'tree';
   updateViewButtons();
+  candidate.refresh();
   if (searchInput.value.trim()) runSearch();
+  return true;
 }
 
 function currentText() {
@@ -160,9 +168,9 @@ async function setView(view) {
   if (view === 'tree') {
     const ready = await ensureTreeData();
     if (requestVersion !== viewRequestVersion) return false;
-    pendingView = null;
-    if (!ready) return false;
-    showTree();
+    const shown = ready && await showTree(requestVersion);
+    if (requestVersion === viewRequestVersion) pendingView = null;
+    return shown;
   } else {
     pendingView = null;
     showText(state.outputText);
@@ -190,9 +198,7 @@ async function doFormat() {
     }
     const nextView = pendingView ?? state.view;
     invalidateViewRequest();
-    treeView?.destroy();
-    treeView = null;
-    treeDocument = null;
+    destroyTree();
     outputView.clear();
     state.outputText = res.result.text;
     state.outputLineIndex = res.result.lineIndex ?? null;
@@ -201,11 +207,11 @@ async function doFormat() {
     state.numberLiterals = displayedDocument.numberLiterals;
     state.remote = displayedDocument.remote && displayedDocument.ready;
     state.matchIndex = -1;
-    if (nextView === 'tree' && displayedDocument.ready) {
-      showTree();
+    if (nextView === 'tree' && displayedDocument.ready && !state.remote) {
+      followup = showTree(viewRequestVersion);
     } else {
-      // A lazy tree still needs a snapshot transfer. Keep the available text
-      // usable if that follow-up is cancelled or fails.
+      // Keep the formatted text usable during both parsing and the first
+      // remote window request, including when formatting from the tree view.
       showText(state.outputText);
       if (nextView === 'tree') followup = setView('tree');
     }
@@ -230,9 +236,7 @@ function resetDocument() {
   clearTimeout(searchTimer);
   searchTimer = 0;
   session.clear();
-  treeView?.destroy();
-  treeView = null;
-  treeDocument = null;
+  destroyTree();
   displayedDocument = null;
   textInput.clear();
   state.outputText = '';
@@ -279,7 +283,13 @@ function fillSample() {
 }
 
 /* ================= 树形视图 ================= */
-function renderTree() {
+function destroyTree() {
+  treeView?.destroy();
+  treeView = null;
+  treeDocument = null;
+}
+
+function renderTree(navigate = true) {
   const options = {
     data: state.data,
     numberLiterals: state.numberLiterals,
@@ -290,9 +300,7 @@ function renderTree() {
     highlights: state.highlights,
   };
   if (treeView && (Boolean(treeDocument) !== state.remote || (treeDocument && treeDocument !== displayedDocument))) {
-    treeView.destroy();
-    treeView = null;
-    treeDocument = null;
+    destroyTree();
   }
   if (treeView) treeView.update(options);
   else if (state.remote) {
@@ -306,7 +314,7 @@ function renderTree() {
       return applied ? response : { ok: false, cancelled: true };
     } });
   } else treeView = createVirtualTree(treeEl, options);
-  if (state.searchQuery && state.matchCount > 0) updateMatchNav(0);
+  if (navigate && state.searchQuery && state.matchCount > 0) updateMatchNav(0);
   else {
     treeView.setCurrent(null);
     updateMatchInfo();
