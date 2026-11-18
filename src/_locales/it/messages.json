@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Incolla JSON o trascina qui un file .json… (Cmd/Ctrl + Invio per formattare)"
   },
-  "largeInputTitle": {
-    "message": "Anteprima di file grandi in sola lettura"
-  },
   "btnImportFile": {
     "message": "Importa file"
   },

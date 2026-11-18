@@ -3,13 +3,13 @@ import { t } from '../shared/i18n.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
-import { createTextInput } from '../shared/text-input.js';
+import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
 initializePage();
 
 const inputEl = document.getElementById('input');
-const inputViewEl = document.getElementById('input-view');
+const inputEditorEl = document.getElementById('input-editor');
 const outputEl = document.getElementById('output-text');
 const statusEl = document.getElementById('status');
 const busyEl = document.getElementById('busy');
@@ -31,7 +31,7 @@ const runTask = createTaskRunner({
 const { setStatus, showError, hideError, showParseError, copyWithFeedback } = createFeedback({
   statusEl, errorEl, selectInputPosition: (position, line) => textInput.selectPosition(position, line),
 });
-const textInput = createTextInput(inputEl, inputViewEl, { copy: copyWithFeedback });
+const textInput = createTextInput(inputEl, inputEditorEl);
 const outputView = createVirtualTextView(outputEl, { copy: copyWithFeedback });
 
 const fileImport = createFileImport({
@@ -43,7 +43,7 @@ const fileImport = createFileImport({
   onImport: ({ text }) => {
     resetDocument();
     textInput.setText(text);
-    if (textInput.isLarge()) {
+    if (text.length > LARGE_INPUT_THRESHOLD) {
       const version = dataVersion;
       setTimeout(() => { if (version === dataVersion) void runTransform(); }, 0);
     } else {
@@ -126,23 +126,11 @@ document.getElementById('btn-copy').addEventListener('click', doCopy);
 document.getElementById('btn-clear').addEventListener('click', doClear);
 document.getElementById('btn-sample').addEventListener('click', fillSample);
 
-function inputChanged() {
-  fileImport.reset();
-  dataVersion++;
-  runTask.cancel({ onlyIfBusy: true });
-}
-inputEl.addEventListener('input', inputChanged);
-for (const element of [inputEl, inputViewEl]) {
-  for (const type of ['paste', 'drop']) element.addEventListener(type, (event) => {
-    if (textInput.acceptTransfer(event)) inputChanged();
-  });
-  element.addEventListener('dragover', (event) => {
-    if (!Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault();
-  });
-  element.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      runTransform();
-    }
-  });
-}
+textInput.bindEvents({
+  onChange() {
+    fileImport.reset();
+    dataVersion++;
+    runTask.cancel({ onlyIfBusy: true });
+  },
+  onRun: runTransform,
+});

@@ -16,7 +16,7 @@ Formatieren und durchsuchen
 Lokale Dateien importieren
 - Wählen Sie auf jeder der fünf Werkzeugseiten eine Datei aus oder ziehen Sie sie in ein Eingabefeld.
 - Importieren Sie jeweils eine UTF-8-kodierte .json-Datei mit bis zu 50 MiB. Das Werkzeug startet automatisch nach dem Import. Der Vergleich startet, sobald beide Eingabefelder Text enthalten.
-- Große Dateien werden nach dem Import in einer schreibgeschützten virtuellen Vorschau angezeigt. Das Werkzeug verarbeitet den vollständigen Inhalt.
+- Wenn Sie eine große Datei importieren oder einen langen Text einfügen oder in das Eingabefeld ziehen, öffnet sich der Inhalt direkt im Editor. Sie können den gesamten Text bearbeiten und kopieren.
 
 Minifizieren, maskieren und demaskieren
 - Wechseln Sie über die Seitenleiste zwischen den Werkzeugen.

@@ -16,7 +16,7 @@ Format and browse
 Import local files
 - On any of the five tool pages, choose a file or drop it into an input pane.
 - Import one UTF-8 .json file at a time, up to 50 MiB each. The tool runs automatically after import. Compare runs when both inputs contain text.
-- Large imports open in a read-only virtual preview. The tool still processes the full input.
+- Import a large file or paste or drop a large block of text to open it directly in the editor. You can edit and copy the entire input.
 
 Minify, escape and unescape
 - Switch between dedicated tools using the sidebar.

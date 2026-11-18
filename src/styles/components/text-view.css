@@ -1,5 +1,5 @@
 /* Plain/diff text surfaces and the virtual text renderer. */
-#output-text, #input-view, .input-preview {
+#output-text {
   flex: 1;
   min-height: 0;
   margin: 0;
@@ -27,7 +27,7 @@
 .tline.gap { color: var(--text-dim); font-style: italic; }
 
 /* Large text: the scroll surface represents the complete indexed text. */
-#output-text.virtual-text, #input-view.virtual-text, .input-preview.virtual-text, #text-view.virtual-text {
+#output-text.virtual-text, #text-view.virtual-text {
   position: relative;
   padding: 0;
   overflow-anchor: none;

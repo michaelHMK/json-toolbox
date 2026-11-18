@@ -133,7 +133,7 @@ async function measureImport(page, action) {
       agentMemoryMiB: agentMemoryMiB === null ? null : +agentMemoryMiB.toFixed(2),
       error: document.querySelector('#error').hidden ? null : document.querySelector('#error').textContent,
       textareaHidden: document.querySelector('#input').hidden,
-      previewVisible: !document.querySelector('#input-view').hidden,
+      editorVisible: document.querySelector('#input-pane .cm-content')?.checkVisibility() ?? false,
     };
   }, measureMemory);
 }
@@ -141,7 +141,7 @@ async function measureImport(page, action) {
 async function verifyImport(page, action) {
   // Copying and constructing expected output happen after the measured phase.
   // Return only booleans: do not clone hundreds of MiB into the Node process.
-  return page.evaluate((action) => {
+  const checks = await page.evaluate(async (action) => {
     const { source, scenario, count, depth } = window.importBench;
     function copy(selector) {
       const element = document.querySelector(selector);
@@ -157,10 +157,18 @@ async function verifyImport(page, action) {
     let errorSelectionMatches = null;
     if (scenario === 'invalid') {
       const expected = source.indexOf('!');
-      if (input.hidden) {
+      const editor = document.querySelector('#input-pane .cm-content');
+      if (editor) {
+        const { EditorView } = await import('/vendor/codemirror.js');
+        const view = EditorView.findFromDOM(editor);
+        const { from, to } = view.state.selection.main;
+        selectedErrorPosition = from;
+        errorSelectionMatches = from === expected && to === expected + 1 && view.state.sliceDoc(from, to) === '!';
+      } else if (input.hidden) {
+        // Older checkouts show the selection in a read-only virtual text view.
         const selection = document.getSelection();
         const span = selection?.anchorNode?.parentElement?.closest('[data-text-offset]');
-        if (span && document.querySelector('#input-view').contains(span)) {
+        if (span && document.querySelector('#input-pane').contains(span)) {
           selectedErrorPosition = Number(span.dataset.textOffset) + selection.anchorOffset;
         }
         errorSelectionMatches = selectedErrorPosition === expected && selection?.toString() === '!';
@@ -169,19 +177,17 @@ async function verifyImport(page, action) {
         errorSelectionMatches = selectedErrorPosition === expected && input.selectionEnd === expected + 1;
       }
     }
-    const completeInputCopy = copy(input.hidden ? '#input-view' : '#input') === source;
     const error = document.querySelector('#error').hidden ? null : document.querySelector('#error').textContent;
     if (scenario === 'invalid') {
       const position = source.indexOf('!');
       return {
-        completeInputCopy,
         exactOutput: null,
         selectedErrorPosition,
         errorSelectionMatches,
         errorLocationMatches: !!error && (error.toLowerCase().includes(`position ${position}`) || error.toLowerCase().includes(`line 1 column ${position + 1}`)),
       };
     }
-    if (error) return { completeInputCopy, exactOutput: false, errorLocationMatches: null };
+    if (error) return { exactOutput: false, errorLocationMatches: null };
     const output = copy('#output-text');
     let exactOutput;
     if (scenario === 'decimals') {
@@ -209,8 +215,16 @@ async function verifyImport(page, action) {
       const data = JSON.parse(source);
       exactOutput = output === (action === 'format' ? JSON.stringify(data, null, 2) : JSON.stringify(data));
     }
-    return { completeInputCopy, exactOutput, errorLocationMatches: null };
+    return { exactOutput, errorLocationMatches: null };
   }, action);
+  // Exercise the focused input's own selection and copy handlers. Keep the
+  // potentially multi-megabyte clipboard value inside the browser process.
+  const surface = page.locator('#input-pane :is(textarea, .cm-content, .virtual-text):visible');
+  await page.evaluate(() => navigator.clipboard.writeText(''));
+  await surface.press('ControlOrMeta+a');
+  await page.keyboard.press('ControlOrMeta+c');
+  const completeInputCopy = await page.evaluate(async () => (await navigator.clipboard.readText()) === importBench.source);
+  return { ...checks, completeInputCopy };
 }
 
 function median(values) {
@@ -229,7 +243,8 @@ try {
   for (const scenario of scenarios) {
     for (const action of actions) {
       for (let iteration = 1; iteration <= repeats; iteration++) {
-        const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+        const page = await browser.newPage({ viewport: { width: 1200, height: 900 },
+          permissions: ['clipboard-read', 'clipboard-write'] });
         try {
           // Exercise localized parse locations under HTTP, just as the
           // extension does. Bare message keys have no line/column substitutions.
@@ -256,7 +271,7 @@ try {
           const large = measurement.inputBytes > LARGE_INPUT_THRESHOLD;
           const validationErrors = [...runtimeErrors];
           if (scenario === 'invalid' ? !measurement.error : measurement.error !== null) validationErrors.push('Unexpected success/error state');
-          if (measurement.textareaHidden !== large || measurement.previewVisible !== large) validationErrors.push('Unexpected input preview state');
+          if (measurement.textareaHidden !== large || measurement.editorVisible !== large) validationErrors.push('Unexpected input editor state');
           if (!checks.completeInputCopy) validationErrors.push('Input copy differs from the source');
           if (checks.exactOutput === false) validationErrors.push('Output differs from the expected complete text');
           if (checks.errorLocationMatches === false) validationErrors.push('Parse error does not identify the expected location');

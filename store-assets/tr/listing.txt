@@ -16,7 +16,7 @@ Biçimlendirme ve inceleme
 Yerel dosyaları içe aktarma
 - Beş araç sayfasının her birinde bir dosya seçebilir veya dosyayı girdi alanına sürükleyip bırakabilirsiniz.
 - Her seferinde en fazla 50 MiB boyutunda bir UTF-8 .json dosyası içe aktarın. İçe aktarma sonrasında araç otomatik olarak çalışır. Karşılaştırma, her iki girdi alanında da metin olduğunda başlar.
-- Büyük dosyalar salt okunur sanal önizlemede açılır. Araç, dosyanın içeriğini eksiksiz işler.
+- Büyük bir dosyayı içe aktardığınızda, uzun bir metni yapıştırdığınızda veya giriş alanına sürükleyip bıraktığınızda içerik doğrudan düzenleyicide açılır. Metnin tamamını düzenleyebilir ve kopyalayabilirsiniz.
 
 Küçültme, kaçış ekleme ve kaldırma
 - Kenar çubuğundan araçlar arasında geçiş yapın.

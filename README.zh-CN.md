@@ -4,7 +4,7 @@
 
 **为大 JSON 优化，所有处理都在本地完成。**
 
-JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V3），提供 JSON 格式化、压缩、转义与对比。零权限、零上传、零追踪，无广告、无运行时第三方依赖，安装后即可离线使用。
+JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V3），提供 JSON 格式化、压缩、转义与对比。零权限、零上传、零追踪，无广告，安装后即可离线使用。
 
 当前版本见 [`src/manifest.json`](src/manifest.json) 中的 `version` 字段。
 
@@ -12,14 +12,14 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 - **保持交互流畅**：Web Worker 承担解析、搜索与对比，减少主线程计算对界面响应的影响。
 - **轻量浏览大结果**：树和长文本按可见区域渲染，避免一次创建全部结果节点；支持树搜索定位与完整复制。
-- **大输入虚拟化**：超过 262,144 个 UTF-16 码元的输入（ASCII 文本约 256 KiB）使用只读虚拟预览，避免原生 textarea 的全量布局开销。
+- **大文本输入**直接在扩展自带的 CodeMirror 6 编辑器中打开。导入文件、粘贴或拖入文本后，如果输入超过 262,144 个 UTF-16 码元（ASCII 文本约 256 KiB），编辑器会随滚动渲染可见部分，全文都可以修改。
 - **减少重复开销**：普通文档复用解析结果和计算缓存；大文件纯文本处理按数据选择原生或直接序列化，深层嵌套自动回退到迭代处理，并释放不需要的 Worker 文档缓存。
 
 性能验证方法与大结果的使用边界见下文[性能验证](#性能验证)。
 
 ## 隐私
 
-- **不上传、不追踪**：扩展不发起网络请求，不加载远程代码，没有遥测、广告或第三方 SDK。
+- **不上传、不追踪**：扩展不发起网络请求，不加载远程代码，没有遥测、广告或追踪 SDK。
 - **零额外扩展权限**：不申请网站访问或存储权限，不读取网页内容、浏览历史、Cookie 或账号信息，见 [`src/manifest.json`](src/manifest.json)。
 - **不保存输入记录**：输入与结果仅在工具页及本地 Worker 的内存中处理，不主动写入浏览器存储、文件或云端；只在你执行复制时写入系统剪贴板。
 - **主题偏好仅保存在本地**：`localStorage` 仅保存你选择的主题，不保存输入内容，也不需要新增扩展权限。
@@ -35,7 +35,7 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 | **JSON 转义 / 去转义** | 文本与 JSON 字符串互转，一键复制 |
 | **JSON 对比** | 双 JSON 结构化 diff（新增 / 删除 / 变更 / 类型变化）；数组按下标或主键配对；可忽略指定路径；树形高亮与「只看差异」；文本逐行 diff |
 
-格式化、压缩、转义、去转义页面和对比页的两侧输入均支持通过文件选择器或拖拽导入本地 UTF-8 `.json` 文件（每个最大 50 MiB）。导入后保留原文并自动执行操作；对比页在两侧都有输入后自动对比。大文本粘贴和纯文本拖放同样使用虚拟预览。大输入始终保留只读虚拟预览，语法出错时也在预览内定位浏览器提供的错误位置；在预览中再次粘贴会替换原文，小文本恢复为可编辑输入框。
+格式化、压缩、转义、去转义页面和对比页的两侧输入均支持通过文件选择器或拖拽导入本地 UTF-8 `.json` 文件（每个最大 50 MiB）。导入后保留原文并自动执行操作，对比页在两侧都有输入后自动对比。大文件和粘贴的大段文本都可以直接编辑、全文复制。遇到语法错误时，可跳转到浏览器提供的错误位置。
 
 侧边栏可在各工具页之间切换。`src/_locales/` 包含 20 个语言及地区版本：英文（`en`）、简体中文（`zh_CN`）、繁体中文（台湾 `zh_TW`、香港 `zh_HK`）、日语（`ja`）、韩语（`ko`）、德语（`de`）、法语（`fr`）、西班牙语（`es`）及拉美西语（`es_419`）、葡萄牙语（巴西 `pt_BR`、葡萄牙 `pt_PT`）、俄语（`ru`）、阿拉伯语（`ar`）、印度尼西亚语（`id`）、越南语（`vi`）、意大利语（`it`）、罗马尼亚语（`ro`）、土耳其语（`tr`）和波兰语（`pl`）。Chrome 根据浏览器界面语言选择翻译，默认语言为英文；扩展 API 不可用时，页面静态文案也以英文兜底。阿拉伯语界面从右向左排列，JSON 输入、输出和树始终从左向右显示。
 
@@ -64,6 +64,7 @@ src/                   # 完整扩展目录，在 Chrome 中加载此目录
     compare.js
     transform.js       # 压缩、转义、去转义共用页面逻辑
   shared/              # 浏览器界面、文档/对比会话与 Worker 通信
+  vendor/              # 扩展自带的 CodeMirror 编辑器及第三方许可证
   core/                # 纯算法：JSON 排版、路径、搜索、结构对比、文本对比等
   worker/
     index.js           # Web Worker 消息入口
@@ -81,9 +82,10 @@ scripts/
   build_release.py     # 发布检查与白名单打包（Python 标准库）
   gen_icons.py         # 重新生成 src/icons/ 下 PNG（可选）
   store-assets/        # 商店截图与宣传图生成脚本
+  vendor-codemirror/   # 编辑器的依赖锁文件和构建脚本
 tests/                 # 算法与通信契约、发布文件检查
 bench/                 # 格式化/搜索/对比算法基准与可选浏览器验证
-package.json           # 原生 ES modules 与开发命令，无第三方依赖
+package.json           # 原生 ES modules 与开发命令
 STORE_LISTING.md       # Chrome 商店上架文案与表单说明
 PRIVACY.md             # 中英文隐私政策（由当前公开仓库托管）
 store-assets/          # 商店截图、宣传图与上架文案（不打进扩展 ZIP）
@@ -146,6 +148,8 @@ node bench/theme.mjs
 
 浏览器验证命令中的 `.` 等目录参数指向仓库，脚本会加载其中的 `src/` 扩展目录，也兼容旧版本将扩展放在仓库根目录的布局；还可以直接传入扩展目录。
 
+运行 `node bench/browser.mjs --large-edit`，可用自动生成的 10 MiB 单行 JSON 文件在五个工具页验证大文本编辑。要复现自己的样本，运行 `node bench/browser.mjs --large-edit path/to/large.min.json`，传入超过大输入阈值、没有换行的有效 UTF-8 JSON 文件。报告从文件输入的 change 事件开始计时，包含读取、解码及浏览器首次有机会绘制编辑器的耗时，并单独记录按键响应时间。脚本还检查能否复制全文，并核对各工具处理编辑后文本的结果。
+
 CI 还会校验发布 ZIP 的摘要，解包加载扩展，启动后台 Worker，并在五个工具页各执行一次操作。本地复验可使用 Playwright 配套的完整版 Chromium，或将 `CHROMIUM_EXECUTABLE` 指向 Chromium 或 Chrome for Testing。将刚构建的 ZIP 传给脚本。
 
 ```bash
@@ -156,7 +160,7 @@ node bench/release-smoke.mjs "dist/json-toolbox-${version}.zip"
 
 这些检查覆盖大文件导入、虚拟输入、大文本与树、导航、复制、焦点、视图切换、状态恢复及深层 Worker 数据传输。`performance.mjs` 使用本地 HTTP 页面和真实 Worker；计时不包含扩展安装、启动和系统剪贴板获取。paste/drop 事件通过合成方式触发，用于测量应用的事件处理路径。
 
-`native-paste.mjs` 使用 Chromium 剪贴板和真实粘贴快捷键，检查转义、去转义页面的大文本原文显示与完整复制。默认输入约 20 MiB，可用 `BENCH_PASTE_MIB` 调整；计时从 paste 事件开始，到两次动画帧后结束，样本构造和剪贴板写入不计时。设置 `BENCH_SCREENSHOT_DIR` 可保存页面截图；用 `BENCH_VERIFY=0` 加旧版本目录可记录基线。它每页测量一次，比较耗时时应在同一环境串行运行。
+`native-paste.mjs` 使用 Chromium 剪贴板和真实粘贴快捷键，检查转义、去转义页面粘贴大文本后的直接编辑、选区替换和全文复制。默认输入约 20 MiB，可用 `BENCH_PASTE_MIB` 调整；计时从 paste 事件开始，到两次动画帧后结束，样本构造和剪贴板写入不计时。设置 `BENCH_SCREENSHOT_DIR` 可保存页面截图；用 `BENCH_VERIFY=0` 加旧版本目录可记录基线。它每页测量一次，比较耗时时应在同一环境串行运行。
 
 `TREE_TOGGLE_BUDGET_MS`、`PERF_INPUT_BUDGET_MS`、`PERF_FRAME_BUDGET_MS` 分别调整同步树开合 p50、输入处理及布局、滚动帧间隔 p95 的预算，默认值为 16、50、35 ms。`remote-state.mjs` 的密集差异检查对滚动阶段执行耗时预算断言，首次对比和 Worker 恢复单独记录。
 
@@ -177,9 +181,20 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 `BENCH_FILE_MIB` 调整常规和无效文件的大小，默认 `50`。`BENCH_VERIFY=0` 仍会记录正确性检查失败。可选的 `BENCH_MAX_MS` 和 `BENCH_MAX_LONG_TASK_MS` 分别约束总耗时中位数与最长任务中位数；考虑硬件与浏览器差异，默认不设耗时预算。比较基线和修改后版本时，请使用相同配置串行运行。
 
-大输入和大结果使用虚拟显示，浏览器原生查找仅覆盖可见窗口，可使用树搜索或复制完整文本。完整输入和结果文本仍由页面保存在内存中，大文档的解析对象图和树索引保留在 Worker；较大的文本差异采用整块替换展示。
+大文本编辑器和大结果视图均使用虚拟渲染。浏览器原生查找在这些视图中仅覆盖已渲染部分。需要查找其他内容时，可使用树搜索或复制完整文本。完整输入和结果文本仍由页面保存在内存中，大文档的解析对象图和树索引保留在 Worker。较大的文本差异采用整块替换展示。
 
 日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000 --directory src`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
+
+## 重新构建内置编辑器
+
+扩展随附可读的 CodeMirror 6 ES module。日常开发、测试、打包和加载扩展都直接使用仓库中的文件。需要重新生成编辑器时，从仓库根目录运行以下命令。
+
+```bash
+npm ci --prefix scripts/vendor-codemirror --include=dev --ignore-scripts
+npm run build --prefix scripts/vendor-codemirror
+```
+
+锁文件固定了所有依赖和 esbuild 的版本。构建脚本生成 `src/vendor/codemirror.js` 及配套的许可证文件。更新编辑器依赖时，请一起审查并提交锁文件和这两份产物。[依赖包版本与许可证](src/vendor/codemirror.LICENSE.txt)
 
 ## 重新生成图标
 

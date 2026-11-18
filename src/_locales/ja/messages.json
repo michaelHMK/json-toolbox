@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "JSON を貼り付けるか、.json ファイルをここにドロップ…（Cmd/Ctrl + Enter で整形）"
   },
-  "largeInputTitle": {
-    "message": "大容量ファイルの読み取り専用プレビュー"
-  },
   "btnImportFile": {
     "message": "ファイルをインポート"
   },

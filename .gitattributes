@@ -1,0 +1,2 @@
+# Keep the checked-in bundle identical to esbuild's output, including upstream comments.
+src/vendor/codemirror.js linguist-generated=true whitespace=-blank-at-eol

@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "ألصق JSON أو أسقط ملف .json هنا… (Cmd/Ctrl + Enter للتنسيق)"
   },
-  "largeInputTitle": {
-    "message": "معاينة الملفات الكبيرة للقراءة فقط"
-  },
   "btnImportFile": {
     "message": "استيراد ملف"
   },

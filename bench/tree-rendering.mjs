@@ -39,6 +39,7 @@ function page(name) {
       getText: () => element.value,
       setText: (text) => { element.value = text; },
       selectPosition() {},
+      bindEvents() {},
       isLarge: () => false,
     }),
     LARGE_INPUT_THRESHOLD: 262144,

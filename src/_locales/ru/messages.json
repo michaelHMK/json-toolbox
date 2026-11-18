@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Вставьте JSON или перетащите сюда файл .json… (Cmd/Ctrl + Enter для форматирования)"
   },
-  "largeInputTitle": {
-    "message": "Предпросмотр большого файла без редактирования"
-  },
   "btnImportFile": {
     "message": "Импорт файла"
   },

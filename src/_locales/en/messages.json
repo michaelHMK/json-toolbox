@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Paste JSON or drop a .json file here… (Cmd/Ctrl + Enter to format)"
   },
-  "largeInputTitle": {
-    "message": "Read-only large-file preview"
-  },
   "btnImportFile": {
     "message": "Import file"
   },

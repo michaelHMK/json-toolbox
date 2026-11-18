@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Dán JSON hoặc thả tệp .json vào đây… (Cmd/Ctrl + Enter để định dạng)"
   },
-  "largeInputTitle": {
-    "message": "Bản xem trước chỉ đọc cho tệp lớn"
-  },
   "btnImportFile": {
     "message": "Nhập tệp"
   },

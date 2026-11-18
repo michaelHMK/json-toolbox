@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Tempel JSON atau letakkan file .json di sini… (Cmd/Ctrl + Enter untuk memformat)"
   },
-  "largeInputTitle": {
-    "message": "Pratinjau file besar hanya-baca"
-  },
   "btnImportFile": {
     "message": "Impor file"
   },

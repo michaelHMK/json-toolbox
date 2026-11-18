@@ -16,7 +16,7 @@ Formater et parcourir
 Importer des fichiers locaux
 - Dans chacun des cinq outils, choisissez un fichier ou déposez-le dans une zone de saisie.
 - Importez un fichier .json encodé en UTF-8 à la fois, dans la limite de 50 MiB par fichier. L’outil démarre automatiquement après l’importation. La comparaison commence dès que les deux zones de saisie contiennent du texte.
-- Les fichiers volumineux s’ouvrent dans un aperçu virtuel en lecture seule. L’outil traite l’intégralité du contenu.
+- Importez un fichier volumineux ou collez ou déposez un long texte dans la zone de saisie. Le contenu s’ouvre directement dans l’éditeur, où vous pouvez le modifier et le copier en entier.
 
 Minifier, échapper et déséchapper
 - Passez d’un outil à l’autre avec la barre latérale.

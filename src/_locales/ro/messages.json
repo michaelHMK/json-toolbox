@@ -191,9 +191,6 @@
   "inputPlaceholder": {
     "message": "Lipește JSON sau trage aici un fișier .json… (Cmd/Ctrl + Enter pentru formatare)"
   },
-  "largeInputTitle": {
-    "message": "Previzualizare doar în citire pentru fișiere mari"
-  },
   "btnImportFile": {
     "message": "Importă fișier"
   },
