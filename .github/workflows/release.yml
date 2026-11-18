@@ -1,0 +1,23 @@
+name: Package Chrome extension
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build extension ZIP and checksum
+        run: python3 scripts/build_release.py
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload --repo "$GITHUB_REPOSITORY" --clobber -- "$GITHUB_REF_NAME" dist/json-toolbox-*.zip dist/json-toolbox-*.zip.sha256
