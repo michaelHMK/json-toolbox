@@ -177,7 +177,11 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     const first = Math.max(0, Math.floor((top - topPadding) / lineHeight) - OVERSCAN);
     const count = Math.min(model.count - first, Math.ceil(height / lineHeight) + OVERSCAN * 2);
     const oldWidth = logicalWidth;
-    const atRightEdge = physicalWidth > width && element.scrollLeft >= physicalWidth - width - 1;
+    // Native scrolling to the right edge follows the growing range. A keyboard
+    // jump or revealed selection stays at its source coordinate, even if that
+    // coordinate happens to land on the current edge.
+    const followRightEdge = horizontalAnchor?.scrollLeft !== element.scrollLeft &&
+      physicalWidth > width && element.scrollLeft >= physicalWidth - width - 1;
     // Only the first chunk of a newly visible Unicode line is needed to paint.
     // Grow its exact width in later frames even when the user does not scroll.
     const visible = [];
@@ -198,7 +202,12 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     }
     if (pending.some(({ info }) => needsWidthIndex(info))) schedule();
     extents();
-    if (logicalWidth > oldWidth) setHorizontalScroll(atRightEdge ? logicalWidth : left);
+    if (logicalWidth > oldWidth) {
+      if (followRightEdge) {
+        horizontalAnchor = null;
+        element.scrollLeft = physicalWidth;
+      } else setHorizontalScroll(left);
+    }
     top = toLogical(element.scrollTop, logicalHeight, physicalHeight, height);
     left = logicalLeft();
     layer.style.width = `${width}px`;
@@ -345,8 +354,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
       const rowOffset = Math.min(position, row.end) - row.start;
       const info = horizontalGeometry(low, row);
       const x = xAtOffset(info, rowOffset);
-      // Leave room past the selection. Reaching a partially measured right edge
-      // otherwise makes background indexing scroll away from the selected text.
+      // Measure enough following text to center the selection on its first paint.
       while (needsWidthIndex(info) && info.width < x + element.clientWidth) extendWidthIndex(info);
       extents();
       setLogicalScroll(Math.max(0, x - element.clientWidth / 2),
