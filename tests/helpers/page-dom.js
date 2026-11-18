@@ -15,6 +15,7 @@ export class Element {
     this.style = {};
     this.dataset = {};
     this.events = {};
+    this.listeners = new Map();
     this.className = '';
     this.value = '';
     this.textContent = '';
@@ -64,8 +65,20 @@ export class Element {
     for (const child of nodes) child.parentElement = parent;
     parent.children.splice(index, 0, ...nodes);
   }
-  addEventListener(type, listener) { this.events[type] = listener; }
-  removeEventListener(type, listener) { if (this.events[type] === listener) delete this.events[type]; }
+  addEventListener(type, listener) {
+    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+    this.listeners.get(type).add(listener);
+    this.events[type] = (event) => {
+      let result;
+      for (const callback of this.listeners.get(type)) result = callback(event);
+      return result;
+    };
+  }
+  removeEventListener(type, listener) {
+    const listeners = this.listeners.get(type);
+    listeners?.delete(listener);
+    if (!listeners?.size) delete this.events[type];
+  }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   getAttribute(name) { return this.attributes[name] ?? null; }
   removeAttribute(name) { delete this.attributes[name]; }

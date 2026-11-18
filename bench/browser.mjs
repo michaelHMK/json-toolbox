@@ -133,7 +133,7 @@ try {
 
     for (const action of ['minify', 'escape', 'unescape']) {
       await page.goto(`${base}/${action}.html`);
-      const original = '{ "a": 1, "b": [true, null] }';
+      const original = '{\r\n "a": 1, "b": [true, null]\r\n}';
       const source = action === 'unescape' ? JSON.stringify(original).slice(1, -1) : original;
       const expected = action === 'minify' ? '{"a":1,"b":[true,null]}'
         : action === 'escape' ? JSON.stringify(original).slice(1, -1) : original;
@@ -141,8 +141,17 @@ try {
         name: `${action}.json`, mimeType: 'application/json', buffer: Buffer.from('\uFEFF' + source),
       });
       await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, expected);
-      assert.equal(await page.locator('#input').inputValue(), source);
+      assert.equal(await page.locator('#input').inputValue(), source.replaceAll('\r\n', '\n'));
       assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}.json`));
+
+      if (action === 'escape') {
+        const input = page.locator('#input');
+        await input.press('Control+End');
+        await input.press('Space');
+        await input.press('Control+Enter');
+        const edited = JSON.stringify(await input.inputValue()).slice(1, -1);
+        await page.waitForFunction((value) => document.querySelector('#output-text').textContent === value, edited);
+      }
 
       await page.locator('#btn-clear').click();
       await page.evaluate(({ action, source }) => {
@@ -154,10 +163,16 @@ try {
         }
       }, { action, source });
       await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, expected);
-      assert.equal(await page.locator('#input').inputValue(), source);
+      assert.equal(await page.locator('#input').inputValue(), source.replaceAll('\r\n', '\n'));
       assert.ok((await page.locator('#file-name').textContent()).startsWith(`${action}-drop.json`));
       assert.equal(await page.locator('#file-drop-hint').isHidden(), true);
     }
+    await page.goto(base + '/minify.html');
+    await page.locator('#file-input').setInputFiles({
+      name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{\r\n"a": 0,\r\n"b": ]}'),
+    });
+    await page.locator('#error').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#input').evaluate((el) => el.value.slice(el.selectionStart, el.selectionEnd)), ']');
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.version(), root: pathToFileURL(root).href, verify, results: rows }, null, 2));

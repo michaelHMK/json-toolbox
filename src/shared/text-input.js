@@ -4,8 +4,12 @@ export const LARGE_INPUT_THRESHOLD = 256 * 1024;
 
 export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THRESHOLD } = {}) {
   const view = preview ? createVirtualTextView(preview) : null;
-  let source = '';
+  let source = null;
   let large = false;
+
+  // An editable textarea normalizes line endings. Keep the original until
+  // the first native edit, even if that edit restores the same visible text.
+  textarea.addEventListener('input', () => { if (!large) source = null; });
 
   function setText(text) {
     const previousInput = large ? preview : textarea;
@@ -18,7 +22,7 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
       preview.hidden = false;
       view.setText(text);
     } else {
-      source = '';
+      source = text.includes('\r') ? text : null;
       if (preview) preview.hidden = true;
       view?.clear();
       textarea.hidden = false;
@@ -51,7 +55,7 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
   return {
     setText,
     acceptTransfer,
-    getText() { return large ? source : textarea.value; },
+    getText() { return source ?? textarea.value; },
     clear() { setText(''); },
     isLarge() { return large; },
     focus() { (large ? preview : textarea).focus(); },
@@ -59,6 +63,12 @@ export function createTextInput(textarea, preview, { threshold = LARGE_INPUT_THR
       if (large) {
         view.revealPosition(position);
         return;
+      }
+      if (source !== null) {
+        const original = position;
+        for (let at = source.indexOf('\r\n'); at >= 0 && at < original; at = source.indexOf('\r\n', at + 2)) {
+          position--;
+        }
       }
       position = Math.max(0, Math.min(position, textarea.value.length));
       textarea.focus();
