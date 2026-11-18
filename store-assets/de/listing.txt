@@ -14,9 +14,9 @@ Formatieren und durchsuchen
 - Kopieren Sie das vollständige Ergebnis mit einem Klick.
 
 Lokale Dateien importieren
-- Wählen Sie auf der Formatierungs- oder Minifizierungsseite eine Datei aus oder ziehen Sie sie in den Eingabebereich.
-- Importieren Sie jeweils eine UTF-8-kodierte .json-Datei bis 50 MiB. Die Formatierung oder Minifizierung startet nach dem Import automatisch.
-- Eingaben mit mehr als etwa zwei Millionen Zeichen erscheinen in einer schreibgeschützten virtuellen Vorschau. Verarbeitung und Kopieren der Ergebnisse nutzen weiterhin den vollständigen Inhalt.
+- Wählen Sie auf jeder der fünf Werkzeugseiten eine Datei aus oder ziehen Sie sie in ein Eingabefeld.
+- Importieren Sie jeweils eine UTF-8-kodierte .json-Datei mit bis zu 50 MiB. Das Werkzeug startet automatisch nach dem Import. Der Vergleich startet, sobald beide Eingabefelder Text enthalten.
+- Große Dateien werden nach dem Import in einer schreibgeschützten virtuellen Vorschau angezeigt. Das Werkzeug verarbeitet den vollständigen Inhalt.
 
 Minifizieren, maskieren und demaskieren
 - Wechseln Sie über die Seitenleiste zwischen den Werkzeugen.
@@ -35,6 +35,6 @@ Darstellung
 - Nur die Designauswahl wird lokal gespeichert und beim Werkzeugwechsel sowie nach erneutem Öffnen wiederhergestellt. Eingaben und Ergebnisse werden nicht gespeichert.
 
 Datenschutz
-Die gesamte Verarbeitung erfolgt lokal im Browser. Keine Datenerfassung oder Uploads, Netzwerkanfragen, extern nachgeladener Code, Werbung oder Tracking. Eingaben werden nicht als Verlauf gespeichert. Ergebnisse gelangen nur beim Kopieren in die Zwischenablage.
+Die gesamte Verarbeitung erfolgt lokal im Browser. Keine Datenerfassung oder Uploads, Netzwerkanfragen, extern nachgeladener Code, Werbung oder Tracking. Eingaben werden nicht als Verlauf gespeichert. Beim Kopieren schreibt die Erweiterung den ausgewählten Text, die Eingabe oder das Ergebnis in die Zwischenablage. Beim Einfügen verarbeitet sie nur den von Ihnen eingefügten Text.
 
 Vollständige Eingaben und Ergebnisse bleiben im Arbeitsspeicher; die Leistung hängt vom Gerät und der Datenstruktur ab. Virtuelle Ansichten rendern jeweils nur einen Teil des Inhalts. Die Browsersuche erfasst deshalb nur diesen Teil. Nutzen Sie bei Bedarf die Baumsuche oder kopieren Sie das vollständige Ergebnis. Bei umfangreichen Textunterschieden können nicht übereinstimmende Abschnitte als ganze Blöcke dargestellt werden.

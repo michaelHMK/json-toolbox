@@ -14,9 +14,9 @@ Formatar e explorar
 - Copie o resultado completo com um clique.
 
 Importar ficheiros locais
-- Nas páginas de formatação e minificação, escolha um ficheiro ou arraste-o para a área de entrada.
-- Importe um ficheiro .json em UTF-8 de cada vez, até 50 MiB. A formatação ou a minificação começa automaticamente após a importação.
-- Entradas com mais de cerca de dois milhões de carateres usam uma pré-visualização virtual só de leitura. O processamento e a cópia do resultado continuam a usar o conteúdo completo.
+- Em qualquer uma das cinco ferramentas, escolha um ficheiro ou arraste-o para a área de entrada.
+- Importe um ficheiro .json em UTF-8 de cada vez, até 50 MiB por ficheiro. A ferramenta é executada automaticamente após a importação. A comparação começa quando ambos os campos de entrada contêm texto.
+- Os ficheiros grandes abrem numa pré-visualização virtual só de leitura. A ferramenta processa todo o conteúdo.
 
 Minificar, escapar e remover escapes
 - Alterne entre as ferramentas pela barra lateral.
@@ -35,6 +35,6 @@ Aparência
 - Apenas a escolha do tema é guardada localmente, para ser reposta ao mudar de ferramenta ou reabrir a extensão. As entradas e os resultados não são guardados.
 
 Privacidade
-Todo o processamento ocorre no navegador. Sem recolha ou envio de dados, pedidos de rede, código remoto, anúncios ou rastreio. O histórico de entradas não é guardado. O resultado só é escrito na área de transferência do sistema quando o copia.
+Todo o processamento ocorre no navegador. Sem recolha ou envio de dados, pedidos de rede, código remoto, anúncios ou rastreio. O histórico de entradas não é guardado. Ao copiar, a extensão coloca o texto selecionado, a entrada ou o resultado na área de transferência do sistema. Ao colar, apenas processa o texto que introduzir.
 
 As entradas e os resultados completos permanecem na memória; o desempenho depende do dispositivo e da estrutura dos dados. As vistas virtuais apresentam apenas parte do conteúdo de cada vez, pelo que a pesquisa nativa do navegador abrange apenas a parte apresentada. Use a pesquisa na árvore ou copie o resultado completo quando necessário. Quando há muitas diferenças, os trechos de texto sem correspondência podem ser apresentados em blocos inteiros.

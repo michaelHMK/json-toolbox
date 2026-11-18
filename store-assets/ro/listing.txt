@@ -14,9 +14,9 @@ Formatare și explorare
 - Copiază rezultatul complet cu un clic.
 
 Importul fișierelor locale
-- În paginile Formatare JSON și Minificare JSON, alege un fișier sau trage-l în panoul de intrare.
-- Importă câte un fișier .json UTF-8, de cel mult 50 MiB. Formatarea sau minificarea începe automat după import.
-- Intrările cu mai mult de aproximativ două milioane de caractere folosesc o previzualizare virtuală doar în citire. Procesarea și copierea rezultatelor folosesc în continuare conținutul complet.
+- În oricare dintre cele cinci instrumente, alege un fișier sau trage-l în câmpul de intrare.
+- Importă câte un fișier .json UTF-8, de cel mult 50 MiB. Instrumentul pornește automat după import. Compararea începe când ambele câmpuri conțin text.
+- Fișierele mari se deschid într-o previzualizare virtuală doar pentru citire. Instrumentul procesează întregul conținut.
 
 Minificare, adăugare și eliminare de secvențe escape
 - Comută între instrumente folosind bara laterală.
@@ -35,6 +35,6 @@ Aspect
 - Tema aleasă este reținută local între instrumente și după redeschidere. Intrările și rezultatele nu sunt salvate.
 
 Confidențialitate
-Toată procesarea are loc în browser. Fără colectare sau încărcare de date, solicitări de rețea, cod la distanță, reclame sau urmărire. Istoricul intrărilor nu este salvat. Rezultatele sunt scrise în clipboardul sistemului doar când le copiezi.
+Toată procesarea are loc în browser. Fără colectare sau încărcare de date, solicitări de rețea, cod la distanță, reclame sau urmărire. Istoricul intrărilor nu este salvat. Când copiezi, extensia scrie în clipboardul sistemului textul selectat, datele de intrare sau rezultatul. Când lipești, procesează doar textul pe care îl furnizezi.
 
 Intrările și rezultatele complete rămân în memorie; performanța depinde de dispozitiv și de structura datelor. Vizualizările virtuale afișează doar o parte a conținutului odată, astfel încât funcția de căutare a browserului acoperă doar partea afișată. Folosește căutarea în arbore sau copiază rezultatul complet când este necesar. În cazul diferențelor textuale ample, secțiunile care nu corespund pot fi afișate ca blocuri întregi.

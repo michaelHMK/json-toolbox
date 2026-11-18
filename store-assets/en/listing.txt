@@ -14,9 +14,9 @@ Format and browse
 - Copy the complete result with one click.
 
 Import local files
-- On the Formatter and Minify pages, choose a file or drag it into the input pane.
-- Import one UTF-8 .json file at a time, up to 50 MiB. Formatting or minification starts automatically after import.
-- Inputs longer than about two million characters use a read-only virtual preview. The complete content is still used for processing and copying results.
+- On any of the five tool pages, choose a file or drop it into an input pane.
+- Import one UTF-8 .json file at a time, up to 50 MiB each. The tool runs automatically after import. Compare runs when both inputs contain text.
+- Large imports open in a read-only virtual preview. The tool still processes the full input.
 
 Minify, escape and unescape
 - Switch between dedicated tools using the sidebar.
@@ -35,6 +35,6 @@ Appearance
 - Your theme choice is remembered locally across tools and after reopening. Input and results are not saved.
 
 Privacy
-All processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. Results are written to the system clipboard only when you copy.
+All processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. When you copy, the extension writes the selected text, input or result to the system clipboard. When you paste, it processes only the text you provide.
 
 Large inputs and results remain in memory; performance depends on your device and data structure. Virtual views render only part of the content at a time, so native browser Find covers only the rendered portion. Use tree search or copy the complete result when needed. For extensive text differences, unmatched sections may be shown as whole blocks.

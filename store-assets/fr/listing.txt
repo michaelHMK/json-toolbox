@@ -14,9 +14,9 @@ Formater et parcourir
 - Copiez le résultat complet en un clic.
 
 Importer des fichiers locaux
-- Dans les outils de formatage et de minification, choisissez un fichier ou déposez-le dans la zone de saisie.
-- Importez un seul fichier .json encodé en UTF-8 à la fois, jusqu’à 50 MiB. Le formatage ou la minification démarre automatiquement après l’importation.
-- Au-delà d’environ deux millions de caractères, la saisie est affichée dans un aperçu virtuel en lecture seule. Le traitement et la copie du résultat utilisent toujours le contenu complet.
+- Dans chacun des cinq outils, choisissez un fichier ou déposez-le dans une zone de saisie.
+- Importez un fichier .json encodé en UTF-8 à la fois, dans la limite de 50 MiB par fichier. L’outil démarre automatiquement après l’importation. La comparaison commence dès que les deux zones de saisie contiennent du texte.
+- Les fichiers volumineux s’ouvrent dans un aperçu virtuel en lecture seule. L’outil traite l’intégralité du contenu.
 
 Minifier, échapper et déséchapper
 - Passez d’un outil à l’autre avec la barre latérale.
@@ -35,6 +35,6 @@ Apparence
 - Seul le choix du thème est mémorisé localement, entre les outils et après réouverture. Les saisies et les résultats ne sont pas enregistrés.
 
 Confidentialité
-Tout est traité localement dans le navigateur. Aucune collecte ni transmission de données, aucune requête réseau, aucun code distant, aucune publicité ni aucun suivi. L’historique des saisies n’est pas enregistré. Le résultat est placé dans le presse-papiers uniquement lorsque vous le copiez.
+Tout est traité localement dans le navigateur. Aucune collecte ni transmission de données, aucune requête réseau, aucun code distant, aucune publicité ni aucun suivi. L’historique des saisies n’est pas enregistré. Lorsque vous copiez, l’extension place le texte sélectionné, la saisie ou le résultat dans le presse-papiers du système. Lorsque vous collez, elle traite uniquement le texte que vous fournissez.
 
 Les données et résultats complets restent en mémoire ; les performances dépendent de l’appareil et de la structure des données. Les vues virtuelles n’affichent qu’une partie du contenu à la fois : la recherche native du navigateur ne couvre que cette partie. Utilisez la recherche dans l’arborescence ou copiez le résultat complet si nécessaire. En cas de différences textuelles importantes, les sections non correspondantes peuvent être affichées par blocs entiers.

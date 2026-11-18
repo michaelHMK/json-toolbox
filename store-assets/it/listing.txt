@@ -14,9 +14,9 @@ Formattare ed esplorare
 - Copia il risultato completo con un clic.
 
 Importare file locali
-- Nelle pagine Formatta JSON e Minifica JSON, scegli un file o trascinalo nel riquadro di input.
-- Importa un file .json UTF-8 alla volta, fino a 50 MiB. La formattazione o la minificazione parte automaticamente dopo l’importazione.
-- Gli input con più di circa due milioni di caratteri usano un’anteprima virtuale in sola lettura. L’elaborazione e la copia dei risultati continuano a usare il contenuto completo.
+- In ciascuno dei cinque strumenti, scegli un file o trascinalo nel riquadro di input.
+- Importa un file .json UTF-8 alla volta, fino a 50 MiB per file. Lo strumento si avvia automaticamente dopo l’importazione. Il confronto inizia quando entrambi i riquadri contengono del testo.
+- I file di grandi dimensioni si aprono in un’anteprima virtuale in sola lettura. Lo strumento elabora l’intero contenuto.
 
 Minificare, applicare e rimuovere escape
 - Passa da uno strumento all’altro tramite la barra laterale.
@@ -35,6 +35,6 @@ Aspetto
 - La scelta del tema viene memorizzata localmente tra gli strumenti e alla riapertura. Input e risultati non vengono salvati.
 
 Privacy
-Tutta l’elaborazione avviene nel browser. Nessuna raccolta o caricamento di dati, richiesta di rete, codice remoto, pubblicità o tracciamento. La cronologia degli input non viene salvata. I risultati vengono scritti negli appunti di sistema solo quando li copi.
+Tutta l’elaborazione avviene nel browser. Nessuna raccolta o caricamento di dati, richiesta di rete, codice remoto, pubblicità o tracciamento. La cronologia degli input non viene salvata. Quando copi, l’estensione scrive negli appunti di sistema il testo selezionato, l’input o il risultato. Quando incolli, elabora solo il testo che fornisci.
 
 Gli input e i risultati completi restano in memoria; le prestazioni dipendono dal dispositivo e dalla struttura dei dati. Le viste virtuali mostrano solo una parte del contenuto alla volta, quindi la ricerca integrata del browser copre solo la parte visualizzata. Usa la ricerca nell’albero o copia il risultato completo quando necessario. In caso di differenze testuali estese, le sezioni non corrispondenti possono essere mostrate come blocchi interi.

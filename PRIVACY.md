@@ -1,6 +1,6 @@
 # JSON 工具箱隐私政策 / JSON Toolbox Privacy Policy
 
-更新日期：2026年11月15日。适用版本：1.4.0。
+更新日期：2026年11月18日。适用版本：1.4.0。
 
 JSON 工具箱用于在浏览器本地格式化、压缩、转义、查看和比较 JSON。扩展不收集、上传、出售或与第三方共享用户数据。
 
@@ -10,7 +10,7 @@ JSON 工具箱用于在浏览器本地格式化、压缩、转义、查看和比
 
 外观默认使用正常模式，你可以手动选择正常、护眼或暗色模式。扩展仅将主题选择保存到本机的 `localStorage`，以便在切换工具页或重新打开扩展时恢复；其中不保存输入、文件内容或处理结果，不上传该偏好或通过云端同步，也不需要新增扩展权限。
 
-只有点击“复制结果”时，扩展才会将结果写入系统剪贴板；不会主动读取剪贴板。复制后的内容由操作系统和剪贴板管理工具管理，可能在扩展页面关闭后仍然保留。
+当你执行复制操作时，扩展会将选中的文本、输入内容或处理结果写入系统剪贴板。当你粘贴时，扩展只处理浏览器在该次粘贴操作中提供的文本，不会主动读取剪贴板。复制后的内容由操作系统和剪贴板管理工具管理，可能在扩展页面关闭后仍然保留。
 
 ## 权限和第三方服务
 
@@ -24,7 +24,7 @@ JSON 工具箱用于在浏览器本地格式化、压缩、转义、查看和比
 
 ## English
 
-Last updated: November 15, 2026. Applies to version 1.4.0.
+Last updated: November 18, 2026. Applies to version 1.4.0.
 
 JSON Toolbox processes JSON locally in your browser for formatting, minification, escaping, viewing and comparison. The extension does not collect, upload, sell or share user data with third parties.
 
@@ -34,7 +34,7 @@ JSON, text, search queries and comparison settings that you enter or paste, plus
 
 Appearance defaults to Normal, and you can manually choose Normal, Eye comfort or Dark. The extension saves only your theme choice in `localStorage` on your device to restore it across tool pages and after reopening. This storage contains no input, file content or processing results. The preference is not uploaded or synced through cloud services, and saving it requires no additional extension permissions.
 
-Only when you click Copy does the extension write the result to the system clipboard. It does not programmatically read the clipboard. Copied content is managed by your operating system and clipboard tools and may remain after the extension page closes.
+When you copy, the extension writes the selected text, input or result to the system clipboard. When you paste, the extension processes only the text your browser provides for that paste. It does not read the clipboard independently. Copied content is managed by your operating system and clipboard tools and may remain after the extension page closes.
 
 ### Permissions and third parties
 
