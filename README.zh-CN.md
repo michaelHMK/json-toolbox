@@ -43,11 +43,10 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 ## 本地加载（开发者模式）
 
-1. 打开 Chrome，进入 `chrome://extensions/`
-2. 开启右上角 **开发者模式**
-3. 点击 **加载已解压的扩展程序**
-4. 选择本仓库的 **`src/` 目录**（其中包含 `manifest.json`）
-5. 点击工具栏中的扩展图标，即可打开 JSON 工具箱
+1. 在 [Releases 页面](https://github.com/michaelHMK/json-toolbox/releases)找到所需版本，从 **Assets** 下载 `json-toolbox-<version>.zip`，解压到单独的文件夹。
+2. 在 Chrome 中打开 `chrome://extensions/`，开启 **开发者模式**。
+3. 点击 **加载已解压的扩展程序**，选择解压后直接包含 `manifest.json` 的文件夹。如果已克隆仓库，则选择仓库的 `src/` 目录。
+4. 点击工具栏中的扩展图标，即可打开 JSON 工具箱。
 
 快捷键：多数页面支持 **Cmd/Ctrl + Enter** 执行当前操作。
 
@@ -186,7 +185,9 @@ python3 scripts/gen_icons.py
 
 ## 打包发布
 
-需要 Python 3，无第三方依赖：
+发布新版本时，先更新 `src/manifest.json` 中的 `version` 并提交。在仓库的 **Releases** 页面创建 Release，选择指向该提交的标签，点击 **Publish release**。GitHub Actions 会打包该标签对应的扩展，并将 `json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件上传到该 Release 的 **Assets**。文件名中的版本号取自 `manifest.json`。
+
+本地打包可使用 Python 3 运行以下命令。
 
 ```bash
 python3 scripts/build_release.py --check
@@ -195,7 +196,7 @@ python3 scripts/build_release.py
 
 脚本检查版本号、所有语言版本的名称和简介长度、翻译键、图标尺寸、HTML 资源引用，以及 JavaScript 静态导入、Worker 入口和 CSS `@import`/`url()` 依赖的相对路径，再按白名单打包 `src/` 中的运行时文件。输出为 `dist/json-toolbox-<version>.zip` 和对应的 `.zip.sha256` 校验文件。`manifest.json` 位于 ZIP 根目录，没有外层 `src/` 目录；测试、文档、截图、开发配置和 `.git` 不会被收录。`dist/` 已加入 Git 忽略规则。
 
-上传前将 ZIP 解压到一个新目录，在 `chrome://extensions/` 中加载该目录并完成下面的检查。以后发布更新时先提高 `src/manifest.json` 的版本号，再重新打包。
+上传到 Chrome 应用商店前，将 ZIP 解压到一个新目录，在 `chrome://extensions/` 中加载该目录并完成下面的检查。
 
 ### 首次上架
 

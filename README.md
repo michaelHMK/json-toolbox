@@ -43,11 +43,10 @@ Choose **Normal**, **Eye comfort**, or **Dark** under **Appearance** in the side
 
 ## Load Locally (Developer Mode)
 
-1. Open Chrome and go to `chrome://extensions/`.
-2. Enable **Developer mode** in the upper-right corner.
-3. Click **Load unpacked**.
-4. Select the repository's **`src/` directory**, which contains `manifest.json`.
-5. Click the extension icon in the toolbar to open JSON Toolbox.
+1. Open the [Releases page](https://github.com/michaelHMK/json-toolbox/releases). Under **Assets**, download `json-toolbox-<version>.zip` and extract it into its own folder.
+2. Open `chrome://extensions/` in Chrome and enable **Developer mode**.
+3. Click **Load unpacked** and select the extracted folder containing `manifest.json`. If you cloned the repository, select its `src/` folder.
+4. Click the extension icon in the toolbar to open JSON Toolbox.
 
 Keyboard shortcut: most pages support **Cmd/Ctrl + Enter** to run the current operation.
 
@@ -186,7 +185,9 @@ The output directory is `src/icons/`. Existing PNG files are overwritten.
 
 ## Build a Release
 
-Requires Python 3 with no third-party dependencies:
+For a new version, update `version` in `src/manifest.json` and commit the change. On the repository's **Releases** page, create a release using a tag that points to that commit and click **Publish release**. GitHub Actions builds the tagged extension and attaches `json-toolbox-<version>.zip` and its `.zip.sha256` checksum under **Assets**. The filename uses the manifest version.
+
+To build the same package locally, run the following commands with Python 3.
 
 ```bash
 python3 scripts/build_release.py --check
@@ -195,7 +196,7 @@ python3 scripts/build_release.py
 
 The script validates the version, name and description lengths in all locale catalogs, translation keys, icon dimensions, HTML resource references, and relative paths for JavaScript static imports, the Worker entry point, and CSS `@import`/`url()` dependencies. It then packages runtime files from `src/` using an explicit allowlist. Output is written to `dist/json-toolbox-<version>.zip` with a matching `.zip.sha256` checksum file. The ZIP contains `manifest.json` at its root, without an enclosing `src/` directory, and excludes tests, documentation, screenshots, development configuration, and `.git`. The `dist/` directory is ignored by Git.
 
-Before uploading, extract the ZIP to a new directory, load that directory through `chrome://extensions/`, and complete the checks below. For subsequent releases, increase the version in `src/manifest.json` before rebuilding.
+Before uploading to the Chrome Web Store, extract the ZIP to a new directory, load that directory through `chrome://extensions/`, and complete the checks below.
 
 ### First Store Submission
 
