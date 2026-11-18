@@ -24,7 +24,10 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
+const browser = await chromium.launch({
+  headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE,
+  ignoreDefaultArgs: process.argv.includes('--large-edit') ? ['--hide-scrollbars'] : [],
+});
 const page = await browser.newPage();
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));

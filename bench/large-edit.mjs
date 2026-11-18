@@ -10,7 +10,8 @@ function makeFixture() {
   const row = '{"name":"测试用户","active":true,"payload":"' + 'x'.repeat(128) + '"}';
   const prefix = '{"records":[';
   const tail = '],"padding":"';
-  const suffix = '"}';
+  // The final window is wider than an equal number of ASCII characters.
+  const suffix = '末'.repeat(4096) + '"}';
   const available = bytes - Buffer.byteLength(prefix + tail + suffix);
   const count = Math.floor((available + 1) / Buffer.byteLength(row + ','));
   const text = prefix + Array(count).fill(row).join(',') + tail;
@@ -53,6 +54,44 @@ async function selectAndCopy(page, editor) {
   await page.keyboard.press('ControlOrMeta+C');
 }
 
+async function verifyScrollToEnd(page, editor) {
+  // Give the native scrollbar a track without platform-dependent arrow buttons.
+  await page.addStyleTag({ content: `
+    .cm-scroller::-webkit-scrollbar { height: 16px }
+    .cm-scroller::-webkit-scrollbar-button { display: none }
+    .cm-scroller::-webkit-scrollbar-thumb { background: gray }
+  ` });
+  const { left, right, y, height } = await editor.evaluate(async (element) => {
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    const scroller = element.closest('.cm-scroller');
+    const rect = scroller.getBoundingClientRect();
+    const height = scroller.offsetHeight - scroller.clientHeight;
+    return { left: rect.left, right: rect.left + scroller.clientWidth,
+      y: rect.top + scroller.clientHeight + height / 2, height };
+  });
+  assert.ok(height > 0, 'horizontal scrollbar is visible');
+  await page.mouse.move(left + 5, y);
+  await page.mouse.down();
+  await page.mouse.move((left + right) / 2, y);
+  // Let the editor replace the middle of the line while the thumb is held.
+  const fraction = await editor.evaluate(async (element) => {
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    const scroller = element.closest('.cm-scroller');
+    return scroller.scrollLeft / (scroller.scrollWidth - scroller.clientWidth);
+  });
+  await page.mouse.move(right - 1, y, { steps: 4 });
+  await page.mouse.up();
+  assert.ok(fraction > 0.45 && fraction < 0.55, 'thumb should stay under the pointer halfway across');
+  await page.waitForFunction(async () => {
+    const { EditorView } = await import('/vendor/codemirror.js');
+    const view = EditorView.findFromDOM(document.querySelector('.large-input-editor .cm-content'));
+    const tail = view.coordsForChar(view.state.doc.length - 1);
+    const bounds = view.scrollDOM.getBoundingClientRect();
+    return tail && tail.left >= bounds.left - 1 && tail.right <= bounds.right + 1 &&
+      tail.top >= bounds.top - 1 && tail.bottom <= bounds.bottom + 1;
+  }, undefined, { timeout: 5000 });
+}
+
 async function verifyMiddleEdit(page, editor, sourceLength) {
   const scroller = page.locator('.large-input-editor .cm-scroller');
   await scroller.evaluate((element) => {
@@ -86,6 +125,10 @@ export async function measureLargeEdits(browser, base, path) {
       const page = await context.newPage();
       page.setDefaultTimeout(60000);
       page.on('pageerror', (error) => errors.push(error.message));
+      page.on('console', (message) => {
+        if (message.type() === 'warning' && message.text() === 'Viewport failed to stabilize')
+          errors.push(message.text());
+      });
       await page.goto(base + '/' + tool + '.html');
       const compare = tool === 'compare';
       const input = page.locator(compare ? '#input-left' : '#input');
@@ -101,7 +144,10 @@ export async function measureLargeEdits(browser, base, path) {
         // Unescape may report a diagnostic for a normal, unescaped JSON file.
         await page.waitForFunction(() => document.querySelector('#status').textContent || !document.querySelector('#error').hidden);
       }
-      if (tool === 'formatter') await verifyMiddleEdit(page, editor, source.length);
+      if (tool === 'formatter') {
+        await verifyScrollToEnd(page, editor);
+        await verifyMiddleEdit(page, editor, source.length);
+      }
       await editor.press('ControlOrMeta+Home');
       const keyMs = await measurePaint(page, editor, 'keydown', () => editor.press('['));
       await editor.press('ControlOrMeta+End');

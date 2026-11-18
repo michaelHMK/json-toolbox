@@ -1,0 +1,162 @@
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -3416,6 +3416,8 @@
+         while (i < this.decorations.length)
+             this.dynamicDecorationMap[i++] = false;
+         this.blockWrappers = this.view.state.facet(blockWrappers).map(v => typeof v == "function" ? v(this.view) : v);
++        if (this.view.viewState.horizontalWrappers.size)
++            this.blockWrappers.push(this.view.viewState.horizontalWrappers);
+     }
+     scrollIntoView(target) {
+         if (target.isSnapshot) {
+@@ -6149,7 +6151,7 @@
+             return false;
+         for (let i = 0; i < a.length; i++) {
+             let gA = a[i], gB = b[i];
+-            if (gA.from != gB.from || gA.to != gB.to || gA.size != gB.size)
++            if (gA.from != gB.from || gA.to != gB.to || gA.size != gB.size || gA.displaySize != gB.displaySize)
+                 return false;
+         }
+         return true;
+@@ -6482,10 +6484,11 @@
+         let wrapping = this.heightOracle.lineWrapping;
+         let margin = wrapping ? 10000 /* LG.MarginWrap */ : 2000 /* LG.Margin */, halfMargin = margin >> 1, doubleMargin = margin << 1;
+         // The non-wrapping logic won't work at all in predominantly right-to-left text.
++        this.horizontalWrappers = RangeSet.empty;
+         if (this.defaultTextDirection != Direction.LTR && !wrapping)
+             return [];
+-        let gaps = [];
+-        let addGap = (from, to, line, structure) => {
++        let gaps = [], wrappers = [];
++        let addGap = (from, to, line, structure, scale) => {
+             if (to - from < halfMargin)
+                 return;
+             let sel = this.state.selection.main, avoid = [sel.from];
+@@ -6493,8 +6496,8 @@
+                 avoid.push(sel.to);
+             for (let pos of avoid) {
+                 if (pos > from && pos < to) {
+-                    addGap(from, pos - 10 /* LG.SelectionMargin */, line, structure);
+-                    addGap(pos + 10 /* LG.SelectionMargin */, to, line, structure);
++                    addGap(from, pos - 10 /* LG.SelectionMargin */, line, structure, scale);
++                    addGap(pos + 10 /* LG.SelectionMargin */, to, line, structure, scale);
+                     return;
+                 }
+             }
+@@ -6510,8 +6513,10 @@
+                         to = lineStart;
+                 }
+                 let size = this.gapSize(line, from, to, structure);
+-                let displaySize = wrapping || size < 2000000 /* VP.MaxHorizGap */ ? size : 2000000 /* VP.MaxHorizGap */;
+-                gap = new LineGap(from, to, size, displaySize);
++                gap = new LineGap(from, to, size, size * scale);
++            }
++            else if (gap.displaySize != gap.size * scale) {
++                gap = new LineGap(gap.from, gap.to, gap.size, gap.size * scale);
+             }
+             gaps.push(gap);
+         };
+@@ -6522,7 +6527,7 @@
+             if (structure.total < doubleMargin)
+                 return;
+             let target = this.scrollTarget ? this.scrollTarget.range.head : null;
+-            let viewFrom, viewTo;
++            let viewFrom, viewTo, scale = 1;
+             if (wrapping) {
+                 let marginHeight = (margin / this.heightOracle.lineLength) * this.heightOracle.lineHeight;
+                 let top, bot;
+@@ -6542,32 +6547,39 @@
+             else {
+                 let totalWidth = structure.total * this.heightOracle.charWidth;
+                 let marginWidth = margin * this.heightOracle.charWidth;
+-                let horizOffset = 0;
+-                if (totalWidth > 2000000 /* VP.MaxHorizGap */)
+-                    for (let old of current) {
+-                        if (old.from >= line.from && old.from < line.to && old.size != old.displaySize &&
+-                            old.from * this.heightOracle.charWidth + horizOffset < this.pixelViewport.left)
+-                            horizOffset = old.size - old.displaySize;
++                let {left, right} = this.pixelViewport, viewportWidth = right - left;
++                let windowWidth = viewportWidth + 2 * marginWidth;
++                let maxWidth = Math.max(2000000 /* VP.MaxHorizGap */, 2 * windowWidth);
++                let start = target == null ? left - marginWidth : findFraction(structure, target) * totalWidth - windowWidth / 2;
++                let drawn = null;
++                if (totalWidth > maxWidth) {
++                    // Reserve the rendered window at natural width. Both hidden ends
++                    // share the remaining scrollbar track, even after a thumb jump.
++                    scale = (maxWidth - windowWidth) / (totalWidth - windowWidth);
++                    if (target == null) {
++                        start /= scale;
++                        // A caret reveal may have scrolled to a measured glyph. Keep
++                        // the drawn text while it still covers the physical viewport.
++                        if (mayMeasure && current.length && left > 0 && right < maxWidth - 1)
++                            drawn = this.drawnHorizontalWindow(line, mayMeasure, halfMargin);
+                     }
+-                let pxLeft = this.pixelViewport.left + horizOffset, pxRight = this.pixelViewport.right + horizOffset;
+-                let left, right;
+-                if (target != null) {
+-                    let targetFrac = findFraction(structure, target);
+-                    let spaceFrac = ((pxRight - pxLeft) / 2 + marginWidth) / totalWidth;
+-                    left = targetFrac - spaceFrac;
+-                    right = targetFrac + spaceFrac;
+-                }
+-                else {
+-                    left = (pxLeft - marginWidth) / totalWidth;
+-                    right = (pxRight + marginWidth) / totalWidth;
+-                }
+-                viewFrom = findPosition(structure, left);
+-                viewTo = findPosition(structure, right);
++                    start = Math.max(0, Math.min(totalWidth - windowWidth, start));
++                }
++                viewFrom = drawn ? drawn.from : findPosition(structure, start / totalWidth);
++                viewTo = drawn ? drawn.to : findPosition(structure, (start + windowWidth) / totalWidth);
++                if (scale < 1) {
++                    // Keep the native thumb's track fixed as glyph widths vary.
++                    // Align the last window to the right so its tail stays visible.
++                    wrappers.push(BlockWrapper.create({tagName: "div", attributes: {
++                        class: "cm-wideLine",
++                        style: `width: ${maxWidth}px; justify-content: ${viewTo == line.to ? "end" : "start"}`
++                    }}).range(line.from, line.to));
++                }
+             }
+             if (viewFrom > line.from)
+-                addGap(line.from, viewFrom, line, structure);
++                addGap(line.from, viewFrom, line, structure, scale);
+             if (viewTo < line.to)
+-                addGap(viewTo, line.to, line, structure);
++                addGap(viewTo, line.to, line, structure, scale);
+         };
+         for (let line of this.viewportLines) {
+             if (Array.isArray(line.type))
+@@ -6575,7 +6587,20 @@
+             else
+                 checkLine(line);
+         }
++        this.horizontalWrappers = BlockWrapper.set(wrappers);
+         return gaps;
++    }
++    drawnHorizontalWindow(line, view, minLength) {
++        let {left, right} = this.pixelViewport, origin = view.contentDOM.getBoundingClientRect().left;
++        for (let range of view.visibleRanges) {
++            let from = Math.max(range.from, line.from), to = Math.min(range.to, line.to);
++            if (to - from < minLength)
++                continue;
++            if ((from == line.from || view.docView.coordsAt(from, 1)?.right <= origin + left) &&
++                (to == line.to || view.docView.coordsAt(to, -1)?.left >= origin + right))
++                return {from, to};
++        }
++        return null;
+     }
+     gapSize(line, from, to, structure) {
+         let fraction = findFraction(structure, to) - findFraction(structure, from);
+@@ -6844,6 +6869,11 @@
+     ".cm-line": {
+         display: "block",
+         padding: "0 2px 0 6px"
++    },
++    ".cm-wideLine": {
++        display: "grid",
++        gridTemplateColumns: "max-content",
++        overflow: "clip"
+     },
+     ".cm-layer": {
+         userSelect: "none", // #1708

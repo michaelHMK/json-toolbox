@@ -18,6 +18,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   let virtual = false;
   let destroyed = false;
   let frame = 0;
+  let resizePending = false;
   let layer = null;
   let spacer = null;
   let rows = [];
@@ -32,6 +33,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   let logicalWidth = 0;
   let physicalHeight = 0;
   let physicalWidth = 0;
+  let previousViewportWidth = 0;
   let horizontalAnchor = null;
   let selectAll = false;
   const originalTabIndex = element.getAttribute('tabindex');
@@ -56,9 +58,14 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     let info = geometry.get(index);
     if (info) return info;
     const text = row.prefix + row.text.slice(row.start, row.end);
-    const ascii = row.ascii === true || !/[^\x20-\x7e]/.test(text);
-    if (ascii) {
-      info = { text, width: text.length * characterWidth, ascii: true };
+    const singleLongRow = model.count === 1 && text.length > LONG_LINE_LIMIT;
+    const ascii = singleLongRow && typeof row.ascii === 'boolean'
+      ? row.ascii : row.ascii === true || !/[^\x20-\x7e]/.test(text);
+    // A single long row can use source offsets for its entire scroll track.
+    // Its position then never depends on how much of a Unicode prefix was measured.
+    const byOffset = singleLongRow && !ascii;
+    if (ascii || byOffset) {
+      info = { text, width: text.length * characterWidth, ascii, byOffset };
     } else {
       info = { text, width: 0, ascii: false, offsets: [0], widths: [0] };
       extendWidthIndex(info);
@@ -68,9 +75,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     return info;
   }
 
-  function measuredPrefix(info, chunk, offset) {
-    const text = info.text.slice(info.offsets[chunk], offset);
-    let width = info.widths[chunk];
+  function measureRun(text, width = 0) {
     let start = 0;
     for (let at = text.indexOf('\t'); at !== -1; at = text.indexOf('\t', at + 1)) {
       width += context.measureText(text.slice(start, at)).width;
@@ -82,18 +87,22 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     return width + context.measureText(text.slice(start)).width;
   }
 
-  function extendWidthIndex(info) {
+  function measuredPrefix(info, chunk, offset) {
+    return measureRun(info.text.slice(info.offsets[chunk], offset), info.widths[chunk]);
+  }
+
+  function extendWidthIndex(info, updateExtent = true) {
     const chunk = info.offsets.length - 1;
     const from = info.offsets[chunk];
     const end = safeTextWindow(info.text, from, from + COLUMN_CHUNK).end;
     info.width = measuredPrefix(info, chunk, end);
     info.offsets.push(end);
     info.widths.push(info.width);
-    logicalWidth = Math.max(logicalWidth, info.width + leftPadding + rightPadding);
+    if (updateExtent) logicalWidth = Math.max(logicalWidth, info.width + leftPadding + rightPadding);
   }
 
   function needsWidthIndex(info) {
-    return !info.ascii && info.offsets.at(-1) < info.text.length;
+    return !!info.offsets && info.offsets.at(-1) < info.text.length;
   }
 
   function columnAt(info, x) {
@@ -119,8 +128,62 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     return { offset: safe.start, x: measuredPrefix(info, chunk, safe.start) };
   }
 
+  function pixelWindow(info, left, width) {
+    const start = columnAt(info, Math.max(0, left - leftPadding - 100));
+    const end = columnAt(info, Math.max(0, left - leftPadding + width + 100));
+    return { ...safeTextWindow(info.text, start.offset, end.offset + 2), x: leftPadding + start.x - left };
+  }
+
+  function rowWindow(info, left, width) {
+    if (!info.byOffset) return pixelWindow(info, left, width);
+    const fraction = Math.min(1, left / Math.max(1, logicalWidth - width));
+    const { text } = info;
+    const offset = Math.round(fraction * text.length);
+    const anchor = safeTextWindow(text, offset, offset).start;
+    const anchorX = leftPadding + fraction * (width - leftPadding - rightPadding);
+    // A local slice usually fills the viewport, even with wide or joined glyphs.
+    let radius = Math.max(COLUMN_CHUNK, Math.ceil(width / characterWidth));
+    const limit = Math.max(radius, LONG_LINE_LIMIT);
+    for (;;) {
+      const { start, end } = safeTextWindow(text, anchor - radius, anchor + radius);
+      const before = measureRun(text.slice(start, anchor));
+      const x = anchorX - before;
+      const coversLeft = start === 0 || x <= -100;
+      const coversRight = end === text.length || x + measureRun(text.slice(anchor, end), before) >= width + 100;
+      const local = { start, end, x, alignEnd: anchor === text.length };
+      const wholeRow = start === 0 && end === text.length;
+      if (coversLeft && coversRight && !wholeRow) return local;
+      if (radius === limit || wholeRow) return sparseWindow(info, anchor, anchorX, width) ?? local;
+      radius = Math.min(limit, radius * 2);
+    }
+  }
+
+  function sparseWindow(info, anchor, anchorX, width) {
+    // A run of combining marks may occupy only a few pixels. Fill a viewport
+    // from the exact index in frame-sized batches without moving the native thumb.
+    const exact = info.exact ??= { text: info.text, width: 0, offsets: [0], widths: [0] };
+    const deadline = Date.now() + WIDTH_INDEX_FRAME_MS;
+    while (needsWidthIndex(exact) && Date.now() < deadline) extendWidthIndex(exact, false);
+    const pending = needsWidthIndex(exact);
+    const exactWidth = exact.width + leftPadding + rightPadding;
+    if (pending) schedule();
+    if (exact.offsets.at(-1) < anchor) return null;
+    const anchorPixel = xAtOffset(exact, anchor);
+    if (pending && exact.width - anchorPixel < width - anchorX) return null;
+    const left = Math.max(0, Math.min(exactWidth - width, leftPadding + anchorPixel - anchorX));
+    if (!pending) {
+      // Narrow rows can fit almost entirely on screen. Adopt their real scroll
+      // range once, keeping the same source character at its screen position.
+      geometry.set(0, exact);
+      logicalWidth = exactWidth;
+      extents();
+      setHorizontalScroll(left);
+    }
+    return pixelWindow(exact, left, width);
+  }
+
   function xAtOffset(info, offset) {
-    if (info.ascii) return offset * characterWidth;
+    if (info.ascii || info.byOffset) return offset * characterWidth;
     // An explicit error-location or End jump needs the exact source coordinate.
     while (info.offsets.at(-1) < offset) extendWidthIndex(info);
     if (offset >= info.offsets.at(-1)) return info.width;
@@ -135,8 +198,8 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   }
 
   function extents() {
-    physicalHeight = Math.min(MAX_SCROLL_SIZE, Math.max(element.clientHeight, logicalHeight));
-    physicalWidth = Math.min(MAX_SCROLL_SIZE, Math.max(element.clientWidth, logicalWidth));
+    physicalHeight = Math.min(MAX_SCROLL_SIZE, logicalHeight);
+    physicalWidth = Math.min(MAX_SCROLL_SIZE, logicalWidth);
     spacer.style.height = `${physicalHeight}px`;
     spacer.style.width = `${physicalWidth}px`;
   }
@@ -172,6 +235,13 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     const height = element.clientHeight;
     const width = element.clientWidth;
     extents();
+    // Keep a manually reached line end visible when the pane changes width.
+    if (previousViewportWidth && previousViewportWidth !== width && physicalWidth > previousViewportWidth &&
+        horizontalAnchor?.scrollLeft !== element.scrollLeft &&
+        Math.abs(element.scrollLeft - (physicalWidth - previousViewportWidth)) <= 1) {
+      element.scrollLeft = Math.max(0, physicalWidth - width);
+    }
+    previousViewportWidth = width;
     let top = toLogical(element.scrollTop, logicalHeight, physicalHeight, height);
     let left = logicalLeft();
     const first = Math.max(0, Math.floor((top - topPadding) / lineHeight) - OVERSCAN);
@@ -210,9 +280,6 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     }
     top = toLogical(element.scrollTop, logicalHeight, physicalHeight, height);
     left = logicalLeft();
-    layer.style.width = `${width}px`;
-    layer.style.height = `${height}px`;
-    layer.style.transform = `translate(${element.scrollLeft}px, ${element.scrollTop}px)`;
     while (rows.length < count) {
       const div = document.createElement('div');
       div.className = 'virtual-text-row';
@@ -226,20 +293,21 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
       const { row, info } = visible[i];
       const node = rows[i];
       node.index = first + i;
-      const start = columnAt(info, Math.max(0, left - leftPadding - 100));
-      const end = columnAt(info, Math.max(0, left - leftPadding + width + 100));
-      const window = safeTextWindow(info.text, start.offset, Math.min(info.text.length, end.offset + 2));
+      const window = rowWindow(info, left, width);
       const value = info.text.slice(window.start, window.end);
       node.div.className = `virtual-text-row ${row.className}`;
       node.div.style.height = `${lineHeight}px`;
       node.div.style.top = `${topPadding + (first + i) * lineHeight - top}px`;
-      node.text.style.transform = `translateX(${leftPadding + start.x - left}px)`;
+      // Let layout align the final glyph even if canvas and DOM shaping differ.
+      node.text.style.transform = window.alignEnd
+        ? `translateX(calc(${width - rightPadding}px - 100%))` : `translateX(${window.x}px)`;
       node.text.dataset.textOffset = String(row.start + Math.max(0, window.start - row.prefix.length));
       if (node.value !== value) {
         node.text.textContent = value;
         node.value = value;
       }
     }
+    layer.style.transform = `translate(${element.scrollLeft}px, ${element.scrollTop}px)`;
     // Limit retained geometry to recently visible rows, never every visited line.
     if (geometry.size > count * 4 + 32) {
       const keep = new Map();
@@ -249,12 +317,19 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   }
 
   function schedule() {
-    if (!frame && !destroyed) frame = requestAnimationFrame(() => { frame = 0; render(true); });
+    if (!frame && !destroyed) frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (resizePending) {
+        resizePending = false;
+        refresh();
+      } else render(true);
+    });
   }
 
   function reset() {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
+    resizePending = false;
     element.classList.remove('virtual-text', 'virtual-text-selected');
     element.replaceChildren();
     element.scrollTop = 0;
@@ -269,6 +344,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     spacer = null;
     rows = [];
     geometry.clear();
+    previousViewportWidth = 0;
     horizontalAnchor = null;
     selectAll = false;
     virtual = false;
@@ -296,9 +372,7 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
       return;
     }
     logicalHeight = next.count * lineHeight + topPadding + bottomPadding;
-    // UTF-16 length is not rendered width (combining marks/emoji can be much
-    // narrower). Grow from measured visible rows, never from an irreversible
-    // length estimate that would leave an unreachable blank right-hand tail.
+    // Multi-row text shares a pixel coordinate across the visible rows.
     logicalWidth = leftPadding + rightPadding;
     element.classList.add('virtual-text');
     element.setAttribute('tabindex', '0');
@@ -353,12 +427,17 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
       // CR/LF positions belong to the end of the preceding displayed row.
       const rowOffset = Math.min(position, row.end) - row.start;
       const info = horizontalGeometry(low, row);
-      const x = xAtOffset(info, rowOffset);
-      // Measure enough following text to center the selection on its first paint.
-      while (needsWidthIndex(info) && info.width < x + element.clientWidth) extendWidthIndex(info);
+      let left;
+      if (info.byOffset) {
+        left = rowOffset / info.text.length * (logicalWidth - element.clientWidth);
+      } else {
+        const x = xAtOffset(info, rowOffset);
+        // Measure enough following text to center the selection on its first paint.
+        while (needsWidthIndex(info) && info.width < x + element.clientWidth) extendWidthIndex(info);
+        left = x - element.clientWidth / 2;
+      }
       extents();
-      setLogicalScroll(Math.max(0, x - element.clientWidth / 2),
-        Math.max(0, (low - 2) * lineHeight + topPadding));
+      setLogicalScroll(left, Math.max(0, (low - 2) * lineHeight + topPadding));
       const target = rows.find((node) => node.index === low)?.text;
       textNode = target?.firstChild || target;
       offset = row.start + rowOffset - Number(target?.dataset.textOffset);
@@ -441,7 +520,14 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
   element.addEventListener('keydown', onKeyDown);
   element.addEventListener('copy', onCopy);
   element.addEventListener('pointerdown', onPointerDown);
-  const resize = new ResizeObserver(() => refresh());
+  // A scrollbar can resize the observed content box. Write layout in the next
+  // frame, after ResizeObserver has finished delivering the current sizes.
+  const resize = new ResizeObserver(() => {
+    if (virtual) {
+      resizePending = true;
+      schedule();
+    }
+  });
   resize.observe(element);
   return {
     setText(text, lineIndex) {

@@ -25,7 +25,10 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
+const browser = await chromium.launch({
+  headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE,
+  ignoreDefaultArgs: ['--hide-scrollbars'], args: ['--disable-features=OverlayScrollbar'],
+});
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
@@ -38,7 +41,7 @@ const goToEnd = async (selector = '#output-text') => {
 };
 
 const visibleMarker = async (selector, marker) => {
-  const visible = await page.evaluate(({ selector, marker }) => {
+  const left = await page.evaluate(({ selector, marker }) => {
     const element = document.querySelector(selector);
     const viewport = element.getBoundingClientRect();
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
@@ -51,11 +54,12 @@ const visibleMarker = async (selector, marker) => {
       range.setEnd(node, start + marker.length);
       const rect = range.getBoundingClientRect();
       if (rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1 &&
-          rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1) return true;
+          rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1) return rect.left;
     }
-    return false;
+    return null;
   }, { selector, marker });
-  assert.ok(visible, `${marker} must be in the viewport, not merely an overscan row`);
+  assert.notEqual(left, null, `${marker} must be in the viewport, not merely an overscan row`);
+  return left;
 };
 
 try {
@@ -63,6 +67,10 @@ try {
   await page.evaluate(async (moduleBase) => {
     const { createVirtualTextView } = await import(moduleBase + 'shared/virtual-text.js');
     window.output = document.querySelector('#output-text');
+    window.resizeErrors = [];
+    window.addEventListener('error', (event) => {
+      if (event.message?.startsWith('ResizeObserver loop')) resizeErrors.push(event.message);
+    });
     window.textView = createVirtualTextView(output);
     textView.setText('small 中文 😀');
   }, moduleBase);
@@ -72,21 +80,35 @@ try {
       window.source = scenario === '100000-lines'
         ? Array.from({ length: 100000 }, (_, i) => `  {"id":${i},"name":"Record ${i}","active":true,"payload":"abcdefghijklmnopqrstuvwxyz0123456789"},`).join('\n')
         : scenario === '5MiB-single-line' ? 'BEGIN' + 'x'.repeat(5 * 1024 * 1024) + 'ENDMARK'
-          : scenario === 'unicode-tab-line' ? '前🙂\t'.repeat(10000) + '末尾终'
+          : scenario === 'unicode-tab-line' ? ('前🙂\t' + 'x'.repeat(124)).repeat(8192) + '末尾终'
             : 'row\n'.repeat(2000000) + 'FINALROW';
       const start = performance.now();
       textView.setText(source);
+      // Drag to the edge immediately after the result appears.
+      if (scenario === 'unicode-tab-line') output.scrollLeft = output.scrollWidth;
       const scrollHeight = output.scrollHeight;
       return { bytes: source.length, setupAndLayoutMs: +(performance.now() - start).toFixed(2),
         elements: output.querySelectorAll('*').length, scrollHeight, scrollWidth: output.scrollWidth };
     }, scenario);
-    await goToEnd();
+    if (scenario === 'unicode-tab-line') await settle();
+    else await goToEnd();
     const end = await page.evaluate(() => ({ text: output.textContent, elements: output.querySelectorAll('*').length }));
     const marker = scenario === '100000-lines' ? 'Record 99999' : scenario === '5MiB-single-line' ? 'ENDMARK'
       : scenario === 'unicode-tab-line' ? '末尾终' : 'FINALROW';
     assert.ok(end.text.includes(marker), `end marker missing: ${scenario}`);
     assert.ok(end.elements < 150);
-    await visibleMarker('#output-text', marker);
+    const markerLeft = await visibleMarker('#output-text', marker);
+    if (scenario === 'unicode-tab-line') {
+      const releasedAt = await page.evaluate(() => output.scrollLeft);
+      await settle();
+      assert.equal(await page.evaluate(() => output.scrollLeft), releasedAt, 'released scrollbar must stay still');
+      assert.ok(Math.abs(await visibleMarker('#output-text', marker) - markerLeft) <= 1, 'line end must stay still');
+      await page.evaluate(() => { output.style.width = '700px'; });
+      await settle();
+      await visibleMarker('#output-text', marker);
+      await page.evaluate(() => { output.style.width = '800px'; });
+      await settle();
+    }
     const copiedComplete = await page.evaluate(() => {
       output.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }));
       const clipboardData = new DataTransfer();
@@ -95,6 +117,14 @@ try {
     });
     assert.ok(copiedComplete);
     results.push({ scenario, ...measurement, endElements: end.elements, copiedComplete });
+    if (scenario === '5MiB-single-line') {
+      assert.ok(await page.evaluate(() => output.offsetHeight > output.clientHeight), 'horizontal scrollbar occupies layout space');
+      await page.evaluate(() => { output.style.height = '300px'; });
+      await settle();
+      await page.evaluate(() => { output.style.height = '500px'; });
+      await settle();
+      assert.deepEqual(await page.evaluate(() => resizeErrors), [], 'resizing the output must settle without observer errors');
+    }
   }
   for (const text of ['a\u0301'.repeat(10000) + 'COMBINING_END',
     'a\u0301'.repeat(10000) + 'FIRST_END\n' + 'e\u0301'.repeat(10000) + 'COMBINING_END',
@@ -106,6 +136,11 @@ try {
     await settle();
     await visibleMarker('#output-text', 'COMBINING_END');
   }
+  // This many code units need virtualization, but their glyphs fit on one screen.
+  await page.evaluate(() => textView.setText('BEGIN' + ('a' + '\u0301'.repeat(299)).repeat(55) + 'END'));
+  await page.waitForFunction(() => output.scrollWidth === output.clientWidth && output.textContent.endsWith('END'));
+  await visibleMarker('#output-text', 'BEGIN');
+  await visibleMarker('#output-text', 'END');
   // Ctrl+End locates the end of the last row even as a wider row above it
   // grows the scrollbar. A subsequent native scroll can still reach that row.
   for (const jump of ['Ctrl+End', 'revealPosition']) {
