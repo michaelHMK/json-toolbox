@@ -246,3 +246,47 @@ test('nested container toggles follow keyed-array pairing on the opposite side',
   assert.equal(page.state.collapsed.right.has('/1/nested'), true);
   assert.ok(!visiblePaths(page, 'right').includes('/1/nested/value'));
 });
+
+test('added and removed keyed records expand only on their own side', async () => {
+  const page = loadCompare();
+  page.get('array-mode').value = 'key';
+  page.get('key-field').value = 'id';
+  setInputs(page, '[{"id":1},{"id":2},{"id":4}]', '[{"id":3},{"id":1},{"id":2}]');
+  await page.doCompare();
+  for (const [side, other, index] of [['right', 'left', 0], ['left', 'right', 2]]) {
+    const path = '/' + index;
+    const entry = page.get('tree-' + side).querySelectorAll('.entry').find((item) => item.dataset.path === path);
+    entry.querySelector('.toggle').click();
+    assert.ok(visiblePaths(page, side).includes(path + '/id'));
+    assert.ok(!visiblePaths(page, other).includes(path + '/id'));
+  }
+});
+
+test('an omitted keyed record never inherits its paired ancestor after truncation', async () => {
+  const handler = createTaskHandler();
+  const page = loadCompare(async (action, payload) => {
+    const response = handler({ action, ...payload });
+    // Keep the outer move, just as if it had used the last mapping slot.
+    if (action === 'diff') {
+      response.result.pairs = response.result.pairs.slice(0, 1);
+      response.result.pairsTruncated = true;
+    }
+    return response;
+  });
+  page.get('array-mode').value = 'key';
+  page.get('key-field').value = 'id';
+  setInputs(page,
+    '[{"id":1,"rows":[{"id":1},{"id":2}]},{"id":2}]',
+    '[{"id":2},{"id":1,"rows":[{"id":2},{"id":1}]}]');
+  await page.doCompare();
+  function toggle(path) {
+    const entry = page.get('tree-left').querySelectorAll('.entry').find((item) => item.dataset.path === path);
+    entry.querySelector('.toggle').click();
+  }
+  toggle('/0');
+  toggle('/0/rows');
+  assert.ok(visiblePaths(page, 'right').includes('/1/rows/0'));
+  toggle('/0/rows/0');
+  assert.ok(visiblePaths(page).includes('/0/rows/0/id'));
+  assert.ok(!visiblePaths(page, 'right').includes('/1/rows/0/id'));
+});

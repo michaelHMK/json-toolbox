@@ -155,7 +155,7 @@ export function createTaskHandler() {
           leftNumberLiterals: left.numberLiterals,
           rightNumberLiterals: right.numberLiterals,
         });
-        const snapshot = { id: ++snapshotSequence, left, right, textDiff: null };
+        const snapshot = { id: ++snapshotSequence, left, right, diffs: result.diffs, textDiff: null };
         if (options.includeData !== false) Object.assign(result, comparisonData(snapshot));
         comparison = options.retainSnapshot ? snapshot : null;
         if (comparison) result.snapshotId = comparison.id;

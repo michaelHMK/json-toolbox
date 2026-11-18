@@ -56,7 +56,7 @@ const state = {
   collapsed: { left: new Set(), right: new Set() },
   force: { left: new Set(), right: new Set() },        // 差异祖先，自动展开
   diffMap: { left: new Map(), right: new Map() },      // path → diff 记录
-  pairLR: new Map(),   // 主键配对导致的左路径 → 右路径
+  pairLR: new Map(),   // 主键配对导致的左路径 → 右路径，null 表示单侧记录
   pairRL: new Map(),
 };
 
@@ -180,15 +180,19 @@ function clearIndexes() {
 
 function buildIndexes() {
   const r = state.result;
-  state.pairLR = new Map(r.pairs);
-  state.pairRL = new Map(r.pairs.map(([l, rr]) => [rr, l]));
+  for (const [left, right] of r.pairs) {
+    if (left !== null) state.pairLR.set(left, right);
+    if (right !== null) state.pairRL.set(right, left);
+  }
   for (const d of r.diffs) {
     if (d.leftPath !== null) state.diffMap.left.set(d.leftPath, d);
     if (d.rightPath !== null) state.diffMap.right.set(d.rightPath, d);
   }
-  for (const side of ['left', 'right']) {
-    state.children[side] = createChildPathIndex(state.diffMap[side].keys());
-    state.force[side] = new Set(state.children[side].keys());
+  if (!state.remote) {
+    for (const side of ['left', 'right']) {
+      state.children[side] = createChildPathIndex(state.diffMap[side].keys());
+      state.force[side] = new Set(state.children[side].keys());
+    }
   }
   state.indexesReady = true;
 }
@@ -228,8 +232,13 @@ function pairedPath(side, path) {
   let ancestor = path;
   while (ancestor !== '') {
     const paired = pairs.get(ancestor);
+    if (paired === null) return null;
     if (paired !== undefined) return paired + path.slice(ancestor.length);
-    ancestor = ancestor.slice(0, ancestor.lastIndexOf('/'));
+    const slash = ancestor.lastIndexOf('/');
+    // A missing array index may have been omitted at the mapping cap. Its
+    // descendants cannot safely inherit the path of a more distant ancestor.
+    if (state.result.pairsTruncated && /^\d+$/.test(ancestor.slice(slash + 1))) return undefined;
+    ancestor = ancestor.slice(0, slash);
   }
   return path;
 }
@@ -244,15 +253,18 @@ function renderTrees() {
       numberLiterals: side === 'left' ? state.leftNumberLiterals : state.rightNumberLiterals,
       expanded: state.expanded[side],
       collapsed: state.collapsed[side],
-      forceExpand: state.force[side],
-      requiredChildren: state.children[side],
       onlyRequired: state.onlyDiff,
       decorations: state.diffMap[side],
       onToggle(path, open) {
         const other = side === 'left' ? 'right' : 'left';
-        suspendScrollSync(treeViews[other]?.setOpen(pairedPath(side, path), open));
+        const paired = pairedPath(side, path);
+        if (paired != null) suspendScrollSync(treeViews[other]?.setOpen(paired, open));
       },
     };
+    if (!state.remote) {
+      options.forceExpand = state.force[side];
+      options.requiredChildren = state.children[side];
+    }
     if (treeViews[side]) treeViews[side].update(options);
     else {
       const element = side === 'left' ? treeLeftEl : treeRightEl;

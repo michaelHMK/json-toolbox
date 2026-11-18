@@ -48,11 +48,19 @@ test('Worker tree expansion, filtering and keyboard movement retain exact paths 
 
 test('Worker comparison owns both trees and rejects stale snapshots after clearing', () => {
   const handle = createTaskHandler();
-  const diff = handle({ action: 'diff', text: '{"left":1}', text2: '{"right":2}', includeData: false, retainSnapshot: true });
+  const diff = handle({
+    action: 'diff', text: '{"branch":{"left":1,"same":0}}', text2: '{"branch":{"right":2,"same":0}}',
+    includeData: false, retainSnapshot: true,
+  });
   assert.equal(diff.result.leftData, undefined);
-  const request = (side) => handle({ action: 'tree', kind: 'comparison', side, options: {}, snapshotId: diff.result.snapshotId });
-  assert.equal(request('left').result.rows[1].value, 1);
-  assert.equal(request('right').result.rows[1].value, 2);
+  const request = (side, onlyRequired) => handle({
+    action: 'tree', operation: 'update', kind: 'comparison', side, options: { onlyRequired }, snapshotId: diff.result.snapshotId,
+  });
+  for (const side of ['left', 'right']) {
+    const entries = (filtered) => request(side, filtered).result.rows.filter((row) => row.kind === 'entry').map((row) => row.path);
+    assert.deepEqual(entries(false), ['', '/branch', '/branch/' + side, '/branch/same']);
+    assert.deepEqual(entries(true), ['', '/branch', '/branch/' + side]);
+  }
   handle({ action: 'clear' });
   assert.equal(request('left').code, 'SNAPSHOT_UNAVAILABLE');
 });

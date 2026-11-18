@@ -94,6 +94,11 @@ function previewValue(v, path, numberLiterals) {
   return '{' + Object.keys(v).length + ' 键}';
 }
 
+function jsonType(value) {
+  if (value === null) return 'null';
+  return Array.isArray(value) ? 'array' : typeof value;
+}
+
 /*
  * 结构 diff：深度优先对齐两棵树，产出 added / removed / changed / typeChanged 四类差异。
  * 数组默认按下标对齐；指定 keyField 且两边元素都是含该字段的对象时按主键配对，
@@ -115,6 +120,7 @@ export function diffData(left, right, options) {
   const pairs = [];
   const stats = { added: 0, removed: 0, changed: 0, typeChanged: 0 };
   let truncated = false;
+  let pairsTruncated = false;
   let keyFallback = false;
 
   const ignoreByDepth = new Map();
@@ -133,6 +139,13 @@ export function diffData(left, right, options) {
     let path = '';
     for (const seg of segs) path = appendJsonPath(path, seg);
     return path;
+  }
+
+  // Identity is implicit. Store exceptions independently of ignored paths and
+  // the detail cap, including an explicit null for a record with no partner.
+  function recordPair(left, right) {
+    if (pairs.length < MAX_PAIRS) pairs.push([left && toPath(left), right && toPath(right)]);
+    else pairsTruncated = true;
   }
 
   function record(type, leftSegs, rightSegs, lv, rv) {
@@ -190,18 +203,15 @@ export function diffData(left, right, options) {
 
   function enter(lv, rv, depth, leftNumbers, rightNumbers) {
     if (lv === rv && !keyField && leftNumbers === rightNumbers) return false;
-    const lObj = lv !== null && typeof lv === 'object';
-    const rObj = rv !== null && typeof rv === 'object';
-    if (!lObj || !rObj) {
-      if (lObj !== rObj) record('typeChanged', leftSegs, rightSegs, lv, rv);
-      else if (lv !== rv || (typeof lv === 'number' && typeof rv === 'number' && numbersDiffer(lv, rv, leftNumbers, rightNumbers))) {
-        record('changed', leftSegs, rightSegs, lv, rv);
-      }
+    const type = jsonType(lv);
+    if (type !== jsonType(rv)) {
+      record('typeChanged', leftSegs, rightSegs, lv, rv);
       return false;
     }
-    const lArr = Array.isArray(lv);
-    if (lArr !== Array.isArray(rv)) {
-      record('typeChanged', leftSegs, rightSegs, lv, rv);
+    if (type !== 'object' && type !== 'array') {
+      if (lv !== rv || (type === 'number' && numbersDiffer(lv, rv, leftNumbers, rightNumbers))) {
+        record('changed', leftSegs, rightSegs, lv, rv);
+      }
       return false;
     }
     let frame = frames[depth];
@@ -214,7 +224,7 @@ export function diffData(left, right, options) {
     frame.leftNumbers = leftNumbers;
     frame.rightNumbers = rightNumbers;
     frame.index = 0;
-    if (!lArr) {
+    if (type === 'object') {
       frame.type = 1;
       frame.keys = Object.keys(lv);
     } else {
@@ -288,10 +298,11 @@ export function diffData(left, right, options) {
         if (j !== undefined && !frame.matched[j]) {
           frame.matched[j] = 1;
           rightSegs.push(String(j));
-          if (i !== j && pairs.length < MAX_PAIRS) pairs.push([toPath(leftSegs), toPath(rightSegs)]);
+          if (i !== j) recordPair(leftSegs, rightSegs);
           if (enter(lv[i], rv[j], depth + 1, frame.leftNumbers?.get(String(i)), frame.rightNumbers?.get(String(j)))) depth++;
           else { leftSegs.pop(); rightSegs.pop(); }
         } else {
+          recordPair(leftSegs, null);
           record('removed', leftSegs, null, lv[i]);
           leftSegs.pop();
         }
@@ -300,6 +311,7 @@ export function diffData(left, right, options) {
       for (let j = 0; j < rv.length; j++) {
         if (!frame.matched[j]) {
           rightSegs.push(String(j));
+          recordPair(null, rightSegs);
           record('added', null, rightSegs, undefined, rv[j]);
           rightSegs.pop();
         }
@@ -319,6 +331,7 @@ export function diffData(left, right, options) {
   return {
     diffs,
     pairs,
+    pairsTruncated,
     stats,
     truncated,
     keyFallback,
