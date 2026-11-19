@@ -4,7 +4,7 @@ import { createTaskHandler } from '../src/worker/tasks.js';
 
 function session(text) {
   const handle = createTaskHandler();
-  const parsed = handle({ action: 'parse', text, retainSnapshot: true, includeData: false });
+  const parsed = handle({ action: 'parse', text, retainSnapshot: true });
   assert.equal(parsed.ok, true);
   assert.equal(Object.hasOwn(parsed.result, 'data'), false);
   return { handle, request: (payload) => handle({ action: 'tree', snapshotId: parsed.result.snapshotId, ...payload }) };
@@ -50,7 +50,7 @@ test('Worker comparison owns both trees and rejects stale snapshots after cleari
   const handle = createTaskHandler();
   const diff = handle({
     action: 'diff', text: '{"branch":{"left":1,"same":0}}', text2: '{"branch":{"right":2,"same":0}}',
-    includeData: false, retainSnapshot: true,
+    retainSnapshot: true,
   });
   assert.equal(diff.result.leftData, undefined);
   const request = (side, onlyRequired) => handle({
@@ -70,7 +70,7 @@ test('a truncated root array still pairs the root and recorded moves', () => {
   const rows = Array.from({ length: 100001 }, (_, id) => ({ id }));
   const { result } = handle({
     action: 'diff', text: JSON.stringify(rows), text2: JSON.stringify([...rows.slice(1), rows[0]]),
-    keyField: 'id', retainSnapshot: true, includeData: false,
+    keyField: 'id', retainSnapshot: true,
   });
   assert.equal(result.total, 0);
   assert.equal(result.pairs.length, 100000);
@@ -114,12 +114,12 @@ test('Worker child navigation enters only a visible direct child while normal mo
 test('Worker supplies cloneable large text indexes for format and cached text comparisons', () => {
   const handle = createTaskHandler();
   const text = '[' + '19.90,'.repeat(80000) + '1]';
-  const formatted = handle({ action: 'format', text, includeData: false, includeTextIndex: true });
+  const formatted = handle({ action: 'format', text, includeTextIndex: true });
   assert.equal(formatted.ok, true);
   assert.ok(formatted.result.lineIndex.starts instanceof Uint32Array);
   assert.equal(formatted.result.lineIndex.count, 80003);
   assert.doesNotThrow(() => structuredClone(formatted.result));
-  const diff = handle({ action: 'diff', text, text2: text.replace('19.90', '2'), includeData: false, retainSnapshot: true });
+  const diff = handle({ action: 'diff', text, text2: text.replace('19.90', '2'), retainSnapshot: true });
   const lines = handle({ action: 'textDiff', snapshotId: diff.result.snapshotId, includeTextIndex: true });
   assert.equal(lines.ok, true);
   assert.equal(lines.result.aLineIndex.count, formatted.result.lineIndex.count);

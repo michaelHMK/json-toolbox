@@ -216,13 +216,9 @@ export function loadPage(name, {
     setTimeout,
     clearTimeout,
   });
-  for (const module of ['virtual-tree', 'remote-tree', 'virtual-text', 'text-input', 'feedback']) {
-    let source = readFileSync(new URL(`../../src/shared/${module}.js`, import.meta.url), 'utf8')
+  for (const module of ['virtual-tree', 'virtual-text', 'text-input', 'feedback']) {
+    const source = readFileSync(new URL(`../../src/shared/${module}.js`, import.meta.url), 'utf8')
       .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
-    // Remote and local tree modules intentionally have private names in common.
-    if (module === 'remote-tree') {
-      source = '(function () {' + source + '\nglobalThis.createRemoteTree = createRemoteTree; })()';
-    }
     vm.runInContext(source, context, { filename: `${module}.js` });
   }
   const source = readFileSync(new URL(`../../src/pages/${name}.js`, import.meta.url), 'utf8')

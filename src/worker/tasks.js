@@ -10,9 +10,9 @@ import { createTextLineIndex } from '../core/text-lines.js';
 const TEXT_INDEX_THRESHOLD = 256 * 1024;
 
 /**
- * 一次 Worker 会话的任务入口。format/minify/parse 按需更新搜索数据；
- * retainSnapshot 显式保留当前文档/对比供视图切换复用；snapshotId 防止旧请求读到新数据。
- * retainSearch=false 释放搜索数据；includeData 只控制对象传输；clear 释放数据及快照。
+ * 一次 Worker 会话的任务入口。所有解析对象图均留在 Worker 内，仅通过树窗口、
+ * 搜索结果、差异摘要或格式化文本返回给页面；retainSnapshot 显式保留当前文档/对比供
+ * 视图切换复用；snapshotId 防止旧请求读到新数据；clear 释放数据及快照。
  * 输入 { id, action, text, ... }，返回带耗时的成功结果或含可用行列位置的错误。
  */
 export function createTaskHandler() {
@@ -50,15 +50,6 @@ export function createTaskHandler() {
     return { data: snapshot.data, numberLiterals: snapshot.numberLiterals };
   }
 
-  function comparisonData(snapshot) {
-    return {
-      leftData: snapshot.left.data,
-      rightData: snapshot.right.data,
-      leftNumberLiterals: snapshot.left.numberLiterals,
-      rightNumberLiterals: snapshot.right.numberLiterals,
-    };
-  }
-
   function withInputSide(text, side, parse) {
     try {
       return parse();
@@ -82,15 +73,14 @@ export function createTaskHandler() {
         comparison = null;
         return {};
       case 'format': {
-        const includeData = options.includeData !== false;
         const retainSnapshot = Boolean(options.retainSnapshot);
         const retainSearchFlag = options.retainSearch !== false;
-        const needData = includeData || retainSnapshot || retainSearchFlag;
+        const needData = retainSnapshot || retainSearchFlag;
         const cached = document?.source === text ? document : null;
         const formatted = formatJson(text, {
           indent,
           includeData: needData,
-          includeNumberLiterals: includeData || options.includeNumberLiterals === true,
+          includeNumberLiterals: options.includeNumberLiterals === true,
           parsed: cached,
         });
         retainSearch(formatted.data, text, formatted.numberLiterals, retainSearchFlag);
@@ -98,7 +88,7 @@ export function createTaskHandler() {
           id: ++snapshotSequence, source: text, output: formatted.text,
           data: formatted.data, numberLiterals: formatted.numberLiterals,
         } : null;
-        const result = includeData ? formatted : { text: formatted.text };
+        const result = { text: formatted.text };
         if (document) result.snapshotId = document.id;
         return result;
       }
@@ -116,19 +106,11 @@ export function createTaskHandler() {
         retainSearch(parsed.data, text, parsed.numberLiterals, options.retainSearch !== false);
         if (options.retainSnapshot) {
           if (!cached) document = { id: ++snapshotSequence, source: text, ...parsed };
-          return { ...(options.includeData === false ? {} : parsed), snapshotId: document.id };
+          return { snapshotId: document.id };
         }
         document = null;
-        return parsed;
+        return {};
       }
-      case 'parseSnapshot':
-        return options.includeData === false
-          ? { snapshotId: requireSnapshot(document, options.snapshotId).id }
-          : documentData(requireSnapshot(document, options.snapshotId));
-      case 'comparisonData':
-        return options.includeData === false
-          ? { snapshotId: requireSnapshot(comparison, options.snapshotId).id }
-          : comparisonData(requireSnapshot(comparison, options.snapshotId));
       case 'comparisonPair': {
         const snapshot = requireSnapshot(comparison, options.snapshotId);
         if (options.side !== 'left' && options.side !== 'right') throw taskError('TASK_FAILED', 'Invalid tree side');
@@ -175,7 +157,6 @@ export function createTaskHandler() {
           rightNumberLiterals: right.numberLiterals,
         });
         const snapshot = { id: ++snapshotSequence, left, right, diffs: result.diffs, truncatedArrays, textDiff: null };
-        if (options.includeData !== false) Object.assign(result, comparisonData(snapshot));
         comparison = options.retainSnapshot ? snapshot : null;
         if (comparison) result.snapshotId = comparison.id;
         return result;

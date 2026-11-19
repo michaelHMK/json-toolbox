@@ -20,147 +20,139 @@ function rejects(handler, request, pattern = /snapshot.*available/i) {
 const numbers = '{"a/b":{"~":[9007199254740993,1.2300,1e400,-0]},"exp":1E+02}';
 const reordered = '{"2":2.00,"1":1E+02,"x":{"old":1e9},"x":3.00,"s":"\\u4e2d\\/","__proto__":4.00}';
 
-function assertNumberLiterals(parsed) {
-  assert.deepEqual({ ...parsed.numberLiterals }, {
-    '/a~1b/~0/0': '9007199254740993',
-    '/a~1b/~0/1': '1.2300',
-    '/a~1b/~0/2': '1e400',
-    '/a~1b/~0/3': '-0',
-    '/exp': '1E+02',
+function readTree(handler, snapshotId, { kind = 'document', side, expandLevel = Infinity } = {}) {
+  return run(handler, {
+    action: 'tree', operation: 'update', kind, ...(side ? { side } : {}),
+    snapshotId, options: { expandLevel }, count: 64,
   });
-  assert.equal(parsed.data['a/b']['~'][2], Infinity);
-  assert.equal(Object.is(parsed.data['a/b']['~'][3], -0), true);
 }
 
-test('snapshot retention is opt-in and preserves legacy response shapes', () => {
+function assertNumberLiterals(handler, snapshotId, options = {}) {
+  const tree = readTree(handler, snapshotId, options);
+  const byPath = new Map(tree.rows.filter((row) => row.kind === 'entry').map((row) => [row.path, row]));
+  assert.equal(byPath.get('/a~1b/~0/0').literal, '9007199254740993');
+  assert.equal(byPath.get('/a~1b/~0/1').literal, '1.2300');
+  assert.equal(byPath.get('/a~1b/~0/2').literal, '1e400');
+  assert.equal(byPath.get('/a~1b/~0/2').value, Infinity);
+  assert.equal(byPath.get('/a~1b/~0/3').literal, '-0');
+  assert.equal(Object.is(byPath.get('/a~1b/~0/3').value, -0), true);
+  assert.equal(byPath.get('/exp').literal, '1E+02');
+}
+
+test('snapshot retention is opt-in and responses never transfer parsed object graphs', () => {
   const handler = createTaskHandler();
-  assert.deepEqual(Object.keys(run(handler, { action: 'format', text: '{}' })), ['text', 'data', 'numberLiterals']);
-  assert.deepEqual(Object.keys(run(handler, { action: 'format', text: '{}', includeData: false })), ['text']);
-  assert.deepEqual(Object.keys(run(handler, { action: 'parse', text: '{}' })), ['data', 'numberLiterals']);
+  assert.deepEqual(Object.keys(run(handler, { action: 'format', text: '{}' })), ['text']);
+  assert.deepEqual(Object.keys(run(handler, { action: 'parse', text: '{}' })), []);
   assert.deepEqual(Object.keys(run(handler, { action: 'minify', text: '{}' })), ['text']);
   const diff = run(handler, { action: 'diff', text: '{}', text2: '{"value":1}' });
   assert.equal(Object.hasOwn(diff, 'snapshotId'), false);
-  assert.deepEqual(diff.leftData, {});
-  assert.deepEqual(diff.rightData, { value: 1 });
+  for (const key of ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals']) {
+    assert.equal(Object.hasOwn(diff, key), false);
+  }
   const textDiff = run(handler, { action: 'textDiff', text: '{}', text2: '{}' });
   assert.deepEqual(Object.keys(textDiff).sort(), ['aText', 'bText', 'blocky', 'ops', 'totalLines']);
-  rejects(handler, { action: 'parseSnapshot', snapshotId: 1 });
-  rejects(handler, { action: 'comparisonData', snapshotId: 1 });
+  rejects(handler, { action: 'tree', kind: 'document', snapshotId: 1, options: {} });
+  rejects(handler, { action: 'tree', kind: 'comparison', side: 'left', snapshotId: 1, options: {} });
+  rejects(handler, { action: 'textDiff', snapshotId: 1 });
 });
 
-test('format snapshots lazily return original literals without retransmitting source or data', () => {
+test('format snapshots lazily populate original literals and reuse parsing across reformatting', (t) => {
   const handler = createTaskHandler();
-  const formatted = run(handler, {
-    action: 'format', text: numbers, includeData: false, retainSnapshot: true,
-  });
+  const formatted = run(handler, { action: 'format', text: numbers, retainSnapshot: true });
   assert.deepEqual(Object.keys(formatted), ['text', 'snapshotId']);
-  const parsed = run(handler, { action: 'parseSnapshot', snapshotId: formatted.snapshotId });
-  assertNumberLiterals(parsed);
-  const repeated = run(handler, { action: 'parseSnapshot', snapshotId: formatted.snapshotId });
-  assert.strictEqual(repeated.data, parsed.data);
-  assert.strictEqual(repeated.numberLiterals, parsed.numberLiterals);
+  const parseSpy = t.mock.method(JSON, 'parse');
+  assertNumberLiterals(handler, formatted.snapshotId);
   const reformatted = run(handler, { action: 'format', text: numbers, indent: '4', retainSnapshot: true });
-  assert.strictEqual(reformatted.data, parsed.data);
-  assert.strictEqual(reformatted.numberLiterals, parsed.numberLiterals);
+  assert.equal(parseSpy.mock.callCount(), 0, 'reformatting the same source reuses cached parsed data');
   assert.match(reformatted.text, /\n    "a\/b":/);
   assert.notEqual(reformatted.snapshotId, formatted.snapshotId);
-  rejects(handler, { action: 'parseSnapshot', snapshotId: formatted.snapshotId });
+  assertNumberLiterals(handler, reformatted.snapshotId);
+  rejects(handler, { action: 'tree', kind: 'document', snapshotId: formatted.snapshotId, options: {} });
 });
 
-test('cached format and parse preserve key reordering, duplicate keys and normalized strings', () => {
+test('cached format and parse preserve key reordering, duplicate keys and normalized strings', (t) => {
   const handler = createTaskHandler();
   const formatted = run(handler, { action: 'format', text: reordered, retainSnapshot: true });
-  assert.deepEqual(Object.keys(formatted.data), ['1', '2', 'x', 's', '__proto__']);
-  assert.equal(formatted.data.x, 3);
-  assert.equal(formatted.data.s, '中/');
-  assert.equal(formatted.data.__proto__, 4);
-  assert.equal(formatted.numberLiterals['/x/old'], undefined);
-  assert.equal(formatted.numberLiterals['/x'], '3.00');
-  assert.equal(formatted.numberLiterals['/1'], '1E+02');
-  assert.equal(formatted.numberLiterals['/__proto__'], '4.00');
+  const parseSpy = t.mock.method(JSON, 'parse');
+  const tree = readTree(handler, formatted.snapshotId);
+  const top = tree.rows.filter((row) => row.kind === 'entry' && row.depth === 1);
+  assert.deepEqual(top.map((row) => row.key), ['1', '2', 'x', 's', '__proto__']);
+  assert.equal(top.find((row) => row.path === '/x').literal, '3.00');
+  assert.equal(top.find((row) => row.path === '/s').value, '中/');
+  assert.equal(top.find((row) => row.path === '/__proto__').literal, '4.00');
+  assert.equal(top.find((row) => row.path === '/1').literal, '1E+02');
   for (const text of [reordered, formatted.text]) {
     const parsed = run(handler, { action: 'parse', text, retainSnapshot: true });
-    assert.strictEqual(parsed.data, formatted.data);
-    assert.strictEqual(parsed.numberLiterals, formatted.numberLiterals);
     assert.equal(parsed.snapshotId, formatted.snapshotId);
   }
   const tabbed = run(handler, { action: 'format', text: reordered, indent: 'tab', retainSnapshot: true });
-  assert.strictEqual(tabbed.data, formatted.data);
+  assert.equal(parseSpy.mock.callCount(), 0);
   assert.match(tabbed.text, /^\{\n\t"1": 1E\+02,/);
   assert.equal(tabbed.text.includes('old'), false);
 });
 
-test('parse snapshots reuse parsed data for repeated parsing and subsequent formatting', () => {
+test('parse snapshots reuse parsed data for repeated parsing and subsequent formatting', (t) => {
   const handler = createTaskHandler();
   const first = run(handler, { action: 'parse', text: numbers, retainSnapshot: true });
+  const parseSpy = t.mock.method(JSON, 'parse');
   const second = run(handler, { action: 'parse', text: numbers, retainSnapshot: true });
   const formatted = run(handler, { action: 'format', text: numbers, retainSnapshot: true });
-  assert.strictEqual(second.data, first.data);
-  assert.strictEqual(formatted.data, first.data);
-  assert.strictEqual(formatted.numberLiterals, first.numberLiterals);
-  assertNumberLiterals(formatted);
+  assert.equal(parseSpy.mock.callCount(), 0);
+  assert.equal(second.snapshotId, first.snapshotId);
+  assertNumberLiterals(handler, formatted.snapshotId);
 });
 
-test('comparison summaries omit trees and recover their exact literals by snapshot id', () => {
+test('comparison summaries omit trees and expose exact literals through Worker tree windows', () => {
   const handler = createTaskHandler();
   const right = numbers.replace('1.2300', '2.3400');
-  const summary = run(handler, {
-    action: 'diff', text: numbers, text2: right, includeData: false, retainSnapshot: true,
-  });
+  const summary = run(handler, { action: 'diff', text: numbers, text2: right, retainSnapshot: true });
   for (const key of ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals']) {
     assert.equal(Object.hasOwn(summary, key), false);
   }
   assert.equal(summary.total, 1);
   assert.equal(summary.diffs[0].leftPreview, '1.2300');
   assert.equal(summary.diffs[0].rightPreview, '2.3400');
-  const data = run(handler, { action: 'comparisonData', snapshotId: summary.snapshotId });
-  assertNumberLiterals({ data: data.leftData, numberLiterals: data.leftNumberLiterals });
-  assert.equal(data.rightNumberLiterals['/a~1b/~0/1'], '2.3400');
-  const repeated = run(handler, { action: 'comparisonData', snapshotId: summary.snapshotId });
-  assert.strictEqual(repeated.leftData, data.leftData);
-  assert.strictEqual(repeated.rightData, data.rightData);
+  assertNumberLiterals(handler, summary.snapshotId, { kind: 'comparison', side: 'left' });
+  const rightTree = readTree(handler, summary.snapshotId, { kind: 'comparison', side: 'right' });
+  assert.equal(rightTree.rows.find((row) => row.path === '/a~1b/~0/1').literal, '2.3400');
 });
 
-test('repeated and swapped comparisons reuse both parsed sides while recomputing options', () => {
+test('repeated and swapped comparisons reuse both parsed sides while recomputing options', (t) => {
   const handler = createTaskHandler();
   const left = '{"rows":[{"id":1,"value":1.00},{"id":2,"value":2.00}]}';
   const right = '{"rows":[{"id":2,"value":3.00},{"id":1,"value":4.00}]}';
   const initial = run(handler, { action: 'diff', text: left, text2: right, retainSnapshot: true });
+  const parseSpy = t.mock.method(JSON, 'parse');
   const keyed = run(handler, {
     action: 'diff', text: left, text2: right, keyField: 'id',
     ignorePaths: ['rows[*].value'], retainSnapshot: true,
   });
-  assert.strictEqual(keyed.leftData, initial.leftData);
-  assert.strictEqual(keyed.rightData, initial.rightData);
-  assert.strictEqual(keyed.leftNumberLiterals, initial.leftNumberLiterals);
   assert.equal(keyed.total, 0);
   assert.deepEqual(keyed.pairs, [['/rows/0', '/rows/1'], ['/rows/1', '/rows/0']]);
   const swapped = run(handler, { action: 'diff', text: right, text2: left, retainSnapshot: true });
-  assert.strictEqual(swapped.leftData, initial.rightData);
-  assert.strictEqual(swapped.rightData, initial.leftData);
-  assert.strictEqual(swapped.leftNumberLiterals, initial.rightNumberLiterals);
-  assert.strictEqual(swapped.rightNumberLiterals, initial.leftNumberLiterals);
+  assert.equal(parseSpy.mock.callCount(), 0, 'repeated and swapped diffs reuse cached sides');
   assert.equal(swapped.total, initial.total);
-  rejects(handler, { action: 'comparisonData', snapshotId: keyed.snapshotId });
+  const swappedLeft = readTree(handler, swapped.snapshotId, { kind: 'comparison', side: 'left' });
+  assert.equal(swappedLeft.rows.find((row) => row.path === '/rows/0/value').literal, '3.00');
+  rejects(handler, { action: 'tree', kind: 'comparison', side: 'left', snapshotId: keyed.snapshotId, options: {} });
 });
 
-test('replacing just one comparison side retains the other parsed object', () => {
+test('replacing just one comparison side retains the other parsed object', (t) => {
   const handler = createTaskHandler();
-  const original = run(handler, { action: 'diff', text: reordered, text2: numbers, retainSnapshot: true });
+  run(handler, { action: 'diff', text: reordered, text2: numbers, retainSnapshot: true });
+  const parseSpy = t.mock.method(JSON, 'parse');
   const changed = run(handler, { action: 'diff', text: reordered, text2: '{"new":true}', retainSnapshot: true });
-  assert.strictEqual(changed.leftData, original.leftData);
-  assert.strictEqual(changed.leftNumberLiterals, original.leftNumberLiterals);
-  assert.notStrictEqual(changed.rightData, original.rightData);
-  assert.equal(changed.leftData.x, 3);
-  assert.equal(changed.leftNumberLiterals['/x/old'], undefined);
+  assert.equal(parseSpy.mock.callCount(), 1, 'only the changed right side is parsed');
+  const leftTree = readTree(handler, changed.snapshotId, { kind: 'comparison', side: 'left' });
+  assert.equal(leftTree.rows.find((row) => row.path === '/x').value, 3);
+  const rightTree = readTree(handler, changed.snapshotId, { kind: 'comparison', side: 'right' });
+  assert.equal(rightTree.rows.find((row) => row.path === '/new').value, true);
 });
 
 test('view-only text diff needs only snapshot id and invalidates its result on indentation changes', () => {
   const handler = createTaskHandler();
   const right = reordered.replace('3.00', '5.00');
-  const compared = run(handler, {
-    action: 'diff', text: reordered, text2: right, includeData: false, retainSnapshot: true,
-  });
+  const compared = run(handler, { action: 'diff', text: reordered, text2: right, retainSnapshot: true });
   const snapshotId = compared.snapshotId;
   const twoSpaces = run(handler, { action: 'textDiff', snapshotId, indent: '2' });
   assert.strictEqual(run(handler, { action: 'textDiff', snapshotId, indent: '2' }), twoSpaces);
@@ -176,11 +168,11 @@ test('view-only text diff needs only snapshot id and invalidates its result on i
   }
 });
 
-test('identical comparison inputs share one parsed object and yield one unchanged text range', () => {
+test('identical comparison inputs share one parsed object and yield one unchanged text range', (t) => {
   const handler = createTaskHandler();
+  const parseSpy = t.mock.method(JSON, 'parse');
   const compared = run(handler, { action: 'diff', text: numbers, text2: numbers, retainSnapshot: true });
-  assert.strictEqual(compared.leftData, compared.rightData);
-  assert.strictEqual(compared.leftNumberLiterals, compared.rightNumberLiterals);
+  assert.equal(parseSpy.mock.callCount(), 1, 'identical left and right inputs parse once');
   const result = run(handler, { action: 'textDiff', snapshotId: compared.snapshotId });
   assert.equal(result.aText, result.bText);
   assert.equal(result.ops.length, 1);
@@ -201,10 +193,8 @@ test('invalid and missing input never overwrite successful document or compariso
     { action: 'textDiff', text: '{}', text2: '{' },
   ]) {
     rejects(handler, request, /JSON/);
-    assert.strictEqual(run(handler, { action: 'parseSnapshot', snapshotId: document.snapshotId }).data, document.data);
-    const recovered = run(handler, { action: 'comparisonData', snapshotId: compared.snapshotId });
-    assert.strictEqual(recovered.leftData, compared.leftData);
-    assert.strictEqual(recovered.rightData, compared.rightData);
+    assert.equal(readTree(handler, document.snapshotId).rows.find((row) => row.path === '/keep').value, 'needle');
+    assert.equal(readTree(handler, compared.snapshotId, { kind: 'comparison', side: 'left' }).rows.find((row) => row.path === '/exp').literal, '1E+02');
     assert.equal(run(handler, { action: 'search', text: 'needle' }).matchCount, 1);
   }
   for (const [request, side] of [
@@ -224,14 +214,14 @@ test('replacing and clearing snapshots rejects stale ids without reusing them', 
   const oldComparison = run(handler, { action: 'diff', text: numbers, text2: reordered, retainSnapshot: true });
   const nextDocument = run(handler, { action: 'parse', text: '{"replacement":true}', retainSnapshot: true });
   const nextComparison = run(handler, { action: 'diff', text: '[]', text2: '{}', retainSnapshot: true });
-  rejects(handler, { action: 'parseSnapshot', snapshotId: oldDocument.snapshotId });
-  rejects(handler, { action: 'comparisonData', snapshotId: oldComparison.snapshotId });
+  rejects(handler, { action: 'tree', kind: 'document', snapshotId: oldDocument.snapshotId, options: {} });
+  rejects(handler, { action: 'tree', kind: 'comparison', side: 'left', snapshotId: oldComparison.snapshotId, options: {} });
   rejects(handler, { action: 'textDiff', snapshotId: oldComparison.snapshotId });
-  rejects(handler, { action: 'parseSnapshot', snapshotId: nextComparison.snapshotId });
-  rejects(handler, { action: 'comparisonData', snapshotId: nextDocument.snapshotId });
+  rejects(handler, { action: 'tree', kind: 'document', snapshotId: nextComparison.snapshotId, options: {} });
+  rejects(handler, { action: 'tree', kind: 'comparison', side: 'left', snapshotId: nextDocument.snapshotId, options: {} });
   assert.deepEqual(run(handler, { action: 'clear' }), {});
-  rejects(handler, { action: 'parseSnapshot', snapshotId: nextDocument.snapshotId });
-  rejects(handler, { action: 'comparisonData', snapshotId: nextComparison.snapshotId });
+  rejects(handler, { action: 'tree', kind: 'document', snapshotId: nextDocument.snapshotId, options: {} });
+  rejects(handler, { action: 'tree', kind: 'comparison', side: 'left', snapshotId: nextComparison.snapshotId, options: {} });
   rejects(handler, { action: 'textDiff', snapshotId: nextComparison.snapshotId });
   rejects(handler, { action: 'search', text: 'replacement' }, /JSON/);
   const restored = run(handler, { action: 'parse', text: numbers, retainSnapshot: true });
@@ -243,25 +233,25 @@ test('non-retaining requests release their snapshots while preserving search beh
     const handler = createTaskHandler();
     const saved = run(handler, { action: 'parse', text: numbers, retainSnapshot: true });
     run(handler, { action, text: '{"current":"needle"}' });
-    rejects(handler, { action: 'parseSnapshot', snapshotId: saved.snapshotId });
+    rejects(handler, { action: 'tree', kind: 'document', snapshotId: saved.snapshotId, options: {} });
     assert.equal(run(handler, { action: 'search', text: 'needle' }).matchCount, 1);
   }
   const handler = createTaskHandler();
   const saved = run(handler, { action: 'diff', text: numbers, text2: reordered, retainSnapshot: true });
   run(handler, { action: 'diff', text: '{}', text2: '[]' });
-  rejects(handler, { action: 'comparisonData', snapshotId: saved.snapshotId });
+  rejects(handler, { action: 'tree', kind: 'comparison', side: 'left', snapshotId: saved.snapshotId, options: {} });
 });
 
 test('snapshots remain isolated between worker sessions', () => {
   const first = createTaskHandler();
   const second = createTaskHandler();
   const saved = run(first, { action: 'format', text: numbers, retainSnapshot: true });
-  rejects(second, { action: 'parseSnapshot', snapshotId: saved.snapshotId });
+  rejects(second, { action: 'tree', kind: 'document', snapshotId: saved.snapshotId, options: {} });
   run(second, { action: 'clear' });
-  assertNumberLiterals(run(first, { action: 'parseSnapshot', snapshotId: saved.snapshotId }));
+  assertNumberLiterals(first, saved.snapshotId);
 });
 
-test('cached keyed comparisons retain duplicate-key fallback and literal previews', () => {
+test('cached keyed comparisons retain duplicate-key fallback and literal previews', (t) => {
   const handler = createTaskHandler();
   const request = {
     action: 'diff', keyField: 'id', retainSnapshot: true,
@@ -269,9 +259,9 @@ test('cached keyed comparisons retain duplicate-key fallback and literal preview
     text2: '[{"id":1,"value":3.00},{"id":1,"value":4.00}]',
   };
   const first = run(handler, request);
+  const parseSpy = t.mock.method(JSON, 'parse');
   const repeated = run(handler, request);
-  assert.strictEqual(repeated.leftData, first.leftData);
-  assert.strictEqual(repeated.rightData, first.rightData);
+  assert.equal(parseSpy.mock.callCount(), 0);
   assert.deepEqual(repeated.diffs, first.diffs);
   assert.deepEqual(repeated.stats, { added: 0, removed: 0, changed: 2, typeChanged: 0 });
   assert.equal(repeated.keyFallback, true);

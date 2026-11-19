@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { createTaskHandler } from '../src/worker/tasks.js';
 import { loadPage } from './helpers/page-dom.js';
 
+const settle = () => new Promise(setImmediate);
+
 function loadCompare(runTask) {
   const handler = createTaskHandler();
   return loadPage('compare', {
@@ -21,15 +23,14 @@ function setInputs(page, left = '{"before":1}', right = '{"after":2}') {
 }
 
 function assertCleared(page) {
-  for (const name of ['diffMap', 'force', 'expanded', 'collapsed', 'children']) {
+  for (const name of ['diffMap', 'expanded', 'collapsed']) {
     assert.equal(page.state[name].left.size, 0, name + '.left');
     assert.equal(page.state[name].right.size, 0, name + '.right');
   }
   for (const name of ['pairLR', 'pairRL']) assert.equal(page.state[name].size, 0, name);
-  for (const name of ['result', 'textResult', 'leftNumberLiterals', 'rightNumberLiterals']) {
+  for (const name of ['result', 'textResult']) {
     assert.equal(page.state[name], null, name);
   }
-  for (const name of ['leftData', 'rightData']) assert.equal(page.state[name], undefined, name);
   assert.equal(page.get('tree-left').children.length, 0);
   assert.equal(page.get('tree-right').children.length, 0);
   assert.equal(page.get('text-view').children.length, 0);
@@ -90,7 +91,7 @@ test('text diff uses the completed comparison snapshot even after input edits', 
   assert.equal(JSON.parse(page.state.textResult.bText).old, 2);
 });
 
-test('text-only comparisons defer object transfer and all tree indexes until structure is opened', async () => {
+test('text-only comparisons defer tree windows and all tree indexes until structure is opened', async () => {
   const handler = createTaskHandler();
   const requests = [];
   const page = loadCompare(async (action, payload) => {
@@ -103,22 +104,21 @@ test('text-only comparisons defer object transfer and all tree indexes until str
   setInputs(page, '[{"id":1,"value":1},{"id":2,"value":2}]', '[{"id":2,"value":3},{"id":1,"value":4}]');
   await page.doCompare();
   assert.ok(page.state.textResult);
-  assert.equal(page.state.leftData, undefined);
   assert.equal(page.state.indexesReady, false);
   assert.equal(page.state.pairLR.size, 0);
   assert.equal(page.state.diffMap.left.size, 0);
-  assert.equal(page.state.force.left.size, 0);
-  assert.equal(page.state.children.left.size, 0);
-  assert.equal(requests.find((request) => request.action === 'diff').includeData, false);
-  assert.ok(!requests.some((request) => request.action === 'comparisonData'));
+  assert.ok(!requests.some((request) => request.action === 'tree'));
   await page.setCompareView('struct');
   assert.equal(page.state.indexesReady, true);
   assert.equal(page.state.pairLR.size, 2);
   assert.ok(page.state.diffMap.left.size > 0);
-  assert.equal(requests.filter((request) => request.action === 'comparisonData').length, 1);
+  assert.equal(requests.filter((request) => request.action === 'diff').length, 1);
+  const treeCount = requests.filter((request) => request.action === 'tree').length;
+  assert.ok(treeCount >= 2);
   await page.setCompareView('text');
   await page.setCompareView('struct');
-  assert.equal(requests.filter((request) => request.action === 'comparisonData').length, 1);
+  assert.equal(requests.filter((request) => request.action === 'diff').length, 1);
+  assert.equal(requests.filter((request) => request.action === 'tree').length, treeCount);
 });
 
 test('clear discards an outstanding text diff response', async () => {
@@ -206,16 +206,15 @@ test('switching views during comparison does not request the old snapshot', asyn
   const oldTextPending = page.setCompareView('text');
   await page.setCompareView('struct');
   assert.deepEqual(requests.map((request) => request.action), ['diff']);
+  hold = false;
   requests[0].finish();
   await comparePending;
   await oldTextPending;
   assert.equal(page.state.textResult, null, 'text for A must not be cached against result B');
-  hold = false;
   await page.setCompareView('text');
   assert.equal(JSON.parse(page.state.textResult.aText).snapshot, 'B');
   assert.equal(JSON.parse(page.state.textResult.bText).snapshot, 'B2');
 });
-
 
 test('dense differences remain navigable on both sides with a bounded DOM', async () => {
   const page = loadCompare();
@@ -223,7 +222,7 @@ test('dense differences remain navigable on both sides with a bounded DOM', asyn
   const right = left.map((row) => ({ ...row, changed: 2 }));
   setInputs(page, JSON.stringify(left), JSON.stringify(right));
   await page.doCompare();
-  page.goToDiff(4999);
+  await page.goToDiff(4999);
   for (const side of ['left', 'right']) {
     assert.equal(page.get('tree-' + side).querySelector('.entry.current').dataset.path, '/4999/changed');
     assert.ok(page.get('tree-' + side).querySelectorAll('.entry').length <= 45);
@@ -242,6 +241,7 @@ test('nested container toggles follow keyed-array pairing on the opposite side',
   const entry = page.get('tree-left').querySelectorAll('.entry').find((item) =>
     item.dataset.path === '/0/nested' && !item.classList.contains('virtual-close'));
   entry.querySelector('.toggle').click();
+  await settle();
   assert.equal(page.state.collapsed.left.has('/0/nested'), true);
   assert.equal(page.state.collapsed.right.has('/1/nested'), true);
   assert.ok(!visiblePaths(page, 'right').includes('/1/nested/value'));
@@ -257,6 +257,7 @@ test('added and removed keyed records expand only on their own side', async () =
     const path = '/' + index;
     const entry = page.get('tree-' + side).querySelectorAll('.entry').find((item) => item.dataset.path === path);
     entry.querySelector('.toggle').click();
+    await settle();
     assert.ok(visiblePaths(page, side).includes(path + '/id'));
     assert.ok(!visiblePaths(page, other).includes(path + '/id'));
   }
@@ -282,7 +283,6 @@ test('truncated keyed arrays isolate unknown records and still sync unrelated pa
   const right = { ...common, full: [...full.slice(1), full[0]], rows: [{ id: 2 }, { id: 1, inner: [{ id: 2 }, { id: 1 }] }] };
   setInputs(page, JSON.stringify(left), JSON.stringify(right));
   await page.doCompare();
-  const settle = () => new Promise(setImmediate);
   await settle();
   assert.equal(page.state.result.pairsTruncated, true);
   async function toggle(side, path) {

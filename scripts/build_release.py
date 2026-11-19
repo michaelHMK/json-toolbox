@@ -28,7 +28,7 @@ RUNTIME_FILES = (
     'shared/file-import.js', 'shared/text-input.js',
     'shared/large-input-editor.js', 'vendor/codemirror.js', 'vendor/codemirror.LICENSE.txt',
     'shared/clipboard.js',
-    'shared/virtual-tree.js', 'shared/remote-tree.js', 'shared/virtual-text.js',
+    'shared/virtual-tree.js', 'shared/virtual-text.js',
     'worker/index.js', 'worker/tasks.js', 'worker/tree-tasks.js',
     'core/json.js', 'core/json-path.js', 'core/parse-error.js', 'core/preview.js',
     'core/tree-model.js', 'core/escape.js', 'core/search.js',

@@ -1,5 +1,3 @@
-import { createTaskResponseDecoder } from './worker-protocol.js';
-
 /**
  * 每个页面拥有独立 Worker；请求按 id 配对，busy 持续到所有请求结束。
  * cancel/clear 立即终止正在执行的同步计算；下一次请求才创建新 Worker。
@@ -16,7 +14,6 @@ export function createTaskRunner({
   const pending = new Map();
   const queued = [];
   let activeId = null;
-  const decode = createTaskResponseDecoder();
 
   function send(request) {
     if (serialize) activeId = request.id;
@@ -35,12 +32,10 @@ export function createTaskRunner({
   function finish(message) {
     const resolve = pending.get(message.id);
     if (!resolve) return;
-    const response = decode(message);
-    if (!response) return;
     pending.delete(message.id);
     if (message.id === activeId) activeId = null;
     onBusyChange(pending.size > 0);
-    resolve(response);
+    resolve(message);
     pump();
   }
 
@@ -52,7 +47,6 @@ export function createTaskRunner({
     activeId = null;
     const requests = [...pending];
     pending.clear();
-    decode.clear();
     onReset();
     onBusyChange(false);
     for (const [id, resolve] of requests) resolve({ id, ok: false, ...response });
