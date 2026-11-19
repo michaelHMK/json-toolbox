@@ -14,24 +14,36 @@ function indexLines(text) {
   const starts = new Uint32Array(count + 1);
   const hashes = new Int32Array(count);
   let start = 0;
+  let maxLineLength = 0;
+  let nonAscii = false;
+  let hasCR = false;
   for (let line = 0; line < count; line++) {
     starts[line] = start;
     const end = line + 1 === count ? text.length : text.indexOf('\n', start);
+    const length = end - start;
+    if (length > maxLineLength) maxLineLength = length;
     let hash = 2166136261;
-    for (let at = start; at < end; at++) hash = Math.imul(hash ^ text.charCodeAt(at), 16777619);
+    for (let at = start; at < end; at++) {
+      const code = text.charCodeAt(at);
+      if (code < 0x20 || code > 0x7e) {
+        nonAscii = true;
+        if (code === 13) hasCR = true;
+      }
+      hash = Math.imul(hash ^ code, 16777619);
+    }
     hashes[line] = hash;
     start = end + 1;
   }
-  starts[count] = text.length + 1;
-  return { text, starts, hashes, count };
+  starts[count] = text.length;
+  return { text, starts, hashes, count, maxLineLength, nonAscii, hasCR };
 }
 
 function sameLine(a, ai, b, bi) {
   if (a.hashes[ai] !== b.hashes[bi]) return false;
   const startA = a.starts[ai];
   const startB = b.starts[bi];
-  const length = a.starts[ai + 1] - startA - 1;
-  if (length !== b.starts[bi + 1] - startB - 1) return false;
+  const length = (ai + 1 === a.count ? a.starts[ai + 1] : a.starts[ai + 1] - 1) - startA;
+  if (length !== (bi + 1 === b.count ? b.starts[bi + 1] : b.starts[bi + 1] - 1) - startB) return false;
   for (let offset = 0; offset < length; offset++) {
     if (a.text.charCodeAt(startA + offset) !== b.text.charCodeAt(startB + offset)) return false;
   }
@@ -114,13 +126,14 @@ function myersOps(a, b, start, N, M) {
  * ops 只存行区间，行内容由主线程从 aText/bText 里取。
  */
 export function makeTextDiff(text, text2, indent) {
-  const aText = formatJson(text, { indent }).text;
-  const bText = text === text2 ? aText : formatJson(text2, { indent }).text;
+  const aText = formatJson(text, { indent, includeData: false }).text;
+  const bText = text === text2 ? aText : formatJson(text2, { indent, includeData: false }).text;
   return diffFormattedText(aText, bText);
 }
 
 // Worker 可直接比较会话里已格式化的文本，不重复解析和排版。
-export function diffFormattedText(aText, bText) {
+// includeTextIndex=true 时复用同一轮扫描生成的行偏移表，避免对大文本重复索引。
+export function diffFormattedText(aText, bText, { includeTextIndex = false, textIndexThreshold = 0 } = {}) {
   if (aText === bText) {
     let count = 1;
     let newline = -1;
@@ -161,5 +174,14 @@ export function diffFormattedText(aText, bText) {
   const suffix = a.count - 1 - endA;
   if (suffix > 0) ops.push({ type: 'same', aStart: endA + 1, bStart: endB + 1, count: suffix });
 
-  return { ops, aText, bText, blocky, totalLines: [a.count, b.count] };
+  const result = { ops, aText, bText, blocky, totalLines: [a.count, b.count] };
+  if (includeTextIndex) {
+    if (!a.hasCR && aText.length > textIndexThreshold) {
+      result.aLineIndex = { starts: a.starts, count: a.count, maxLineLength: a.maxLineLength, ascii: a.maxLineLength > 8000 && !a.nonAscii };
+    }
+    if (!b.hasCR && bText.length > textIndexThreshold) {
+      result.bLineIndex = { starts: b.starts, count: b.count, maxLineLength: b.maxLineLength, ascii: b.maxLineLength > 8000 && !b.nonAscii };
+    }
+  }
+  return result;
 }

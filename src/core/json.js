@@ -3,7 +3,45 @@ import { appendJsonPath } from './json-path.js';
 // V8/Chrome cannot materialize a string beyond this limit. Bound the backing
 // buffer as well, so a tiny, deeply nested input cannot grow into multi-GB output.
 const MAX_OUTPUT_LENGTH = 0x1fffffe8;
+// ICU's UTF-16 TextDecoder rejects single buffers >= 256 MiB (~134M code units);
+// decode large UTF-16 buffers in 32 MiB streaming chunks instead.
+const UTF16_DECODE_CHUNK = 16 * 1024 * 1024;
 const UTF16_ENCODING = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1 ? 'utf-16le' : 'utf-16be';
+
+function maxOutputLength(wide) {
+  // Keep UTF-16 buffers within the same ~512 MiB byte budget as ASCII, while
+  // preserving reduced ceilings injected by tests (e.g. MAX_OUTPUT_LENGTH = 256).
+  return wide ? Math.min(MAX_OUTPUT_LENGTH, 0x0ffffff4) : MAX_OUTPUT_LENGTH;
+}
+
+function decodeOutput(output, used, wide) {
+  const view = output.subarray(0, used);
+  const decoder = new TextDecoder(wide ? UTF16_ENCODING : 'utf-8');
+  if (!wide || used <= UTF16_DECODE_CHUNK) return decoder.decode(view);
+  let result = '';
+  for (let offset = 0; offset < used; offset += UTF16_DECODE_CHUNK) {
+    const end = Math.min(used, offset + UTF16_DECODE_CHUNK);
+    result += decoder.decode(view.subarray(offset, end), { stream: end < used });
+  }
+  return result;
+}
+
+// ECMA-262 array index keys ("0", or 1..4294967294 without leading zeros) are
+// reordered before string keys by Object.keys / JSON.stringify.
+function isArrayIndexKey(text, start, end) {
+  const len = end - start;
+  if (len === 0 || len > 10) return false;
+  const first = text.charCodeAt(start);
+  if (first < 48 || first > 57) return false;
+  if (first === 48) return len === 1;
+  let value = first - 48;
+  for (let n = start + 1; n < end; n++) {
+    const c = text.charCodeAt(n);
+    if (c < 48 || c > 57) return false;
+    value = value * 10 + (c - 48);
+  }
+  return value <= 4294967294;
+}
 
 function skipJsonWhitespace(text, i) {
   while (i < text.length) {
@@ -244,41 +282,56 @@ function restoreNumberLiterals(text, numberLiterals) {
 // Keep native key ordering/string escaping without recursing through containers.
 function stringifyJsonIterative(value, indentUnit) {
   const frames = [];
-  const lineIndents = ['\n'];
+  const indentSize = indentUnit === null ? 0 : indentUnit.length;
+  let indentBuf = indentUnit === null ? '' : '\n' + indentUnit.repeat(64);
   const newline = (depth) => {
     if (indentUnit === null) return '';
-    return lineIndents[depth] ?? (lineIndents[depth] = '\n' + indentUnit.repeat(depth));
+    const needed = 1 + depth * indentSize;
+    while (indentBuf.length < needed) indentBuf += indentBuf.slice(1);
+    return indentBuf.slice(0, needed);
   };
+  let wide = false;
+  let limit = MAX_OUTPUT_LENGTH;
   let output = '';
+  const append = (piece, checkWide = false) => {
+    if (checkWide && !wide && /[^\x00-\x7f]/.test(piece)) {
+      wide = true;
+      limit = maxOutputLength(true);
+    }
+    if (output.length + piece.length > limit) {
+      throw new RangeError('Formatted JSON exceeds the maximum string length');
+    }
+    output += piece;
+  };
   while (true) {
     if (value !== null && typeof value === 'object') {
       const isArray = Array.isArray(value);
       const keys = isArray ? null : Object.keys(value);
       const length = isArray ? value.length : keys.length;
-      output += isArray ? '[' : '{';
+      append(isArray ? '[' : '{');
       if (length) {
         frames.push({ value, keys, length, index: 0 });
-        output += newline(frames.length);
-        if (keys) output += JSON.stringify(keys[0]) + (indentUnit === null ? ':' : ': ');
+        append(newline(frames.length));
+        if (keys) append(JSON.stringify(keys[0]) + (indentUnit === null ? ':' : ': '), true);
         value = value[keys ? keys[0] : 0];
         continue;
       }
-      output += isArray ? ']' : '}';
+      append(isArray ? ']' : '}');
     } else {
-      output += JSON.stringify(value);
+      append(JSON.stringify(value), typeof value === 'string');
     }
 
     while (frames.length) {
       const frame = frames[frames.length - 1];
       if (++frame.index < frame.length) {
-        output += ',' + newline(frames.length);
+        append(',' + newline(frames.length));
         const key = frame.keys ? frame.keys[frame.index] : frame.index;
-        if (frame.keys) output += JSON.stringify(key) + (indentUnit === null ? ':' : ': ');
+        if (frame.keys) append(JSON.stringify(key) + (indentUnit === null ? ':' : ': '), true);
         value = frame.value[key];
         break;
       }
       frames.pop();
-      output += newline(frames.length) + (frame.keys ? '}' : ']');
+      append(newline(frames.length) + (frame.keys ? '}' : ']'));
     }
     if (!frames.length) return output;
   }
@@ -288,8 +341,12 @@ function stringifyJson(value, numberLiterals, indentUnit) {
   let output;
   try {
     output = indentUnit === null ? JSON.stringify(value) : JSON.stringify(value, null, indentUnit);
+    if (output.length > MAX_OUTPUT_LENGTH
+        || (output.length > maxOutputLength(true) && /[^\x00-\x7f]/.test(output))) {
+      throw new RangeError('Formatted JSON exceeds the maximum string length');
+    }
   } catch (error) {
-    if (!(error instanceof RangeError)) throw error;
+    if (!(error instanceof RangeError) || error.message === 'Formatted JSON exceeds the maximum string length') throw error;
     output = stringifyJsonIterative(value, indentUnit);
   }
   return restoreNumberLiterals(output, numberLiterals);
@@ -302,14 +359,18 @@ function normalizeJsonIndent(indent) {
   return ' '.repeat(Math.min(10, Math.floor(value)));
 }
 
-// 输入已由 JSON.parse 验证。直接复制 token，避免创建每个 token 的切片/连接树。
-// 需要原生 key 排序、去重或字符串规范化时整体回退，不返回部分字面量表。
-function formatJsonTextDirect(text, indentUnit, collectLiterals) {
+// 直接复制 token，避免创建每个 token 的切片/连接树。
+// validate=true 时按 RFC 8259 严格校验，无需预先 JSON.parse；
+// 语法错误或需要原生 key 排序、去重、字符串规范化时整体回退，不返回部分字面量表。
+function formatJsonTextDirect(text, indentUnit, collectLiterals, validate = false) {
   const wide = /[^\x00-\x7f]/.test(text);
+  const maxLength = maxOutputLength(wide);
   const BufferType = wide ? Uint16Array : Uint8Array;
-  let output = new BufferType(Math.min(MAX_OUTPUT_LENGTH, Math.max(64, text.length * (indentUnit === null ? 1 : 2))));
-  let used = 0;
   const pretty = indentUnit !== null;
+  const alreadyPretty = pretty && text.charCodeAt(1) === 10;
+  const initialSize = pretty ? Math.ceil(text.length * (alreadyPretty ? 1.1 : 1.75)) : text.length;
+  let output = new BufferType(Math.min(maxLength, Math.max(64, initialSize)));
+  let used = 0;
   const indentCode = indentUnit === '\t' ? 9 : 32;
   const indentWidth = indentUnit?.length ?? 0;
   const parentIsArray = [];
@@ -332,24 +393,30 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
 
   function reserve(count) {
     const needed = used + count;
-    if (needed > MAX_OUTPUT_LENGTH) throw new RangeError('Formatted JSON exceeds the maximum string length');
-    if (needed <= output.length) return;
-    const grown = new BufferType(Math.min(MAX_OUTPUT_LENGTH, Math.max(needed, Math.ceil(output.length * 1.5))));
+    if (needed > maxLength) {
+      if (validate) return false;
+      throw new RangeError('Formatted JSON exceeds the maximum string length');
+    }
+    if (needed <= output.length) return true;
+    const grown = new BufferType(Math.min(maxLength, Math.max(needed, Math.ceil(output.length * 1.5))));
     grown.set(output.subarray(0, used));
     output = grown;
+    return true;
   }
 
   function copy(start, end) {
-    reserve(end - start);
+    if (!reserve(end - start)) return false;
     for (let n = start; n < end; n++) output[used++] = text.charCodeAt(n);
+    return true;
   }
 
   function newline(level) {
     const count = level * indentWidth;
-    reserve(count + 1);
+    if (!reserve(count + 1)) return false;
     output[used++] = 10;
     const end = used + count;
     while (used < end) output[used++] = indentCode;
+    return true;
   }
 
   function setSegment(index, value) {
@@ -374,13 +441,17 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
 
   while (true) {
     if (state === 2) {
-      if (depth === 0) break;
+      if (depth === 0) {
+        if (validate && skipJsonWhitespace(text, i) !== text.length) return null;
+        break;
+      }
       i = skipJsonWhitespace(text, i);
-      if (text.charCodeAt(i) === 44) {
-        reserve(1);
+      const sep = text.charCodeAt(i);
+      if (sep === 44) {
+        if (!reserve(1)) return null;
         output[used++] = 44;
         i++;
-        if (pretty) newline(depth);
+        if (pretty && !newline(depth)) return null;
         if (parentIsArray[depth - 1]) {
           if (collectLiterals) setSegment(depth - 1, ++arrayIndexes[depth - 1]);
           state = 0;
@@ -388,11 +459,13 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
           state = 1;
         }
       } else {
-        const close = text.charCodeAt(i++);
+        const expectedClose = parentIsArray[depth - 1] ? 93 : 125;
+        if (validate && sep !== expectedClose) return null;
+        i++;
         depth--;
-        if (pretty) newline(depth);
-        reserve(1);
-        output[used++] = close;
+        if (pretty && !newline(depth)) return null;
+        if (!reserve(1)) return null;
+        output[used++] = sep;
         if (collectLiterals) {
           pathLength = depth;
           encodedLength = Math.min(encodedLength, depth + 1);
@@ -402,25 +475,45 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
     }
 
     i = skipJsonWhitespace(text, i);
+    if (validate && i >= text.length) return null;
     if (state === 1) {
+      if (validate && text.charCodeAt(i) !== 34) return null;
       const start = i++;
       let escaped = false;
+      let closed = false;
       while (i < text.length) {
         const c = text.charCodeAt(i);
-        if (c === 34) break;
+        if (c === 34) {
+          i++;
+          closed = true;
+          break;
+        }
+        if (validate && c < 0x20) return null;
         if (c === 92) {
+          if (validate && i + 1 >= text.length) return null;
           const escapedCode = text.charCodeAt(i + 1);
           if (escapedCode === 117 || escapedCode === 47) return null;
+          if (validate && escapedCode !== 34 && escapedCode !== 92 && escapedCode !== 98
+              && escapedCode !== 102 && escapedCode !== 110 && escapedCode !== 114 && escapedCode !== 116) {
+            return null;
+          }
           escaped = true;
           i += 2;
+        } else if (c >= 0xd800 && c <= 0xdfff) {
+          if (c <= 0xdbff && i + 1 < text.length) {
+            const low = text.charCodeAt(i + 1);
+            if (low >= 0xdc00 && low <= 0xdfff) {
+              i += 2;
+              continue;
+            }
+          }
+          return null;
         } else {
-          if (c >= 0xd800 && c <= 0xdfff) return null;
           i++;
         }
       }
-      i++;
-      const first = text.charCodeAt(start + 1);
-      if (first >= 48 && first <= 57) return null;
+      if (validate && !closed) return null;
+      if (isArrayIndexKey(text, start + 1, i - 1)) return null;
       const frame = depth - 1;
       const base = frame * 32;
       const count = keyCounts[frame];
@@ -453,11 +546,13 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
         pathKeyEnds[frame] = i;
         pathKeyEscapes[frame] = escaped;
       }
-      copy(start, i);
-      reserve(pretty ? 2 : 1);
+      if (!copy(start, i)) return null;
+      if (!reserve(pretty ? 2 : 1)) return null;
       output[used++] = 58;
       if (pretty) output[used++] = 32;
-      i = skipJsonWhitespace(text, i) + 1;
+      i = skipJsonWhitespace(text, i);
+      if (validate && text.charCodeAt(i) !== 58) return null;
+      i++;
       state = 0;
       continue;
     }
@@ -468,7 +563,7 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
       const close = isArray ? 93 : 125;
       const end = skipJsonWhitespace(text, i + 1);
       if (text.charCodeAt(end) === close) {
-        reserve(2);
+        if (!reserve(2)) return null;
         output[used++] = c;
         output[used++] = close;
         i = end + 1;
@@ -491,36 +586,113 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
         }
       }
       depth++;
-      reserve(1);
+      if (!reserve(1)) return null;
       output[used++] = c;
-      if (pretty) newline(depth);
+      if (pretty && !newline(depth)) return null;
       i++;
       state = isArray ? 0 : 1;
       continue;
     }
     if (c === 34) {
       const start = i++;
+      let closed = false;
       while (i < text.length) {
-        const code = text.charCodeAt(i++);
-        if (code === 34) break;
+        const code = text.charCodeAt(i);
+        if (code === 34) {
+          i++;
+          closed = true;
+          break;
+        }
+        if (validate && code < 0x20) return null;
         if (code === 92) {
-          const escapedCode = text.charCodeAt(i++);
+          if (validate && i + 1 >= text.length) return null;
+          const escapedCode = text.charCodeAt(i + 1);
           if (escapedCode === 117 || escapedCode === 47) return null;
+          if (validate && escapedCode !== 34 && escapedCode !== 92 && escapedCode !== 98
+              && escapedCode !== 102 && escapedCode !== 110 && escapedCode !== 114 && escapedCode !== 116) {
+            return null;
+          }
+          i += 2;
         } else if (code >= 0xd800 && code <= 0xdfff) {
+          if (code <= 0xdbff && i + 1 < text.length) {
+            const low = text.charCodeAt(i + 1);
+            if (low >= 0xdc00 && low <= 0xdfff) {
+              i += 2;
+              continue;
+            }
+          }
           return null;
+        } else {
+          i++;
         }
       }
-      copy(start, i);
+      if (validate && !closed) return null;
+      if (!copy(start, i)) return null;
       state = 2;
       continue;
     }
     const start = i;
     let simpleInteger = true;
-    while (i < text.length) {
-      const code = text.charCodeAt(i);
-      if (code === 44 || code === 93 || code === 125 || code === 0x20 || code === 0x0a || code === 0x0d || code === 0x09) break;
-      if (code === 46 || code === 101 || code === 69) simpleInteger = false;
-      i++;
+    if (validate) {
+      if (c === 45 || (c >= 48 && c <= 57)) {
+        if (c === 45) i++;
+        const digit = text.charCodeAt(i);
+        if (!(digit >= 48 && digit <= 57)) return null;
+        if (digit === 48) i++;
+        else {
+          i++;
+          while (i < text.length) {
+            const code = text.charCodeAt(i);
+            if (code >= 48 && code <= 57) i++;
+            else break;
+          }
+        }
+        if (text.charCodeAt(i) === 46) {
+          simpleInteger = false;
+          i++;
+          const frac = text.charCodeAt(i);
+          if (!(frac >= 48 && frac <= 57)) return null;
+          i++;
+          while (i < text.length) {
+            const code = text.charCodeAt(i);
+            if (code >= 48 && code <= 57) i++;
+            else break;
+          }
+        }
+        const exp = text.charCodeAt(i);
+        if (exp === 101 || exp === 69) {
+          simpleInteger = false;
+          i++;
+          const sign = text.charCodeAt(i);
+          if (sign === 43 || sign === 45) i++;
+          const expDigit = text.charCodeAt(i);
+          if (!(expDigit >= 48 && expDigit <= 57)) return null;
+          i++;
+          while (i < text.length) {
+            const code = text.charCodeAt(i);
+            if (code >= 48 && code <= 57) i++;
+            else break;
+          }
+        }
+      } else if (c === 116) {
+        if (text.charCodeAt(i + 1) !== 114 || text.charCodeAt(i + 2) !== 117 || text.charCodeAt(i + 3) !== 101) return null;
+        i += 4;
+      } else if (c === 102) {
+        if (text.charCodeAt(i + 1) !== 97 || text.charCodeAt(i + 2) !== 108 || text.charCodeAt(i + 3) !== 115 || text.charCodeAt(i + 4) !== 101) return null;
+        i += 5;
+      } else if (c === 110) {
+        if (text.charCodeAt(i + 1) !== 117 || text.charCodeAt(i + 2) !== 108 || text.charCodeAt(i + 3) !== 108) return null;
+        i += 4;
+      } else {
+        return null;
+      }
+    } else {
+      while (i < text.length) {
+        const code = text.charCodeAt(i);
+        if (code === 44 || code === 93 || code === 125 || code === 0x20 || code === 0x0a || code === 0x0d || code === 0x09) break;
+        if (code === 46 || code === 101 || code === 69) simpleInteger = false;
+        i++;
+      }
     }
     if (collectLiterals && (c === 45 || (c >= 48 && c <= 57))) {
       const length = i - start;
@@ -530,27 +702,34 @@ function formatJsonTextDirect(text, indentUnit, collectLiterals) {
         if (!Number.isFinite(value) || raw !== String(value)) numberLiterals[currentPath()] = raw;
       }
     }
-    copy(start, i);
+    if (!copy(start, i)) return null;
     state = 2;
   }
-  return { text: new TextDecoder(wide ? UTF16_ENCODING : 'utf-8').decode(output.subarray(0, used)), numberLiterals };
+  return { text: decodeOutput(output, used, wide), numberLiterals };
 }
 
 /**
  * 解析并排版 JSON，保留原文数字字面量及 JSON.parse 的 key 排序/去重语义。
  * indent=null 表示压缩；仅树形显示需要额外返回数字字面量表。
- * 核心根据输入选择序列化方式，缓存/传输选项不影响算法；无效输入抛出 SyntaxError。
+ * includeData=false 时允许单遍校验直接排版，仅在语法错误或需要规范化时回退 JSON.parse。
  */
-export function formatJson(text, { indent = '2', includeNumberLiterals = false, parsed = null } = {}) {
+export function formatJson(text, { indent = '2', includeNumberLiterals = false, includeData = true, parsed = null } = {}) {
+  const indentUnit = indent === null ? null : normalizeJsonIndent(indent);
+  const tryDirectFirst = !includeData && !parsed && typeof text === 'string';
+  if (tryDirectFirst) {
+    const direct = formatJsonTextDirect(text, indentUnit, includeNumberLiterals, true);
+    if (direct) return { text: direct.text, data: undefined, numberLiterals: direct.numberLiterals };
+  }
   // parsed 只由持有同一原文解析结果的 Worker 会话传入，避免切换视图重复解析。
   const data = parsed ? parsed.data : JSON.parse(text);
-  const indentUnit = indent === null ? null : normalizeJsonIndent(indent);
   let numberLiterals = parsed?.numberLiterals ?? null;
-  const direct = formatJsonTextDirect(text, indentUnit, includeNumberLiterals && numberLiterals === null);
-  if (direct) {
-    numberLiterals ??= direct.numberLiterals;
-    return { text: direct.text, data, numberLiterals };
+  if (!tryDirectFirst) {
+    const direct = formatJsonTextDirect(text, indentUnit, includeNumberLiterals && numberLiterals === null, false);
+    if (direct) {
+      numberLiterals ??= direct.numberLiterals;
+      return { text: direct.text, data: includeData ? data : undefined, numberLiterals };
+    }
   }
   numberLiterals ??= collectNumberLiterals(text);
-  return { text: stringifyJson(data, numberLiterals, indentUnit), data, numberLiterals };
+  return { text: stringifyJson(data, numberLiterals, indentUnit), data: includeData ? data : undefined, numberLiterals };
 }

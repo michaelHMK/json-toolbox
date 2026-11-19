@@ -2,7 +2,7 @@ import { appendJsonPath, createChildPathIndex } from './json-path.js';
 
 const isContainer = (value) => value !== null && typeof value === 'object';
 const decodeKey = (key) => key.replace(/~1/g, '/').replace(/~0/g, '~');
-const MODEL_OPTIONS = ['data', 'expandLevel', 'expanded', 'collapsed', 'forceExpand', 'onlyRequired', 'requiredChildren'];
+export const MODEL_OPTIONS = ['data', 'expandLevel', 'expanded', 'collapsed', 'forceExpand', 'onlyRequired', 'requiredChildren'];
 const modelOptions = (options) => Object.fromEntries(MODEL_OPTIONS.filter((key) => Object.hasOwn(options, key)).map((key) => [key, options[key]]));
 
 // Logical rows are compressed sibling ranges, not one allocation per value.
@@ -94,7 +94,7 @@ export function createTreeModel(initial = {}) {
       const open = isContainer(value) && openAt(path, depth);
       const entry = emit({ kind: 'entry', descriptor: { ...descriptor, open } });
       if (!open) return null;
-      const record = { value, path, depth, keys: keysOf(value), indices: null, ranges: [], entry, close: null };
+      const record = { value, path, depth, keys: keysOf(value), keyPositions: null, indices: null, ranges: [], entry, close: null };
       if (options.onlyRequired) record.indices = positionsFor(record, options.requiredChildren.get(path));
       record.length = record.indices ? record.indices.length : record.keys ? record.keys.length : value.length;
       record.opens = [];
@@ -244,7 +244,22 @@ export function createTreeModel(initial = {}) {
     const parent = containers.get(path.slice(0, slash));
     if (!parent) return -1;
     const key = decodeKey(path.slice(slash + 1));
-    let position = parent.keys ? parent.keys.indexOf(key) : Number(key);
+    let position;
+    if (parent.keys) {
+      if (parent.keys.length > 64) {
+        let map = parent.keyPositions;
+        if (!map) {
+          map = new Map();
+          for (let i = 0; i < parent.keys.length; i++) map.set(parent.keys[i], i);
+          parent.keyPositions = map;
+        }
+        position = map.get(key) ?? -1;
+      } else {
+        position = parent.keys.indexOf(key);
+      }
+    } else {
+      position = Number(key);
+    }
     if (!Number.isInteger(position) || position < 0 || (!parent.keys && String(position) !== key)) return -1;
     if (parent.indices) {
       let lo = 0;
@@ -291,20 +306,28 @@ export function createTreeModel(initial = {}) {
     if (!open) {
       const start = record.entry.index;
       const count = record.close.index - start + 1;
-      let replacement;
-      if (path === '') {
-        replacement = { kind: 'entry', descriptor: { ...record.entry.descriptor, open: false }, count: 1 };
-      } else {
-        const parent = containers.get(path.slice(0, path.lastIndexOf('/')));
-        const position = record.entry.descriptor.posInSet - 1;
-        replacement = { kind: 'range', record: parent, start: position, count: 1 };
-        parent.ranges.splice(rangePosition(parent, position), 0, replacement);
-      }
       for (let i = start; i < start + count; i++) {
         const segment = segments[i];
         if (segment.kind === 'entry') containers.delete(segment.descriptor.path);
       }
-      replaceSegments(start, count, [replacement]);
+      if (path === '') {
+        const replacement = { kind: 'entry', descriptor: { ...record.entry.descriptor, open: false }, count: 1 };
+        replaceSegments(start, count, [replacement]);
+        return;
+      }
+      const parent = containers.get(path.slice(0, path.lastIndexOf('/')));
+      const position = record.entry.descriptor.posInSet - 1;
+      const prev = start > 0 ? segments[start - 1] : null;
+      const next = start + count < segments.length ? segments[start + count] : null;
+      const mergePrev = prev?.kind === 'range' && prev.record === parent && prev.start + prev.count === position;
+      const mergeNext = next?.kind === 'range' && next.record === parent && next.start === position + 1;
+      const rangeStart = mergePrev ? prev.start : position;
+      const rangeCount = 1 + (mergePrev ? prev.count : 0) + (mergeNext ? next.count : 0);
+      const replaceStart = mergePrev ? start - 1 : start;
+      const replaceCount = count + (mergePrev ? 1 : 0) + (mergeNext ? 1 : 0);
+      const merged = { kind: 'range', record: parent, start: rangeStart, count: rangeCount };
+      parent.ranges.splice(rangePosition(parent, rangeStart), (mergePrev ? 1 : 0) + (mergeNext ? 1 : 0), merged);
+      replaceSegments(replaceStart, replaceCount, [merged]);
       return;
     }
     const index = indexOf(path);

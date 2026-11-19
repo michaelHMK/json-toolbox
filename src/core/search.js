@@ -1,6 +1,7 @@
 import { appendJsonPath } from './json-path.js';
 
 const MAX_MATCHES = 500;
+const MAX_KEY_CACHE = 4096;
 
 /*
  * 迭代式 DFS 搜索（避免深嵌套爆栈）。
@@ -10,6 +11,14 @@ const MAX_MATCHES = 500;
  */
 export function searchData(data, query, numberLiterals = null) {
   const q = query.toLowerCase();
+  const matchesTrue = 'true'.includes(q);
+  const matchesFalse = 'false'.includes(q);
+  const matchesNull = 'null'.includes(q);
+  const canMatchFiniteNumber = q === '' || /^[0-9e.+-]+$/.test(q);
+  const matchesInfinity = 'infinity'.includes(q);
+  const matchesNegInfinity = '-infinity'.includes(q);
+  const matchesNaN = 'nan'.includes(q);
+  const keyMatchCache = new Map();
   const highlights = [];
   const forceExpand = new Set();
   let matchCount = 0;
@@ -43,15 +52,37 @@ export function searchData(data, query, numberLiterals = null) {
     return path;
   }
 
+  function valueMatches(val) {
+    if (val === null) return matchesNull;
+    const type = typeof val;
+    if (type === 'string') return val.toLowerCase().includes(q);
+    if (type === 'boolean') return val ? matchesTrue : matchesFalse;
+    if (type === 'number') {
+      if (literalSensitiveValues.size && literalSensitiveValues.has(val)) {
+        const path = key === null ? '' : appendJsonPath(parentPath(), key);
+        const literal = numberLiterals[path];
+        if (literal !== undefined) return literal.toLowerCase().includes(q);
+      }
+      if (Number.isFinite(val)) return canMatchFiniteNumber && String(val).toLowerCase().includes(q);
+      if (Number.isNaN(val)) return matchesNaN;
+      return val < 0 ? matchesNegInfinity : matchesInfinity;
+    }
+    return String(val).toLowerCase().includes(q);
+  }
+
   while (true) {
     const isContainer = value !== null && typeof value === 'object';
-    let displayValue = value;
-    if (typeof value === 'number' && literalSensitiveValues.has(value)) {
-      const path = key === null ? '' : appendJsonPath(parentPath(), key);
-      displayValue = numberLiterals[path] ?? value;
+    let keyMatched = false;
+    if (key !== null && !isIndex) {
+      const cached = keyMatchCache.get(key);
+      if (cached !== undefined) {
+        keyMatched = cached;
+      } else {
+        keyMatched = key.toLowerCase().includes(q);
+        if (keyMatchCache.size < MAX_KEY_CACHE) keyMatchCache.set(key, keyMatched);
+      }
     }
-    const matched = (key !== null && !isIndex && key.toLowerCase().includes(q))
-      || (!isContainer && String(displayValue).toLowerCase().includes(q));
+    const matched = keyMatched || (!isContainer && valueMatches(value));
     if (matched) {
       matchCount++;
       if (highlights.length < MAX_MATCHES) {

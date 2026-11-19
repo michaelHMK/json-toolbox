@@ -45,10 +45,24 @@ function postTreeChunks(response, postMessage) {
   postMessage({ ...response, result: { ...metadata, streamedData: true } });
 }
 
+function transferableBuffers(request, response) {
+  if (!response.ok || !response.result) return [];
+  const { lineIndex, aLineIndex, bLineIndex } = response.result;
+  const buffers = new Set();
+  if (lineIndex?.starts?.buffer instanceof ArrayBuffer) buffers.add(lineIndex.starts.buffer);
+  if (request.action === 'textDiff' && request.snapshotId === undefined) {
+    if (aLineIndex?.starts?.buffer instanceof ArrayBuffer) buffers.add(aLineIndex.starts.buffer);
+    if (bLineIndex?.starts?.buffer instanceof ArrayBuffer) buffers.add(bLineIndex.starts.buffer);
+  }
+  return [...buffers];
+}
+
 export function postTaskResponse(request, handleTask, postMessage) {
   const response = handleTask(request);
+  const transfer = transferableBuffers(request, response);
   try {
-    postMessage(response);
+    if (transfer.length) postMessage(response, transfer);
+    else postMessage(response);
   } catch (error) {
     const result = response.result;
     if (response.ok && result && (Object.hasOwn(result, 'data') || Object.hasOwn(result, 'leftData'))) {
@@ -60,13 +74,9 @@ export function postTaskResponse(request, handleTask, postMessage) {
       }
     }
     // Even a partial transfer must settle and release its accumulated nodes.
-    postMessage({ id: request.id, ok: false, error: error.message || String(error), duration: response.duration });
+    postMessage({ id: request.id, ok: false, code: 'TASK_FAILED', error: error.message || String(error), duration: response.duration });
   }
 }
-
-// Ordinary messages are already usable. Stateful tree batches are decoded by
-// one decoder per Worker connection, so cancellation can release every node.
-export const decodeTaskResponse = (response) => response;
 
 export function createTaskResponseDecoder() {
   const transfers = new Map();
@@ -88,7 +98,7 @@ export function createTaskResponseDecoder() {
     const nodes = transfers.get(response.id);
     transfers.delete(response.id);
     if (!response.ok || !response.result?.streamedData) return response;
-    if (!nodes) return { id: response.id, ok: false, error: 'Incomplete tree transfer', duration: response.duration };
+    if (!nodes) return { id: response.id, ok: false, code: 'TASK_FAILED', error: 'Incomplete tree transfer', duration: response.duration };
     const { streamedData, ...metadata } = response.result;
     return { ...response, result: { ...metadata, ...nodes[0] } };
   }
@@ -96,7 +106,7 @@ export function createTaskResponseDecoder() {
     try { return read(response); }
     catch (error) {
       transfers.delete(response.id);
-      return { id: response.id, ok: false, error: error.message || String(error), duration: response.duration };
+      return { id: response.id, ok: false, code: 'TASK_FAILED', error: error.message || String(error), duration: response.duration };
     }
   }
   decode.clear = () => transfers.clear();

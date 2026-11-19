@@ -36,6 +36,10 @@ test('fallback accepts valid tokens and deep containers without inventing a loca
   }
   const invalid = '['.repeat(20000) + 'tru' + ']'.repeat(20000);
   assert.equal(parseErrorLocation(genericMessage, invalid).position, 20003);
+  const deepUnclosed = '['.repeat(100000);
+  assert.deepEqual(parseErrorLocation(genericMessage, deepUnclosed), {
+    position: 100000, line: 1, column: 100001,
+  });
 });
 
 test('native offsets take precedence and native line/column remain usable without source', () => {

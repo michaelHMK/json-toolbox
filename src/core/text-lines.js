@@ -1,3 +1,16 @@
+// Avoid scanning or slicing 50 MiB strings with .trim() just to test emptiness.
+export function hasNonWhitespace(text) {
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c > 32) {
+      if (c < 0x80 || !/\s/.test(text[i])) return true;
+    } else if (c < 9 || (c > 13 && c !== 32)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // A transferable/cloneable index has no source text or bound methods. Workers
 // build this once; the UI attaches a reader without scanning the document.
 export function createTextLineIndex(text) {
@@ -105,9 +118,22 @@ export function createDiffTextRows(result, { gapText, blockyText } = {}) {
     getRow,
     copyText() {
       const rows = [];
-      for (let i = 0; i < count; i++) {
-        const row = getRow(i);
-        rows.push(row.prefix + row.text.slice(row.start, row.end));
+      for (const segment of segments) {
+        if (segment.source) {
+          const { text, starts, count: lineCount } = segment.source;
+          const endLine = segment.start + segment.count;
+          for (let line = segment.start; line < endLine; line++) {
+            const start = starts[line];
+            let end = starts[line + 1];
+            if (line + 1 < lineCount) {
+              if (text.charCodeAt(end - 1) === 10) end--;
+              if (text.charCodeAt(end - 1) === 13) end--;
+            }
+            rows.push(segment.prefix + text.slice(start, end));
+          }
+        } else {
+          rows.push(segment.prefix + segment.note);
+        }
       }
       return rows.join('\n');
     },

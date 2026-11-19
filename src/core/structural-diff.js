@@ -1,4 +1,5 @@
 import { appendJsonPath } from './json-path.js';
+import { previewPrefix } from './preview.js';
 
 // 超出明细上限仍继续统计总数；主键配对映射单独限制大小。
 const MAX_DIFFS = 5000;
@@ -62,7 +63,7 @@ function parseIgnorePattern(pattern) {
 function matchSegments(patternSegs, segs) {
   if (patternSegs.length !== segs.length) return false;
   for (let i = 0; i < segs.length; i++) {
-    if (patternSegs[i] !== '*' && patternSegs[i] !== segs[i]) return false;
+    if (patternSegs[i] !== '*' && patternSegs[i] !== String(segs[i])) return false;
   }
   return true;
 }
@@ -71,7 +72,8 @@ function matchSegments(patternSegs, segs) {
 function displayPath(segs) {
   if (!segs.length) return '(根)';
   let out = '';
-  for (const s of segs) {
+  for (const raw of segs) {
+    const s = String(raw);
     if (/^\d+$/.test(s)) out += '[' + s + ']';
     else if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s)) out += (out ? '.' : '') + s;
     else out += '[' + JSON.stringify(s) + ']';
@@ -82,13 +84,17 @@ function displayPath(segs) {
 function previewValue(v, path, numberLiterals) {
   if (v === undefined) return '';
   if (v === null || typeof v !== 'object') {
+    if (typeof v === 'string') {
+      const encoded = JSON.stringify(previewPrefix(v, 81));
+      return v.length > 80 || encoded.length > 80 ? previewPrefix(encoded, 80) + '…' : encoded;
+    }
     let s;
     if (typeof v === 'number' && numberLiterals && path != null && Object.prototype.hasOwnProperty.call(numberLiterals, path)) {
       s = numberLiterals[path];
     } else {
       s = JSON.stringify(v);
     }
-    return s.length > 80 ? s.slice(0, 80) + '…' : s;
+    return s.length > 80 ? previewPrefix(s, 80) + '…' : s;
   }
   if (Array.isArray(v)) return '[' + v.length + ' 项]';
   return '{' + Object.keys(v).length + ' 键}';
@@ -107,6 +113,7 @@ function jsonType(value) {
  */
 export function diffData(left, right, options) {
   const keyField = (options && options.keyField) || '';
+  const includePreviews = options?.includePreviews !== false;
   const leftNumberLiterals = (options && options.leftNumberLiterals) || null;
   const rightNumberLiterals = (options && options.rightNumberLiterals) || null;
   const sameDocument = left === right && leftNumberLiterals === rightNumberLiterals && !keyField;
@@ -175,14 +182,18 @@ export function diffData(left, right, options) {
     if (diffs.length < MAX_DIFFS) {
       const leftPath = leftSegs ? toPath(leftSegs) : null;
       const rightPath = rightSegs ? toPath(rightSegs) : null;
-      diffs.push({
-        type,
-        leftPath,
-        rightPath,
-        display: displayPath(rightSegs || leftSegs),
-        leftPreview: previewValue(lv, leftPath, leftNumberLiterals),
-        rightPreview: previewValue(rv, rightPath, rightNumberLiterals),
-      });
+      if (includePreviews) {
+        diffs.push({
+          type,
+          leftPath,
+          rightPath,
+          display: displayPath(rightSegs || leftSegs),
+          leftPreview: previewValue(lv, leftPath, leftNumberLiterals),
+          rightPreview: previewValue(rv, rightPath, rightNumberLiterals),
+        });
+      } else {
+        diffs.push({ type, leftPath, rightPath });
+      }
     } else {
       truncated = true;
     }
@@ -283,8 +294,8 @@ export function diffData(left, right, options) {
         }
         continue;
       }
-      for (const key of Object.keys(rv)) {
-        if (!Object.prototype.hasOwnProperty.call(lv, key)) {
+      for (const key in rv) {
+        if (Object.hasOwn(rv, key) && !Object.hasOwn(lv, key)) {
           rightSegs.push(key);
           record('added', null, rightSegs, undefined, rv[key]);
           rightSegs.pop();
@@ -293,20 +304,20 @@ export function diffData(left, right, options) {
     } else if (frame.type === 2) {
       if (frame.index < frame.length) {
         const i = frame.index++;
-        const key = String(i);
-        leftSegs.push(key);
-        rightSegs.push(key);
-        if (enter(lv[i], rv[i], depth + 1, frame.leftNumbers?.get(key), frame.rightNumbers?.get(key))) depth++;
+        leftSegs.push(i);
+        rightSegs.push(i);
+        const key = (frame.leftNumbers || frame.rightNumbers) ? String(i) : null;
+        if (enter(lv[i], rv[i], depth + 1, key !== null ? frame.leftNumbers?.get(key) : undefined, key !== null ? frame.rightNumbers?.get(key) : undefined)) depth++;
         else { leftSegs.pop(); rightSegs.pop(); }
         continue;
       }
       for (let i = frame.length; i < lv.length; i++) {
-        leftSegs.push(String(i));
+        leftSegs.push(i);
         record('removed', leftSegs, null, lv[i]);
         leftSegs.pop();
       }
       for (let i = frame.length; i < rv.length; i++) {
-        rightSegs.push(String(i));
+        rightSegs.push(i);
         record('added', null, rightSegs, undefined, rv[i]);
         rightSegs.pop();
       }

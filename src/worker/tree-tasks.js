@@ -1,14 +1,8 @@
 import { createTreeModel } from '../core/tree-model.js';
 import { createChildPathIndex } from '../core/json-path.js';
+import { previewPrefix } from '../core/preview.js';
 
 const MAX_ROWS = 256;
-const PREVIEW_LIMIT = 2000;
-function prefix(text) {
-  let end = Math.min(text.length, PREVIEW_LIMIT);
-  if (end < text.length && text.charCodeAt(end - 1) >= 0xd800 && text.charCodeAt(end - 1) <= 0xdbff
-    && text.charCodeAt(end) >= 0xdc00 && text.charCodeAt(end) <= 0xdfff) end--;
-  return text.slice(0, end);
-}
 
 // Models and the parsed document stay in the Worker. A window never contains
 // a nested value, even for deep JSON that structured clone cannot serialize.
@@ -70,20 +64,20 @@ export function createTreeTasks() {
       const { value, key, ...rest } = row;
       const result = { ...rest, key };
       if (typeof key === 'string') {
-        result.key = prefix(key);
+        result.key = previewPrefix(key);
         result.keyLength = key.length;
       }
       if (value !== null && typeof value === 'object') {
         result.value = Array.isArray(value) ? [] : {};
         result.size = model.sizeOf(value);
       } else if (typeof value === 'string') {
-        result.value = prefix(value);
+        result.value = previewPrefix(value);
         result.valueLength = value.length;
       } else {
         result.value = value;
         if (typeof value === 'number' && document.numberLiterals?.[row.path] !== undefined) {
           const literal = document.numberLiterals[row.path];
-          result.literal = prefix(literal);
+          result.literal = previewPrefix(literal);
           result.literalLength = literal.length;
         }
       }
