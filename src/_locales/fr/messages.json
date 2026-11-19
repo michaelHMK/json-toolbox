@@ -384,7 +384,7 @@
     "message": "Chemins à ignorer"
   },
   "ignorePathsTitle": {
-    "message": "Chemins exacts séparés par des virgules ; * correspond à un segment"
+    "message": "Chemins exacts séparés par des virgules ; * correspond à un segment, ** à un sous-arbre"
   },
   "ignorePathsPlaceholder": {
     "message": "p. ex. list[*].updatedAt, séparés par des virgules"

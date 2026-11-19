@@ -384,7 +384,7 @@
     "message": "忽略路径"
   },
   "ignorePathsTitle": {
-    "message": "每处一条精确路径，* 匹配任意单段，多个用逗号分隔"
+    "message": "每处一条精确路径，* 匹配单段，** 匹配整棵子树，多个用逗号分隔"
   },
   "ignorePathsPlaceholder": {
     "message": "如 list[*].updatedAt，逗号分隔"

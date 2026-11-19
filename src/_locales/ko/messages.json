@@ -384,7 +384,7 @@
     "message": "무시할 경로"
   },
   "ignorePathsTitle": {
-    "message": "정확한 경로를 쉼표로 구분하여 입력하세요. *는 경로의 한 구간과 일치합니다"
+    "message": "정확한 경로를 쉼표로 구분하여 입력. *는 한 구간, **는 하위 트리 전체와 일치"
   },
   "ignorePathsPlaceholder": {
     "message": "예: list[*].updatedAt, 쉼표로 구분"

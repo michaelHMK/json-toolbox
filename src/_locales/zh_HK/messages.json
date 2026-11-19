@@ -384,7 +384,7 @@
     "message": "忽略路徑"
   },
   "ignorePathsTitle": {
-    "message": "輸入完整路徑，以逗號分隔；* 可匹配任意單一路徑區段"
+    "message": "輸入路徑並以逗號分隔；* 匹配單一區段，** 匹配整棵子樹"
   },
   "ignorePathsPlaceholder": {
     "message": "例如 list[*].updatedAt，以逗號分隔"

@@ -384,7 +384,7 @@
     "message": "Bỏ qua đường dẫn"
   },
   "ignorePathsTitle": {
-    "message": "Đường dẫn chính xác, * khớp một đoạn, phân cách bằng dấu phẩy"
+    "message": "Đường dẫn chính xác, phân cách bằng dấu phẩy; * khớp một đoạn, ** khớp cả cây con"
   },
   "ignorePathsPlaceholder": {
     "message": "ví dụ: list[*].updatedAt, phân cách bằng dấu phẩy"

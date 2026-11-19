@@ -384,7 +384,7 @@
     "message": "Ignorar rutas"
   },
   "ignorePathsTitle": {
-    "message": "Rutas exactas separadas por comas; * coincide con un segmento"
+    "message": "Rutas exactas separadas por comas; * coincide con un segmento y ** con un subárbol"
   },
   "ignorePathsPlaceholder": {
     "message": "p. ej. list[*].updatedAt, separadas por comas"

@@ -325,3 +325,17 @@ test('truncated keyed arrays isolate unknown records and still sync unrelated pa
   for (const side of ['left', 'right']) assert.ok(visiblePaths(page, side).includes('/2026/year'));
   page.doClear();
 });
+
+test('ignore-paths input preserves commas inside quoted keys and forwards subtree wildcards', async () => {
+  const page = loadCompare();
+  setInputs(
+    page,
+    '{"a,b":{"x.y":1,"keep":1},"meta":{"deep":{"ts":1}}}',
+    '{"a,b":{"x.y":2,"keep":2},"meta":{"deep":{"ts":2}}}',
+  );
+  page.get('ignore-paths').value = '["a,b"]["x.y"], meta.**';
+  await page.doCompare();
+  assert.equal(page.state.result.total, 1);
+  assert.equal(page.state.result.diffs[0].leftPath, '/a,b/keep');
+  page.doClear();
+});
