@@ -377,3 +377,51 @@ test('wide-object indexOf and sibling collapse range merging stay exact and reus
   assert.strictEqual(container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/10'), before);
   tree.destroy();
 }));
+
+test('layer ResizeObserver defers spacer minWidth writes to the next frame without synchronous relayout', () => withDom(() => {
+  const previousRO = globalThis.ResizeObserver;
+  const previousRAF = globalThis.requestAnimationFrame;
+  const previousCAF = globalThis.cancelAnimationFrame;
+  const observers = [];
+  const frames = new Map();
+  let nextFrameId = 1;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; this.targets = []; observers.push(this); }
+    observe(target) { this.targets.push(target); }
+    disconnect() { this.disconnected = true; }
+  };
+  globalThis.requestAnimationFrame = (callback) => { const id = nextFrameId++; frames.set(id, callback); return id; };
+  globalThis.cancelAnimationFrame = (id) => { frames.delete(id); };
+  try {
+    const container = new Element();
+    container.clientWidth = 480;
+    const tree = createVirtualTree(container, { data: { nested: { wide: 'x'.repeat(200) } } });
+    const spacer = container.children[0];
+    const layerObserver = observers.find((observer) => observer.targets.includes(spacer.children[0]));
+    assert.ok(layerObserver);
+    // Fits within viewport (even with subpixel rounding): must not introduce a horizontal scrollbar.
+    layerObserver.callback([{ contentRect: { width: 480.4 } }]);
+    for (const callback of [...frames.values()]) callback();
+    frames.clear();
+    assert.equal(spacer.style.minWidth, undefined);
+
+    // Overflowing layer must NOT mutate spacer synchronously inside ResizeObserver.
+    layerObserver.callback([{ contentRect: { width: 1104.4 } }]);
+    assert.equal(spacer.style.minWidth, undefined);
+    assert.equal(frames.size, 1);
+    for (const callback of [...frames.values()]) callback();
+    frames.clear();
+    assert.equal(spacer.style.minWidth, '1104.4px');
+
+    // Collapsing resets horizontal extent and cancels any queued width frame.
+    layerObserver.callback([{ contentRect: { width: 1400 } }]);
+    tree.setOpen('', false);
+    assert.equal(spacer.style.minWidth, '');
+    assert.equal(frames.size, 0);
+    tree.destroy();
+  } finally {
+    globalThis.ResizeObserver = previousRO;
+    globalThis.requestAnimationFrame = previousRAF;
+    globalThis.cancelAnimationFrame = previousCAF;
+  }
+}));

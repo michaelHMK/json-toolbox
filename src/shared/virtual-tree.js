@@ -78,6 +78,8 @@ export function createVirtualTree(container, initial = {}) {
   const itemId = (index) => `${treeId}-item-${index}`;
   const originalAttributes = new Map(['role', 'tabindex', 'aria-activedescendant'].map((name) => [name, container.getAttribute(name)]));
   let frame = null;
+  let widthFrame = null;
+  let pendingWidth = 0;
   let destroyed = false;
   let navigation = Promise.resolve();
   let maxWidth = 0;
@@ -114,8 +116,25 @@ export function createVirtualTree(container, initial = {}) {
   }
 
   function resetHorizontalExtent() {
+    if (widthFrame !== null) {
+      cancelFrame(widthFrame);
+      widthFrame = null;
+    }
+    pendingWidth = 0;
     maxWidth = 0;
     spacer.style.minWidth = '';
+  }
+
+  function flushWidth() {
+    widthFrame = null;
+    if (destroyed) return;
+    const width = pendingWidth;
+    pendingWidth = 0;
+    const viewportWidth = container.clientWidth || 0;
+    if (width > maxWidth && (!viewportWidth || width > viewportWidth + 0.5)) {
+      maxWidth = width;
+      spacer.style.minWidth = `${maxWidth}px`;
+    }
   }
 
   function renderRow(descriptor, index) {
@@ -541,6 +560,7 @@ export function createVirtualTree(container, initial = {}) {
   function destroy() {
     destroyed = true;
     if (frame !== null) cancelFrame(frame);
+    if (widthFrame !== null) cancelFrame(widthFrame);
     resizeObserver?.disconnect();
     layerObserver?.disconnect();
     layer.removeEventListener('pointerdown', onLayerPointerDown);
@@ -573,13 +593,14 @@ export function createVirtualTree(container, initial = {}) {
   const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
   resizeObserver?.observe(container);
   // Track content width after layout instead of forcing synchronous scrollWidth
-  // reads during every scroll frame.
+  // reads during every scroll frame. Mutate spacer.style.minWidth in the next
+  // animation frame so ResizeObserver never re-triggers within the same delivery.
   const layerObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
     if (destroyed) return;
-    const width = Math.ceil(entries[entries.length - 1]?.contentRect?.width || 0);
-    if (width > maxWidth) {
-      maxWidth = width;
-      spacer.style.minWidth = `${maxWidth}px`;
+    const width = entries[entries.length - 1]?.contentRect?.width || 0;
+    if (width > maxWidth && width > pendingWidth) {
+      pendingWidth = width;
+      if (widthFrame === null) widthFrame = requestFrame(flushWidth);
     }
   });
   layerObserver?.observe(layer);

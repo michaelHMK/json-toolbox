@@ -29,6 +29,12 @@ try {
   const base = await background.evaluate(() => chrome.runtime.getURL(''));
   const page = await context.newPage();
   const errors = [];
+  await page.addInitScript(() => {
+    window.__smokeWindowErrors = [];
+    window.addEventListener('error', (event) => {
+      if (event.message) window.__smokeWindowErrors.push(event.message);
+    });
+  });
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 
@@ -58,13 +64,15 @@ try {
 
   await page.goto(base + 'compare.html');
   await page.locator('#input-left').fill(input);
-  await page.locator('#input-right').fill('{"units":8}');
+  await page.locator('#input-right').fill('{"units":8,"wide":"' + 'x'.repeat(200) + '"}');
   await page.locator('#btn-compare').click();
   for (const [side, value] of [['left', '7'], ['right', '8']]) {
     const change = page.locator(`#tree-${side} .entry.current[data-path="/units"]`);
     await change.waitFor();
     assert.ok((await change.textContent()).includes(value));
   }
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+  errors.push(...await page.evaluate(() => window.__smokeWindowErrors));
   assert.deepEqual(errors, []);
   console.log(`✓ ${basename(archive)}: background worker and five extension pages passed`);
 } finally {
