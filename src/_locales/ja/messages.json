@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "クリア"
   },
-  "linkCompare": {
-    "message": "JSON 比較 →"
-  },
-  "linkCompareTitle": {
-    "message": "JSON 比較ページを開く"
-  },
   "paneInput": {
     "message": "入力"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "次の差分"
-  },
-  "linkFormatter": {
-    "message": "← 整形に戻る"
   },
   "paneOld": {
     "message": "旧（左）"

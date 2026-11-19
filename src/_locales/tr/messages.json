@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Temizle"
   },
-  "linkCompare": {
-    "message": "JSON Karşılaştır →"
-  },
-  "linkCompareTitle": {
-    "message": "JSON karşılaştırma sayfasını aç"
-  },
   "paneInput": {
     "message": "Girdi"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Sonraki fark"
-  },
-  "linkFormatter": {
-    "message": "← Biçimlendirmeye dön"
   },
   "paneOld": {
     "message": "Eski (sol)"

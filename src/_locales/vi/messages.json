@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Xóa"
   },
-  "linkCompare": {
-    "message": "So sánh JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "Mở trang so sánh JSON"
-  },
   "paneInput": {
     "message": "Đầu vào"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Khác biệt tiếp theo"
-  },
-  "linkFormatter": {
-    "message": "← Về Định dạng"
   },
   "paneOld": {
     "message": "Cũ (trái)"

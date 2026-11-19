@@ -55,10 +55,10 @@
       });
     }
     document.addEventListener('click', event => {
-      if (!menu.hidden && !event.target.closest('.theme-picker')) setOpen(false);
+      if (!menu.hidden && !event.target?.closest?.('.theme-picker')) setOpen(false);
     });
     document.addEventListener('focusin', event => {
-      if (!menu.hidden && !event.target.closest('.theme-picker')) setOpen(false);
+      if (!menu.hidden && !event.target?.closest?.('.theme-picker')) setOpen(false);
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !menu.hidden) {

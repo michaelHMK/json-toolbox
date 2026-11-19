@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Svuota"
   },
-  "linkCompare": {
-    "message": "Confronta JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "Apri la pagina di confronto JSON"
-  },
   "paneInput": {
     "message": "Input"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Differenza successiva"
-  },
-  "linkFormatter": {
-    "message": "← Torna a Formatta JSON"
   },
   "paneOld": {
     "message": "Precedente (sinistra)"

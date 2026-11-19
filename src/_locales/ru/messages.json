@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Очистить"
   },
-  "linkCompare": {
-    "message": "Сравнение JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "Открыть страницу сравнения JSON"
-  },
   "paneInput": {
     "message": "Ввод"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Следующее различие"
-  },
-  "linkFormatter": {
-    "message": "← К форматированию"
   },
   "paneOld": {
     "message": "Старая версия (слева)"

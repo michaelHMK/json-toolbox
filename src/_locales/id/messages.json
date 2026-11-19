@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Bersihkan"
   },
-  "linkCompare": {
-    "message": "Bandingkan JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "Buka halaman perbandingan JSON"
-  },
   "paneInput": {
     "message": "Masukan"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Perbedaan berikutnya"
-  },
-  "linkFormatter": {
-    "message": "← Kembali ke Pemformat"
   },
   "paneOld": {
     "message": "Lama (kiri)"

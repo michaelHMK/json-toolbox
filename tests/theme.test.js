@@ -149,6 +149,27 @@ test('preview dialog manages focus and closes on selection, Escape, outside clic
   }
 });
 
+test('non-element document click and focus targets close the theme menu safely', () => {
+  const events = {};
+  const trigger = { attributes: {}, setAttribute(k, v) { this.attributes[k] = v; }, addEventListener(k, fn) { this[k] = fn; }, focus() {} };
+  const menu = { hidden: true };
+  const doc = {
+    documentElement: { dataset: {} },
+    querySelector: (s) => ({ '#theme-trigger': trigger, '#theme-switch': menu }[s] ?? null),
+    querySelectorAll: () => [],
+    addEventListener: (name, fn) => { events[name] = fn; },
+  };
+  vm.runInNewContext(source, { document: doc, window: { addEventListener() {} } });
+  events.DOMContentLoaded();
+  trigger.click();
+  assert.equal(menu.hidden, false);
+  events.click({ target: null });
+  assert.equal(menu.hidden, true);
+  trigger.click();
+  events.focusin({ target: {} });
+  assert.equal(menu.hidden, true);
+});
+
 test('open pages follow theme changes and removals in local storage only', () => {
   const page = openPage({ values: new Map([[key, 'comfort']]) });
   page.storageEvent({ key, newValue: 'dark' });
