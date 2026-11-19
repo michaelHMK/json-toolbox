@@ -87,6 +87,28 @@ for (const side of ['left', 'right']) {
   });
 }
 
+function splitIgnorePaths(text) {
+  const result = [];
+  let start = 0;
+  let quote = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = '';
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === ',' || ch === '，' || ch === '\n') {
+      const part = text.slice(start, i).trim();
+      if (part) result.push(part);
+      start = i + 1;
+    }
+  }
+  const tail = text.slice(start).trim();
+  if (tail) result.push(tail);
+  return result;
+}
+
 /* ================= 对比主流程 ================= */
 async function doCompare() {
   const lt = textInputs.left.getText();
@@ -96,10 +118,7 @@ async function doCompare() {
     return;
   }
   hideError();
-  const ignorePaths = ignoreInput.value
-    .split(/[,，\n]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const ignorePaths = splitIgnorePaths(ignoreInput.value);
   const keyField = arrayModeSel.value === 'key' ? keyFieldInput.value.trim() : '';
   let applied = false;
   const res = await session.compare({ text: lt, text2: rt, keyField, ignorePaths }, (response) => {

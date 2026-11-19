@@ -384,7 +384,7 @@
     "message": "Ignorar caminhos"
   },
   "ignorePathsTitle": {
-    "message": "Caminhos exatos separados por vírgulas; * corresponde a um segmento"
+    "message": "Caminhos exatos separados por vírgulas; * corresponde a um segmento e ** a uma subárvore"
   },
   "ignorePathsPlaceholder": {
     "message": "ex.: list[*].updatedAt, separados por vírgulas"

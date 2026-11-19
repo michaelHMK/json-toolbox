@@ -384,7 +384,7 @@
     "message": "Abaikan jalur"
   },
   "ignorePathsTitle": {
-    "message": "Jalur persis, * cocok dengan satu segmen, dipisahkan koma"
+    "message": "Jalur persis, dipisahkan koma; * cocok satu segmen, ** cocok seluruh subpohon"
   },
   "ignorePathsPlaceholder": {
     "message": "mis. list[*].updatedAt, dipisahkan koma"

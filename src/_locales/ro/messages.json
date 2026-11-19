@@ -384,7 +384,7 @@
     "message": "Ignoră căi"
   },
   "ignorePathsTitle": {
-    "message": "Căi exacte separate prin virgulă; * corespunde unui segment"
+    "message": "Căi exacte separate prin virgulă; * corespunde unui segment, ** unui întreg subarbore"
   },
   "ignorePathsPlaceholder": {
     "message": "de ex. list[*].updatedAt, separate prin virgulă"

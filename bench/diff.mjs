@@ -65,6 +65,13 @@ measure('structure-50k-keyed-reversed', () => diffData(rows, reversed, { keyFiel
   unchanged(result);
   if (result.pairs.length !== rows.length) throw new Error('Expected all rows paired by key');
 });
+const prunedLeft = { metadata: rows, keep: { value: 1 } };
+const prunedRight = { metadata: reversed, keep: { value: 2 } };
+measure('structure-50k-subtree-pruned', () => diffData(prunedLeft, prunedRight, { ignorePaths: ['metadata.**'] }), (result) => {
+  if (result.total !== 1 || result.diffs[0].leftPath !== '/keep/value') {
+    throw new Error('Expected ignored 50k metadata subtree to be pruned');
+  }
+});
 
 const leftText = JSON.stringify(Array.from({ length: 1500 }, (_, i) => `left ${i}`));
 const rightText = JSON.stringify(Array.from({ length: 1500 }, (_, i) => `right ${i}`));

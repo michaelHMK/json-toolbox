@@ -384,7 +384,7 @@
     "message": "無視するパス"
   },
   "ignorePathsTitle": {
-    "message": "完全一致のパスをカンマで区切って指定。* は 1 つの区間に一致"
+    "message": "完全一致のパスをカンマ区切りで指定。* は 1 区間、** はサブツリー全体に一致"
   },
   "ignorePathsPlaceholder": {
     "message": "例：list[*].updatedAt（カンマ区切り）"

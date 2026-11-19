@@ -384,7 +384,7 @@
     "message": "Pfade ignorieren"
   },
   "ignorePathsTitle": {
-    "message": "Exakte Pfade, durch Kommas getrennt; * steht für ein Segment"
+    "message": "Exakte Pfade, durch Kommas getrennt; * steht für ein Segment, ** für einen ganzen Teilbaum"
   },
   "ignorePathsPlaceholder": {
     "message": "z. B. list[*].updatedAt, durch Kommas getrennt"

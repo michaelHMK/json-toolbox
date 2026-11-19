@@ -384,7 +384,7 @@
     "message": "Ignora percorsi"
   },
   "ignorePathsTitle": {
-    "message": "Percorsi esatti separati da virgole; * corrisponde a un segmento"
+    "message": "Percorsi esatti separati da virgole; * corrisponde a un segmento, ** a un sottoalbero"
   },
   "ignorePathsPlaceholder": {
     "message": "es. list[*].updatedAt, separati da virgole"

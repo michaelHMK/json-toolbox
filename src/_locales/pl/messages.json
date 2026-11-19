@@ -384,7 +384,7 @@
     "message": "Ignoruj ścieżki"
   },
   "ignorePathsTitle": {
-    "message": "Dokładne ścieżki oddzielone przecinkami; * zastępuje jeden segment"
+    "message": "Dokładne ścieżki oddzielone przecinkami; * zastępuje jeden segment, ** całe poddrzewo"
   },
   "ignorePathsPlaceholder": {
     "message": "np. list[*].updatedAt, oddziel przecinkami"

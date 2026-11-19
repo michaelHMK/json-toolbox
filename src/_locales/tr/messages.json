@@ -384,7 +384,7 @@
     "message": "Yolları yoksay"
   },
   "ignorePathsTitle": {
-    "message": "Tam yollar; * tek bir parçayla eşleşir, virgülle ayırın"
+    "message": "Tam yollar, virgülle ayırın; * tek parçayla, ** tüm alt ağaçla eşleşir"
   },
   "ignorePathsPlaceholder": {
     "message": "ör. list[*].updatedAt, virgülle ayırın"

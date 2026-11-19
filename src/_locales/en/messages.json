@@ -384,7 +384,7 @@
     "message": "Ignore paths"
   },
   "ignorePathsTitle": {
-    "message": "Exact paths, * matches one segment, comma-separated"
+    "message": "Exact paths, * matches one segment, ** matches a subtree, comma-separated"
   },
   "ignorePathsPlaceholder": {
     "message": "e.g. list[*].updatedAt, comma-separated"
