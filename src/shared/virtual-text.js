@@ -54,6 +54,24 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     }
   }
 
+  function asciiWithLeadingTabs(text, prefixLength) {
+    // JSON strings cannot contain raw tabs, so tab-indented JSON only has
+    // leading tabs (after an optional even-width diff prefix such as "  "/"+ "/"- ").
+    if (prefixLength % 2 !== 0) return -1;
+    for (let i = 0; i < prefixLength; i++) {
+      const c = text.charCodeAt(i);
+      if (c < 0x20 || c > 0x7e) return -1;
+    }
+    let leadTabs = 0;
+    while (prefixLength + leadTabs < text.length && text.charCodeAt(prefixLength + leadTabs) === 9) leadTabs++;
+    if (leadTabs === 0) return -1;
+    for (let i = prefixLength + leadTabs; i < text.length; i++) {
+      const c = text.charCodeAt(i);
+      if (c < 0x20 || c > 0x7e) return -1;
+    }
+    return leadTabs;
+  }
+
   function horizontalGeometry(index, row) {
     let info = geometry.get(index);
     if (info) return info;
@@ -61,11 +79,14 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
     const singleLongRow = model.count === 1 && text.length > LONG_LINE_LIMIT;
     const ascii = singleLongRow && typeof row.ascii === 'boolean'
       ? row.ascii : row.ascii === true || !/[^\x20-\x7e]/.test(text);
+    const leadTabs = !ascii && !singleLongRow ? asciiWithLeadingTabs(text, row.prefix.length) : -1;
     // A single long row can use source offsets for its entire scroll track.
     // Its position then never depends on how much of a Unicode prefix was measured.
     const byOffset = singleLongRow && !ascii;
     if (ascii || byOffset) {
       info = { text, width: text.length * characterWidth, ascii, byOffset };
+    } else if (leadTabs > 0) {
+      info = { text, width: (text.length + leadTabs) * characterWidth, ascii: false, leadTabs, tabStart: row.prefix.length };
     } else {
       info = { text, width: 0, ascii: false, offsets: [0], widths: [0] };
       extendWidthIndex(info);
@@ -107,6 +128,21 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
 
   function columnAt(info, x) {
     if (info.ascii) return { offset: Math.max(0, Math.min(info.text.length, Math.floor(x / characterWidth))), x: Math.max(0, Math.floor(x / characterWidth)) * characterWidth };
+    if (info.leadTabs) {
+      const col = Math.max(0, Math.floor(x / characterWidth));
+      const { tabStart, leadTabs } = info;
+      const tabEndCol = tabStart + leadTabs * 2;
+      if (col <= tabStart) {
+        const offset = Math.min(info.text.length, col);
+        return { offset, x: offset * characterWidth };
+      }
+      if (col < tabEndCol) {
+        const tabs = Math.floor((col - tabStart) / 2);
+        return { offset: tabStart + tabs, x: (tabStart + tabs * 2) * characterWidth };
+      }
+      const offset = Math.min(info.text.length, col - leadTabs);
+      return { offset, x: (offset + leadTabs) * characterWidth };
+    }
     if (x <= 0) return { offset: 0, x: 0 };
     if (x >= info.width) return { offset: info.offsets.at(-1), x: info.width };
     let low = 0;
@@ -130,6 +166,11 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
 
   function pixelWindow(info, left, width) {
     const start = columnAt(info, Math.max(0, left - leftPadding - 100));
+    // Keep sliced diff prefixes at an even column before leading tabs so CSS tab-size: 2 stays aligned.
+    if (info.leadTabs && start.offset === 1 && info.tabStart === 2) {
+      start.offset = 0;
+      start.x = 0;
+    }
     const end = columnAt(info, Math.max(0, left - leftPadding + width + 100));
     return { ...safeTextWindow(info.text, start.offset, end.offset + 2), x: leftPadding + start.x - left };
   }
@@ -184,6 +225,12 @@ export function createVirtualTextView(element, { copy = copyText } = {}) {
 
   function xAtOffset(info, offset) {
     if (info.ascii || info.byOffset) return offset * characterWidth;
+    if (info.leadTabs) {
+      const { tabStart, leadTabs } = info;
+      if (offset <= tabStart) return offset * characterWidth;
+      if (offset <= tabStart + leadTabs) return (tabStart + (offset - tabStart) * 2) * characterWidth;
+      return (offset + leadTabs) * characterWidth;
+    }
     // An explicit error-location or End jump needs the exact source coordinate.
     while (info.offsets.at(-1) < offset) extendWidthIndex(info);
     if (offset >= info.offsets.at(-1)) return info.width;

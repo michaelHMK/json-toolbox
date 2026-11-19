@@ -42,7 +42,7 @@ function activeEntry(container) {
 function activate(container, path) {
   const entry = container.querySelectorAll('.entry').find((row) => row.dataset.path === path && !row.classList.contains('virtual-close'));
   assert.ok(entry, `Expected a mounted entry for ${path}`);
-  entry.querySelector('.row').events.pointerdown();
+  entry.querySelector('.row').dispatchEvent({ type: 'pointerdown' });
 }
 
 async function press(container, key) {
@@ -164,7 +164,7 @@ test('rapid remote toggles notify every intent and preserve native text nodes on
   await settle();
   assert.deepEqual(changes, [['/first', true], ['/second', true]]);
   const value = container.querySelector('.v');
-  value.parentElement.events.pointerdown();
+  value.parentElement.dispatchEvent({ type: 'pointerdown' });
   assert.equal(container.querySelector('.v'), value);
   tree.destroy();
 }));

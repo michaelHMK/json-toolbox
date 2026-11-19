@@ -1,6 +1,8 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
+import { hasNonWhitespace } from '../core/text-lines.js';
 import { createTaskRunner } from '../shared/worker-client.js';
+import { createSessionGuard } from '../shared/session-guard.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
@@ -18,13 +20,13 @@ const action = document.body.dataset.action;
 
 let outputText = '';
 let hasOutput = false;
-let dataVersion = 0;
+const guard = createSessionGuard();
 
 const runTask = createTaskRunner({
   serialize: true,
   onBusyChange: createBusyFeedback({
     busyEl, cancelEl: document.getElementById('btn-cancel'),
-    onCancel: () => { dataVersion++; runTask.cancel(); setStatus(t('statusCancelled')); },
+    onCancel: () => { guard.advance(); runTask.cancel(); setStatus(t('statusCancelled')); },
   }),
 });
 
@@ -44,8 +46,7 @@ const fileImport = createFileImport({
     resetDocument();
     textInput.setText(text);
     if (text.length > LARGE_INPUT_THRESHOLD) {
-      const version = dataVersion;
-      setTimeout(() => { if (version === dataVersion) void runTransform(); }, 0);
+      guard.defer(() => { void runTransform(); });
     } else {
       void runTransform();
     }
@@ -55,16 +56,16 @@ const fileImport = createFileImport({
 
 async function runTransform() {
   const text = textInput.getText();
-  if (action === 'minify' ? !text.trim() : !text) {
+  if (action === 'minify' ? !hasNonWhitespace(text) : !text) {
     showError(t(action === 'minify' ? 'errNeedInput' : 'errNeedContent'));
     return;
   }
   hideError();
   runTask.cancel({ onlyIfBusy: true });
-  const version = ++dataVersion;
+  const version = guard.advance();
   const res = await runTask(action, { text, retainSearch: false, includeTextIndex: true }, { key: 'transform' });
   if (res.cancelled) return;
-  if (version !== dataVersion) return;
+  if (!guard.isCurrent(version)) return;
   if (!res.ok) {
     if (action === 'minify') showParseError(text, res);
     else if (action === 'unescape') showParseError(text, res, 'errUnescapeFailed');
@@ -91,7 +92,7 @@ async function doCopy() {
 }
 
 function resetDocument() {
-  dataVersion++;
+  guard.advance();
   runTask('clear', {}, { discardQueued: true });
   textInput.clear();
   outputText = '';
@@ -111,7 +112,7 @@ function fillSample() {
   fileImport.reset();
   const appName = t('appName');
   const sample = JSON.stringify({
-    name: appName === 'appName' ? 'JSON 工具箱' : appName,
+    name: appName === 'appName' ? 'JSON Toolbox' : appName,
     free: true,
     tags: ['local', 'fast'],
     nested: { id: 1, value: null },
@@ -129,7 +130,7 @@ document.getElementById('btn-sample').addEventListener('click', fillSample);
 textInput.bindEvents({
   onChange() {
     fileImport.reset();
-    dataVersion++;
+    guard.advance();
     runTask.cancel({ onlyIfBusy: true });
   },
   onRun: runTransform,

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTextLineIndex, createTextLines, createPlainTextRows, createDiffTextRows, safeTextWindow } from '../src/core/text-lines.js';
+import { createTextLineIndex, createTextLines, createPlainTextRows, createDiffTextRows, safeTextWindow, hasNonWhitespace } from '../src/core/text-lines.js';
 import { Element, loadPage } from './helpers/page-dom.js';
 
 const textOf = (row) => row.prefix + row.text.slice(row.start, row.end);
@@ -211,4 +211,25 @@ test('long-line width metadata stays conservative for tabs, Unicode and control 
     const text = 'x'.repeat(9000) + suffix;
     assert.equal(createTextLineIndex(text).ascii, false);
   }
+});
+
+test('hasNonWhitespace matches String.prototype.trim across ASCII and Unicode whitespace', () => {
+  for (const sample of ['', ' \t\r\n', '\u00a0\ufeff\u2028\u2029\u3000', '\u0000', '  a  ', '\t\n{}']) {
+    assert.equal(hasNonWhitespace(sample), Boolean(sample.trim()), JSON.stringify(sample));
+  }
+});
+
+test('tab-indented virtual text avoids canvas measureText while locating positions accurately', () => {
+  const page = loadPage('formatter', { expose: '{ outputView }' });
+  const element = page.get('output-text');
+  const lines = Array.from({ length: 3000 }, (_, i) => `\t\t"item_${i}": ${i},`);
+  const source = '[\n' + lines.join('\n') + '\n\t\t"last": "TARGET"\n]';
+  page.outputView.setText(source);
+  assert.ok(element.classList.contains('virtual-text'));
+  const targetOffset = source.indexOf('TARGET');
+  page.outputView.revealPosition(targetOffset);
+  const [range] = page.selection.ranges;
+  assert.equal(range.startContainer.textContent.slice(range.startOffset, range.endOffset), 'T');
+  assert.equal(Number(range.startContainer.parentElement.dataset.textOffset) + range.startOffset, targetOffset);
+  page.outputView.destroy();
 });

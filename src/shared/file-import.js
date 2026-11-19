@@ -1,3 +1,4 @@
+import { hasNonWhitespace } from '../core/text-lines.js';
 import { t } from './i18n.js';
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -39,7 +40,7 @@ export async function readJsonFile(file) {
     throw new FileImportError('errFileEncoding');
   }
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-  if (!text.trim()) throw new FileImportError('errFileEmpty');
+  if (!hasNonWhitespace(text)) throw new FileImportError('errFileEmpty');
   return { name: file.name, size: file.size, text };
 }
 

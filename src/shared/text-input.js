@@ -1,31 +1,149 @@
-import { createLargeInputEditor } from './large-input-editor.js';
+import { hasNonWhitespace } from '../core/text-lines.js';
 
 export const LARGE_INPUT_THRESHOLD = 256 * 1024;
 
-export function createTextInput(textarea, host, { threshold = LARGE_INPUT_THRESHOLD } = {}) {
+let cachedLargeEditorFactory = null;
+let pendingLargeEditorLoad = null;
+
+function defaultLoadLargeEditor() {
+  if (cachedLargeEditorFactory) return Promise.resolve(cachedLargeEditorFactory);
+  pendingLargeEditorLoad ??= import('./large-input-editor.js').then((module) => {
+    cachedLargeEditorFactory = module.createLargeInputEditor;
+    return cachedLargeEditorFactory;
+  }, (error) => {
+    pendingLargeEditorLoad = null;
+    throw error;
+  });
+  return pendingLargeEditorLoad;
+}
+
+export function createTextInput(textarea, host, {
+  threshold = LARGE_INPUT_THRESHOLD,
+  createEditor = typeof createLargeInputEditor === 'function' ? createLargeInputEditor : null,
+  loadEditor = defaultLoadLargeEditor,
+} = {}) {
   const doc = textarea.ownerDocument || document;
   let editor = null;
   let source = null;
   let notifyChange;
+  let modeVersion = 0;
+  let syncingEditor = false;
+  let loadingEditor = false;
+  let pendingFocus = false;
+  let pendingSelection = null;
 
   function edited() {
+    if (syncingEditor) return;
     source = null;
     notifyChange?.();
   }
 
+  function resolveFactory() {
+    if (createEditor) return createEditor;
+    if (loadEditor === defaultLoadLargeEditor) return cachedLargeEditorFactory;
+    return null;
+  }
+
+  function shouldRestoreFocus(hadFocus) {
+    if (!hadFocus) return false;
+    const active = doc.activeElement;
+    return active == null || active === doc.body || active === textarea || active === host || Boolean(host.contains?.(active));
+  }
+
   function focus() {
     if (editor) editor.focus();
+    else if (loadingEditor) pendingFocus = true;
     else textarea.focus();
   }
 
-  function showEditor(text) {
-    const hadFocus = doc.activeElement === textarea;
+  function applySelection(position, line) {
+    if (source !== null && line !== 1) {
+      const original = position;
+      for (let at = source.indexOf('\r\n'); at >= 0 && at < original; at = source.indexOf('\r\n', at + 2)) {
+        position--;
+      }
+    }
+    const length = editor ? editor.length : textarea.value.length;
+    position = Math.max(0, Math.min(position, length));
+    focus();
+    const end = Math.min(position + 1, length);
+    if (editor) editor.select(position, end);
+    else {
+      textarea.setSelectionRange(position, end);
+      const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 21;
+      textarea.scrollTop = Math.max(0, ((line || 1) - 3) * lineHeight);
+    }
+  }
+
+  function mountEditor(factory, text, transfer, restoreFocus) {
+    syncingEditor = true;
+    try {
+      if (editor) {
+        if (transfer) {
+          editor.setDocument(transfer.previous);
+          editor.replace(transfer.start, transfer.end, transfer.text);
+        } else {
+          editor.setDocument(text);
+        }
+      } else {
+        editor = factory(host, {
+          text: transfer ? transfer.previous : text,
+          label: textarea.getAttribute('aria-label'),
+          onChange: edited,
+        });
+        if (transfer) editor.replace(transfer.start, transfer.end, transfer.text);
+      }
+    } finally {
+      syncingEditor = false;
+    }
+    if (pendingSelection) {
+      const next = pendingSelection;
+      pendingSelection = null;
+      pendingFocus = false;
+      applySelection(next.position, next.line);
+    } else if (restoreFocus) {
+      pendingFocus = false;
+      editor.focus();
+    }
+  }
+
+  function showEditor(text, transfer = null) {
+    const version = ++modeVersion;
+    const hadFocus = doc.activeElement === textarea || pendingFocus;
+    pendingFocus = false;
+    pendingSelection = null;
     textarea.hidden = true;
     textarea.value = '';
     host.hidden = false;
-    if (editor) editor.setDocument(text);
-    else editor = createLargeInputEditor(host, { text, label: textarea.getAttribute('aria-label'), onChange: edited });
-    if (hadFocus) editor.focus();
+    const factory = resolveFactory();
+    if (factory) {
+      loadingEditor = false;
+      mountEditor(factory, text, transfer, hadFocus);
+      return;
+    }
+    loadingEditor = true;
+    pendingFocus = hadFocus;
+    Promise.resolve(loadEditor()).then((loadedFactory) => {
+      if (version !== modeVersion) return;
+      loadingEditor = false;
+      mountEditor(loadedFactory, text, transfer, shouldRestoreFocus(pendingFocus));
+    }, () => {
+      if (version !== modeVersion) return;
+      loadingEditor = false;
+      const restore = shouldRestoreFocus(pendingFocus);
+      pendingFocus = false;
+      const fallbackText = source ?? text;
+      host.hidden = true;
+      textarea.hidden = false;
+      textarea.value = fallbackText;
+      if (pendingSelection) {
+        const next = pendingSelection;
+        pendingSelection = null;
+        applySelection(next.position, next.line);
+      } else if (restore) {
+        textarea.focus({ preventScroll: true });
+      }
+    });
   }
 
   function setText(text) {
@@ -34,8 +152,12 @@ export function createTextInput(textarea, host, { threshold = LARGE_INPUT_THRESH
       source = text;
       showEditor(text);
     } else {
+      modeVersion++;
+      const hadFocus = (editor && host.contains(doc.activeElement)) || (loadingEditor && shouldRestoreFocus(pendingFocus));
+      loadingEditor = false;
+      pendingFocus = false;
+      pendingSelection = null;
       source = text.includes('\r') ? text : null;
-      const hadFocus = editor && host.contains(doc.activeElement);
       editor?.destroy();
       editor = null;
       host.hidden = true;
@@ -57,9 +179,11 @@ export function createTextInput(textarea, host, { threshold = LARGE_INPUT_THRESH
     const end = textarea.selectionEnd ?? start;
     if (previous.length - (end - start) + text.length <= threshold) return false;
     event.preventDefault();
-    showEditor(previous);
-    editor.replace(start, end, text);
-    source = previous.slice(0, start) + text + previous.slice(end);
+    const nextSource = previous.slice(0, start) + text + previous.slice(end);
+    // Notify change synchronously so stale imports/tasks clear before auto-format runs.
+    notifyChange?.();
+    source = nextSource;
+    showEditor(nextSource, { previous, start, end, text });
     return true;
   }
 
@@ -91,24 +215,19 @@ export function createTextInput(textarea, host, { threshold = LARGE_INPUT_THRESH
   return {
     setText, bindEvents, focus,
     getText() { return source ?? (editor ? editor.getText() : textarea.value); },
+    hasContent() {
+      if (source !== null) return hasNonWhitespace(source);
+      if (editor) return editor.hasContent ? editor.hasContent() : hasNonWhitespace(editor.getText());
+      return hasNonWhitespace(textarea.value);
+    },
     clear() { setText(''); },
-    selectPosition(position, line = 1) {
-      if (source !== null) {
-        const original = position;
-        for (let at = source.indexOf('\r\n'); at >= 0 && at < original; at = source.indexOf('\r\n', at + 2)) {
-          position--;
-        }
+    selectPosition(position, line) {
+      if (loadingEditor && !editor) {
+        pendingSelection = { position, line };
+        pendingFocus = true;
+        return;
       }
-      const length = editor ? editor.length : textarea.value.length;
-      position = Math.max(0, Math.min(position, length));
-      focus();
-      const end = Math.min(position + 1, length);
-      if (editor) editor.select(position, end);
-      else {
-        textarea.setSelectionRange(position, end);
-        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 21;
-        textarea.scrollTop = Math.max(0, (line - 3) * lineHeight);
-      }
+      applySelection(position, line);
     },
   };
 }

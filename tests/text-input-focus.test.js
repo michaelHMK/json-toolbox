@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadPage } from './helpers/page-dom.js';
-import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
+import { Element, loadPage } from './helpers/page-dom.js';
+import { createTextInput, LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
 
 const largeText = '"' + 'x'.repeat(LARGE_INPUT_THRESHOLD + 1) + '"';
 
@@ -138,4 +138,82 @@ test('clearing a focused large editor restores the textarea without refocusing u
   page.textInput.clear();
   assert.equal(page.document.activeElement, input);
   assert.equal(page.focusCalls.length, 3);
+});
+
+test('lazy large-editor loading preserves source, focus, selection, cancellation and fallback', async () => {
+  const doc = { activeElement: null, body: {} };
+  const textarea = new Element('textarea');
+  const host = new Element('div');
+  textarea.ownerDocument = doc;
+  host.ownerDocument = doc;
+  textarea.focus = () => { doc.activeElement = textarea; };
+  host.focus = () => { doc.activeElement = host; };
+
+  let resolveLoad;
+  let rejectLoad;
+  let mounts = 0;
+  const mockFactory = (target, { text, onChange }) => {
+    mounts++;
+    target.value = text;
+    target.editor = {
+      setDocument(v) { target.value = v; },
+      replace(from, to, v) { target.value = target.value.slice(0, from) + v + target.value.slice(to); onChange(); },
+      getText: () => target.value,
+      hasContent: () => Boolean(target.value.trim()),
+      get length() { return target.value.length; },
+      select(start, end) { target.setSelectionRange(start, end); },
+      focus() { target.focus(); },
+      destroy() { delete target.editor; },
+    };
+    return target.editor;
+  };
+
+  let changes = 0;
+  const textInput = createTextInput(textarea, host, {
+    threshold: 8,
+    loadEditor: () => new Promise((resolve, reject) => { resolveLoad = resolve; rejectLoad = reject; }),
+  });
+  textInput.bindEvents({ onChange: () => changes++, onRun: () => {} });
+
+  // Clearing while the editor chunk is still loading cancels the stale mount.
+  textarea.focus();
+  textInput.setText('123456789');
+  assert.equal(textInput.getText(), '123456789');
+  assert.equal(textInput.hasContent(), true);
+  assert.equal(textarea.hidden, true);
+  textInput.clear();
+  resolveLoad(mockFactory);
+  await Promise.resolve();
+  assert.equal(mounts, 0);
+  assert.equal(textarea.hidden, false);
+  assert.equal(doc.activeElement, textarea);
+
+  // Paste while loading notifies once synchronously, applies pending selection when ready.
+  textarea.value = '[]';
+  textarea.setSelectionRange(1, 1);
+  textarea.focus();
+  const paste = transfer('123456789', 'paste');
+  textarea.events.paste(paste);
+  assert.equal(paste.prevented, true);
+  assert.equal(changes, 1);
+  assert.equal(textInput.getText(), '[123456789]');
+  textInput.selectPosition(3, 1);
+  resolveLoad(mockFactory);
+  await Promise.resolve();
+  assert.equal(mounts, 1);
+  assert.equal(changes, 1, 'initial replay must not re-fire onChange');
+  assert.equal(host.value, '[123456789]');
+  assert.equal(host.selectionStart, 3);
+  assert.equal(doc.activeElement, host);
+
+  // Failed lazy load falls back cleanly to the textarea without dropping text.
+  textInput.clear();
+  textarea.focus();
+  textInput.setText('abcdefghi');
+  rejectLoad(new Error('load failed'));
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(textarea.hidden, false);
+  assert.equal(host.hidden, true);
+  assert.equal(textarea.value, 'abcdefghi');
+  assert.equal(doc.activeElement, textarea);
 });
