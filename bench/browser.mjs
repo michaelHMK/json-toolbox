@@ -80,7 +80,7 @@ try {
   data[data.length - 1] = 'changed';
   await page.locator('#input-right').fill(JSON.stringify(data));
   await page.evaluate(() => { window.started = performance.now(); document.querySelector('#btn-compare').click(); });
-  await page.waitForFunction(() => !document.querySelector('#result').hidden);
+  await page.waitForFunction(() => !document.querySelector('#result').hidden && document.querySelectorAll('#struct-view .entry.current').length === 2);
   await settled();
   const result = await page.evaluate(() => ({
     elapsedMs: +(performance.now() - window.started).toFixed(1),
@@ -92,6 +92,7 @@ try {
     assert.equal(result.current, 2);
     assert.ok(result.entries < 200);
     await page.locator('#only-diff').check();
+    await page.waitForFunction(() => document.querySelectorAll('#struct-view .entry:not(.virtual-close)').length === 4);
     assert.equal(await page.locator('#struct-view .entry:not(.virtual-close)').count(), 4);
     await page.locator('#view-text').click();
     await page.waitForFunction(() => document.querySelectorAll('.tline').length > 0);

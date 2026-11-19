@@ -1,8 +1,6 @@
 import { createTaskRunner } from './worker-client.js';
 import { cancelledResponse, createSessionGuard } from './session-guard.js';
 
-const dataKeys = ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals'];
-
 // A displayed comparison survives input edits and Worker replacement. Its
 // handle owns the source and snapshot; UI state never needs a Worker identity.
 // compare optionally publishes through onResult before resolving; apply guards
@@ -29,57 +27,44 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     let snapshotId = initial.snapshotId;
     const { snapshotId: _, ...result } = initial;
     let textResult = null;
-    let dataRequest = null;
+    let snapshotRequest = null;
     let textRequest = null;
-    const data = {};
-    for (const key of dataKeys) {
-      if (initial[key] !== undefined) data[key] = initial[key];
-    }
     const comparison = {
       reset() {
         snapshotId = undefined;
         this.invalidate();
       },
       invalidate() {
-        dataRequest = null;
+        snapshotRequest = null;
         textRequest = null;
       },
       handle: null,
       result,
     };
 
-    async function ensureData(requireSnapshot = false) {
+    async function ensureSnapshot() {
       const version = guard.generation;
       if (!isCurrent(comparison, version)) return cancelledResponse();
-      const hasData = options.remote || data.leftData !== undefined;
-      const hasSnapshot = snapshotId !== undefined;
-      if (hasData && (!(options.remote || requireSnapshot) || hasSnapshot)) {
-        return remember({ ok: true, result: data }, version, comparison);
-      }
-      if (!dataRequest) {
+      if (snapshotId !== undefined) return remember({ ok: true, result: {} }, version, comparison);
+      if (!snapshotRequest) {
         const request = { promise: null };
         request.promise = (async () => {
-          const response = hasSnapshot
-            ? await run('comparisonData', { snapshotId, includeData: !options.remote })
-            : await run('diff', {
-              text: options.text, text2: options.text2,
-              keyField: options.keyField, ignorePaths: options.ignorePaths,
-              retainSnapshot: true, includeData: !options.remote, includePreviews: false,
-            });
+          const response = await run('diff', {
+            text: options.text, text2: options.text2,
+            keyField: options.keyField, ignorePaths: options.ignorePaths,
+            retainSnapshot: true, includePreviews: false,
+          });
           if (!isCurrent(comparison, version)) return cancelledResponse();
           if (!response.ok) return remember(response, version, comparison);
-          if (response.result.snapshotId !== undefined) snapshotId = response.result.snapshotId;
-          // Rehydration must preserve the original keyed/filtered diff summary.
-          for (const key of dataKeys) {
-            if (response.result[key] !== undefined) data[key] = result[key] = response.result[key];
-          }
-          return remember({ ...response, result: data }, version, comparison);
+          snapshotId = response.result.snapshotId;
+          // Rehydration preserves the original keyed/filtered diff summary.
+          return remember({ ...response, result: {} }, version, comparison);
         })().finally(() => {
-          if (dataRequest === request) dataRequest = null;
+          if (snapshotRequest === request) snapshotRequest = null;
         });
-        dataRequest = request;
+        snapshotRequest = request;
       }
-      return dataRequest.promise;
+      return snapshotRequest.promise;
     }
 
     async function textDiff() {
@@ -108,7 +93,7 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
 
     async function requestSnapshot(action, payload) {
       const version = guard.generation;
-      const ready = await ensureData(true);
+      const ready = await ensureSnapshot();
       if (!isCurrent(comparison, version)) return cancelledResponse();
       if (!ready.ok) return ready;
       const response = await run(action, { ...payload, snapshotId });
@@ -117,7 +102,7 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     }
 
     comparison.handle = {
-      ensureData: () => ensureData(), textDiff,
+      ensureSnapshot, textDiff,
       requestTree: (side, payload) => requestSnapshot('tree', { ...payload, kind: 'comparison', side }),
       checkPair: (side, path, knownAncestor) => requestSnapshot('comparisonPair', { side, path, knownAncestor }),
     };
@@ -144,15 +129,15 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     return true;
   }
 
-  async function compare({ text, text2, keyField = '', ignorePaths = [], remote = false, includeData = !remote }, onResult) {
+  async function compare({ text, text2, keyField = '', ignorePaths = [] }, onResult) {
     cancel({ onlyIfBusy: true });
     const version = guard.generation;
     const operation = {};
     comparing = operation;
-    const options = { text, text2, keyField, ignorePaths: [...ignorePaths], remote };
+    const options = { text, text2, keyField, ignorePaths: [...ignorePaths] };
     const response = await run('diff', {
       text, text2, keyField, ignorePaths: options.ignorePaths,
-      includeData: includeData && !remote, retainSnapshot: true, includePreviews: false,
+      retainSnapshot: true, includePreviews: false,
     }, { key: 'diff' });
     if (!guard.isCurrent(version) || comparing !== operation) return cancelledResponse();
     comparing = null;

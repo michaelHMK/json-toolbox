@@ -1,11 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTreeModel, createVirtualTree } from '../src/shared/virtual-tree.js';
+import { createTreeModel } from '../src/core/tree-model.js';
+import { createTreeTasks } from '../src/worker/tree-tasks.js';
+import { createVirtualTree } from '../src/shared/virtual-tree.js';
 import { createChildPathIndex } from '../src/core/json-path.js';
 import { Element, withDom } from './helpers/page-dom.js';
 
 const rows = (model) => Array.from({ length: model.rowCount }, (_, index) => model.rowAt(index));
 const entryPaths = (model) => rows(model).filter((row) => row.kind === 'entry').map((row) => row.path);
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+function makeRequest(data, numberLiterals = null) {
+  const treeTask = createTreeTasks();
+  const snapshot = {};
+  const document = { data, numberLiterals };
+  return (payload) => Promise.resolve({ ok: true, result: treeTask(snapshot, document, payload) });
+}
 
 test('a million-element array is one lazy range with direct access to its final value', () => {
   let reads = 0;
@@ -71,12 +81,13 @@ test('cached object keys survive updates, navigation and repeated viewport acces
   assert.equal(enumerations, 1);
 });
 
-test('virtual rendering bounds DOM and reaches values beyond browser scroll-height limits', () => withDom(() => {
+test('virtual rendering bounds DOM and reaches values beyond browser scroll-height limits', () => withDom(async () => {
   const container = new Element();
-  const tree = createVirtualTree(container, { data: Array(2_000_000).fill(7) });
+  const tree = createVirtualTree(container, { request: makeRequest(Array(2_000_000).fill(7)) });
+  await tree.ready;
   assert.ok(container.querySelectorAll('.entry').length <= 45);
   assert.equal(tree.rowCount, 2_000_002);
-  assert.equal(tree.reveal('/1999999'), true);
+  assert.equal(await tree.reveal('/1999999'), true);
   tree.setCurrent('/1999999');
   const current = container.querySelector('.entry.current');
   assert.equal(current.dataset.path, '/1999999');
@@ -91,31 +102,37 @@ test('virtual rendering bounds DOM and reaches values beyond browser scroll-heig
   assert.equal(container.events.scroll, undefined);
 }));
 
-test('toggles notify once, programmatic synchronization does not recurse, and highlights follow paths', () => withDom(() => {
+test('toggles notify once, programmatic synchronization does not recurse, and highlights follow paths', () => withDom(async () => {
   const changes = [];
   const container = new Element();
   const tree = createVirtualTree(container, {
-    data: { parent: { value: 1 } }, highlights: new Set(['/parent/value']),
+    request: makeRequest({ parent: { value: 1 } }),
+    highlights: new Set(['/parent/value']),
     decorations: new Map([['/parent/value', { type: 'changed' }]]),
     onToggle: (path, open) => changes.push([path, open]),
   });
+  await tree.ready;
   const parent = container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/parent');
   parent.querySelector('.toggle').click();
+  await settle();
   assert.deepEqual(changes, [['/parent', true]]);
   assert.equal(container.querySelector('.entry.highlight').dataset.path, '/parent/value');
   assert.equal(container.querySelector('.entry.diff-changed').dataset.path, '/parent/value');
-  tree.setOpen('/parent', false);
+  await tree.setOpen('/parent', false);
   assert.deepEqual(changes, [['/parent', true]]);
   assert.equal(container.querySelector('.entry.highlight'), null);
   tree.destroy();
 }));
 
-test('large string previews and precision-preserving numeric literals stay bounded', () => withDom(() => {
+test('large string previews and precision-preserving numeric literals stay bounded', () => withDom(async () => {
   const container = new Element();
   const tree = createVirtualTree(container, {
-    data: ['x'.repeat(10_000_000), 9007199254740992, -0, Infinity],
-    numberLiterals: { '/1': '9007199254740993', '/2': '-0', '/3': '9'.repeat(10000) },
+    request: makeRequest(
+      ['x'.repeat(10_000_000), 9007199254740992, -0, Infinity],
+      { '/1': '9007199254740993', '/2': '-0', '/3': '9'.repeat(10000) },
+    ),
   });
+  await tree.ready;
   const values = container.querySelectorAll('.v').map((entry) => entry.textContent);
   assert.ok(values[0].length < 2100);
   assert.equal(values[1], '9007199254740993');
@@ -125,10 +142,11 @@ test('large string previews and precision-preserving numeric literals stay bound
   tree.destroy();
 }));
 
-test('string and key previews never leave half of a surrogate pair', () => withDom(() => {
+test('string and key previews never leave half of a surrogate pair', () => withDom(async () => {
   const container = new Element();
   const value = 'a'.repeat(1998) + '😀' + 'z'.repeat(20);
-  const tree = createVirtualTree(container, { data: { [value]: value } });
+  const tree = createVirtualTree(container, { request: makeRequest({ [value]: value }) });
+  await tree.ready;
   for (const element of [...container.querySelectorAll('.key'), ...container.querySelectorAll('.v')]) {
     const text = element.textContent.replace(/strTruncated$/, '');
     assert.ok(!/[\ud800-\udbff]$/.test(text));
@@ -141,19 +159,22 @@ function activeEntry(container) {
   return container.querySelectorAll('.entry').find((entry) => entry.id === id);
 }
 
-function press(container, key) {
+async function press(container, key) {
   let prevented = false;
   container.events.keydown({ key, preventDefault() { prevented = true; } });
   assert.equal(prevented, true, `${key} must not also scroll the page`);
+  await settle();
   return activeEntry(container)?.dataset.path;
 }
 
-test('virtual tree exposes sibling counts and levels while excluding decorative closing rows', () => withDom(() => {
+test('virtual tree exposes sibling counts and levels while excluding decorative closing rows', () => withDom(async () => {
   const container = new Element();
   container.setAttribute('aria-label', 'Formatted JSON');
   const tree = createVirtualTree(container, {
-    data: { first: 1, nested: { a: 2, b: 3 }, empty: [] }, expandLevel: Infinity,
+    request: makeRequest({ first: 1, nested: { a: 2, b: 3 }, empty: [] }),
+    expandLevel: Infinity,
   });
+  await tree.ready;
   assert.equal(container.getAttribute('role'), 'tree');
   assert.equal(container.getAttribute('tabindex'), '0');
   assert.equal(container.getAttribute('aria-label'), 'Formatted JSON');
@@ -180,7 +201,7 @@ test('virtual tree exposes sibling counts and levels while excluding decorative 
   assert.equal(b.getAttribute('aria-expanded'), null);
   const empty = entries.find((entry) => entry.dataset.path === '/empty');
   assert.equal(empty.getAttribute('aria-expanded'), null, 'empty containers have no child nodes');
-  tree.update({ onlyRequired: true, requiredChildren: createChildPathIndex(['/nested/b']) });
+  await tree.update({ onlyRequired: true, requiredChildren: createChildPathIndex(['/nested/b']) });
   const filtered = container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/nested/b');
   assert.equal(filtered.getAttribute('aria-posinset'), '1');
   assert.equal(filtered.getAttribute('aria-setsize'), '1');
@@ -191,86 +212,93 @@ test('virtual tree exposes sibling counts and levels while excluding decorative 
   assert.equal(container.getAttribute('aria-label'), 'Formatted JSON');
 }));
 
-test('keyboard navigation expands nodes, visits children and siblings, and skips closing brackets', () => withDom(() => {
+test('keyboard navigation expands nodes, visits children and siblings, and skips closing brackets', () => withDom(async () => {
   const changes = [];
   const container = new Element();
   const tree = createVirtualTree(container, {
-    data: { parent: { leaf: 1 }, last: 2 }, onToggle: (...args) => changes.push(args),
+    request: makeRequest({ parent: { leaf: 1 }, last: 2 }),
+    onToggle: (...args) => changes.push(args),
   });
+  await tree.ready;
   assert.equal(activeEntry(container).dataset.path, '');
-  assert.equal(press(container, 'ArrowRight'), '/parent');
-  assert.equal(press(container, 'ArrowRight'), '/parent', 'opening keeps focus on the parent');
+  assert.equal(await press(container, 'ArrowRight'), '/parent');
+  assert.equal(await press(container, 'ArrowRight'), '/parent', 'opening keeps focus on the parent');
   assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'true');
-  assert.equal(press(container, 'ArrowRight'), '/parent/leaf');
-  assert.equal(press(container, 'ArrowRight'), '/parent/leaf', 'leaf nodes do not expand');
-  assert.equal(press(container, 'ArrowDown'), '/last');
-  assert.equal(press(container, 'ArrowUp'), '/parent/leaf');
-  assert.equal(press(container, 'ArrowLeft'), '/parent');
-  assert.equal(press(container, 'ArrowLeft'), '/parent');
+  assert.equal(await press(container, 'ArrowRight'), '/parent/leaf');
+  assert.equal(await press(container, 'ArrowRight'), '/parent/leaf', 'leaf nodes do not expand');
+  assert.equal(await press(container, 'ArrowDown'), '/last');
+  assert.equal(await press(container, 'ArrowUp'), '/parent/leaf');
+  assert.equal(await press(container, 'ArrowLeft'), '/parent');
+  assert.equal(await press(container, 'ArrowLeft'), '/parent');
   assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'false');
-  assert.equal(press(container, 'Enter'), '/parent');
+  assert.equal(await press(container, 'Enter'), '/parent');
   assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'true');
-  assert.equal(press(container, ' '), '/parent');
+  assert.equal(await press(container, ' '), '/parent');
   assert.equal(activeEntry(container).getAttribute('aria-expanded'), 'false');
-  assert.equal(press(container, 'End'), '/last');
-  assert.equal(press(container, 'ArrowDown'), '/last');
-  assert.equal(press(container, 'Home'), '');
-  assert.equal(press(container, 'ArrowUp'), '');
+  assert.equal(await press(container, 'End'), '/last');
+  assert.equal(await press(container, 'ArrowDown'), '/last');
+  assert.equal(await press(container, 'Home'), '');
+  assert.equal(await press(container, 'ArrowUp'), '');
   assert.deepEqual(changes, [['/parent', true], ['/parent', false], ['/parent', true], ['/parent', false]]);
   tree.destroy();
   assert.equal(container.events.keydown, undefined);
   assert.equal(container.events.focus, undefined);
 }));
 
-test('virtual scrolling keeps the active descendant mounted and keyboard focus on the tree', () => withDom(() => {
+test('virtual scrolling keeps the active descendant mounted and keyboard focus on the tree', () => withDom(async () => {
   const container = new Element();
   container.focus = () => { document.activeElement = container; };
-  const tree = createVirtualTree(container, { data: Array(2_000_000).fill(7) });
+  const tree = createVirtualTree(container, { request: makeRequest(Array(2_000_000).fill(7)) });
+  await tree.ready;
   container.focus();
   const originalId = container.getAttribute('aria-activedescendant');
   container.scrollTop = 4_000_000;
   tree.refresh();
+  await settle();
   assert.equal(container.getAttribute('aria-activedescendant'), originalId);
   assert.equal(activeEntry(container).dataset.path, '');
   assert.ok(activeEntry(container).classList.contains('virtual-active-outside'));
   assert.ok(container.querySelectorAll('.entry').length <= 46, 'pinning costs at most one row');
   assert.equal(document.activeElement, container);
-  assert.equal(press(container, 'End'), '/1999999');
+  assert.equal(await press(container, 'End'), '/1999999');
   assert.ok(!activeEntry(container).classList.contains('virtual-active-outside'));
   assert.equal(activeEntry(container).getAttribute('aria-posinset'), '2000000');
   assert.equal(activeEntry(container).getAttribute('aria-setsize'), '2000000');
   assert.equal(document.activeElement, container);
-  assert.equal(press(container, 'ArrowUp'), '/1999998');
+  assert.equal(await press(container, 'ArrowUp'), '/1999998');
   tree.destroy();
 }));
 
-test('collapsing or filtering an active descendant falls back to a visible ancestor', () => withDom(() => {
+test('collapsing or filtering an active descendant falls back to a visible ancestor', () => withDom(async () => {
   const container = new Element();
-  const tree = createVirtualTree(container, { data: { parent: { leaf: 1 }, other: 2 } });
-  tree.reveal('/parent/leaf');
+  const tree = createVirtualTree(container, { request: makeRequest({ parent: { leaf: 1 }, other: 2 }) });
+  await tree.ready;
+  await tree.reveal('/parent/leaf');
   tree.setCurrent('/other');
   assert.equal(activeEntry(container).dataset.path, '/parent/leaf', 'search decoration is independent of keyboard focus');
-  tree.setOpen('/parent', false);
+  await tree.setOpen('/parent', false);
   assert.equal(activeEntry(container).dataset.path, '/parent');
-  tree.update({ onlyRequired: true, requiredChildren: createChildPathIndex(['/other']) });
-  assert.equal(activeEntry(container).dataset.path, '');
-  tree.update({ data: undefined });
-  assert.equal(container.getAttribute('aria-activedescendant'), null);
-  tree.update({ data: [1] });
+  await tree.update({ onlyRequired: true, requiredChildren: createChildPathIndex(['/other']) });
   assert.equal(activeEntry(container).dataset.path, '');
   tree.destroy();
+  const empty = createVirtualTree(container, { request: makeRequest(undefined) });
+  await empty.ready;
+  assert.equal(container.getAttribute('aria-activedescendant'), null);
+  empty.destroy();
 }));
 
-test('pointer activation preserves value text nodes and native selections after virtual scrolling', () => withDom(() => {
+test('pointer activation preserves value text nodes and native selections after virtual scrolling', () => withDom(async () => {
   const container = new Element();
   container.focus = () => {
     if (document.activeElement === container) return;
     document.activeElement = container;
     container.events.focus?.();
   };
-  const tree = createVirtualTree(container, { data: Array(1000).fill('selectable') });
+  const tree = createVirtualTree(container, { request: makeRequest(Array(1000).fill('selectable')) });
+  await tree.ready;
   container.scrollTop = 1200;
   tree.refresh();
+  await settle();
   const entry = container.querySelectorAll('.entry').find((item) => item.dataset.path === '/50');
   const row = entry.querySelector('.row');
   const value = entry.querySelector('.v');
@@ -347,7 +375,7 @@ test('reopening a large subtree does not exceed the function argument limit', ()
   assert.equal(model.rowAt(model.indexOf('/49999/value')).value, 49_999);
 });
 
-test('wide-object indexOf and sibling collapse range merging stay exact and reuse DOM rows on scroll', () => withDom(() => {
+test('wide-object indexOf and sibling collapse range merging stay exact and reuse DOM rows on scroll', () => withDom(async () => {
   const wide = {};
   for (let i = 0; i < 200; i++) wide[`key_${i}`] = { nested: i };
   const model = createTreeModel({ data: wide });
@@ -365,7 +393,8 @@ test('wide-object indexOf and sibling collapse range merging stay exact and reus
   assert.equal(model.rowAt(model.indexOf('/key_199')).path, '/key_199');
 
   const container = new Element();
-  const tree = createVirtualTree(container, { data: Array.from({ length: 200 }, (_, i) => i) });
+  const tree = createVirtualTree(container, { request: makeRequest(Array.from({ length: 200 }, (_, i) => i)) });
+  await tree.ready;
   const before = container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/10');
   // Micro-scroll inside the same row range keeps the exact mounted DOM node.
   container.scrollTop = 4;
@@ -378,7 +407,7 @@ test('wide-object indexOf and sibling collapse range merging stay exact and reus
   tree.destroy();
 }));
 
-test('layer ResizeObserver defers spacer minWidth writes to the next frame without synchronous relayout', () => withDom(() => {
+test('layer ResizeObserver defers spacer minWidth writes to the next frame without synchronous relayout', () => withDom(async () => {
   const previousRO = globalThis.ResizeObserver;
   const previousRAF = globalThis.requestAnimationFrame;
   const previousCAF = globalThis.cancelAnimationFrame;
@@ -395,7 +424,8 @@ test('layer ResizeObserver defers spacer minWidth writes to the next frame witho
   try {
     const container = new Element();
     container.clientWidth = 480;
-    const tree = createVirtualTree(container, { data: { nested: { wide: 'x'.repeat(200) } } });
+    const tree = createVirtualTree(container, { request: makeRequest({ nested: { wide: 'x'.repeat(200) } }) });
+    await tree.ready;
     const spacer = container.children[0];
     const layerObserver = observers.find((observer) => observer.targets.includes(spacer.children[0]));
     assert.ok(layerObserver);
@@ -403,11 +433,11 @@ test('layer ResizeObserver defers spacer minWidth writes to the next frame witho
     layerObserver.callback([{ contentRect: { width: 480.4 } }]);
     for (const callback of [...frames.values()]) callback();
     frames.clear();
-    assert.equal(spacer.style.minWidth, undefined);
+    assert.equal(spacer.style.minWidth, '');
 
     // Overflowing layer must NOT mutate spacer synchronously inside ResizeObserver.
     layerObserver.callback([{ contentRect: { width: 1104.4 } }]);
-    assert.equal(spacer.style.minWidth, undefined);
+    assert.equal(spacer.style.minWidth, '');
     assert.equal(frames.size, 1);
     for (const callback of [...frames.values()]) callback();
     frames.clear();
@@ -415,9 +445,10 @@ test('layer ResizeObserver defers spacer minWidth writes to the next frame witho
 
     // Collapsing resets horizontal extent and cancels any queued width frame.
     layerObserver.callback([{ contentRect: { width: 1400 } }]);
-    tree.setOpen('', false);
+    const collapsing = tree.setOpen('', false);
     assert.equal(spacer.style.minWidth, '');
     assert.equal(frames.size, 0);
+    await collapsing;
     tree.destroy();
   } finally {
     globalThis.ResizeObserver = previousRO;

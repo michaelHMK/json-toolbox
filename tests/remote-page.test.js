@@ -16,7 +16,7 @@ function setup(name) {
   return { page, ...worker };
 }
 
-test('large formatter retains no UI object graph and restores windows and search after Worker reset', async () => {
+test('formatter retains no UI object graph and restores windows and search after Worker reset', async () => {
   const { page, workers, hold } = setup('formatter');
   page.state.view = 'tree';
   page.textInput.setText(JSON.stringify({
@@ -24,9 +24,7 @@ test('large formatter retains no UI object graph and restores windows and search
   }));
   await page.doFormat();
   await page.getTree().ready;
-  assert.equal(page.state.remote, true);
-  assert.equal(page.state.data, undefined);
-  assert.equal(workers[0].requests.find((request) => request.action === 'format').includeData, false);
+  assert.equal(Object.hasOwn(page.state, 'data'), false);
   await page.getTree().setOpen('/nested', true);
   await page.getTree().setOpen('/rows', true);
   assert.equal(page.state.expanded.has('/nested'), true);
@@ -52,26 +50,22 @@ test('large formatter retains no UI object graph and restores windows and search
   await settle();
   assert.equal(workers.length, 2);
   assert.deepEqual(workers[1].requests.slice(0, 2).map((request) => request.action), ['parse', 'tree']);
-  assert.equal(workers[1].requests[0].includeData, false);
   assert.equal(page.get('tree').querySelectorAll('.virtual-placeholder').length, 0);
   workers[1].crash();
   page.get('search').value = 'needle';
   await page.runSearch();
   await settle();
   assert.equal(workers.length, 3);
-  assert.equal(page.state.data, undefined);
   assert.equal(page.state.matchCount, 1);
   await page.setView('text');
   await page.setView('tree');
   await settle();
-  assert.equal(page.state.data, undefined);
 
   const previous = page.getTree();
   page.textInput.setText('{"small":true}');
   await page.doFormat();
-  assert.equal(page.state.remote, false);
-  assert.equal(page.state.data.small, true);
   assert.equal(previous.rowCount, 0);
+  assert.ok(page.get('tree').querySelectorAll('.entry').some((row) => row.dataset.path === '/small'));
   page.doClear();
 });
 
@@ -92,8 +86,6 @@ test('a hidden leftover search does not parse a large text-only format before op
   await page.doFormat();
   await page.runSearch();
   assert.equal(page.state.view, 'text');
-  assert.equal(page.state.remote, false, 'remote data is not ready until the tree is explicitly requested');
-  assert.equal(page.state.data, undefined);
   assert.deepEqual(currentRequests().map((request) => request.action), ['format']);
   assert.equal(currentRequests()[0].retainSnapshot, false);
   assert.equal(currentRequests()[0].retainSearch, false);
@@ -103,8 +95,6 @@ test('a hidden leftover search does not parse a large text-only format before op
   await settle();
   assert.equal(currentRequests().filter((request) => request.action === 'parse').length, 1);
   assert.equal(currentRequests().filter((request) => request.action === 'search').length, 1);
-  assert.equal(page.state.remote, true);
-  assert.equal(page.state.data, undefined);
   assert.equal(page.state.matchCount, 1);
   assert.equal(page.get('tree').querySelector('.entry.current').dataset.path, '/nested/value');
   page.doClear();
@@ -121,9 +111,8 @@ test('large comparison preserves paired toggles, filters and snapshot navigation
   page.get('key-field').value = 'id';
   await page.doCompare();
   await settle();
-  assert.equal(page.state.remote, true);
-  assert.equal(page.state.leftData, undefined);
-  assert.equal(page.state.rightData, undefined);
+  assert.equal(Object.hasOwn(page.state, 'leftData'), false);
+  assert.equal(Object.hasOwn(page.state, 'rightData'), false);
   assert.equal(Object.hasOwn(page.state.result, 'leftData'), false);
   assert.equal(page.state.result.total, 1);
   assert.equal(page.get('tree-left').querySelector('.entry.current').dataset.path, '/users/0/nested/v');
@@ -135,17 +124,14 @@ test('large comparison preserves paired toggles, filters and snapshot navigation
   assert.equal(page.state.collapsed.right.has('/users/1'), true);
   await page.treeViews.left.setOpen('/spare', true);
   page.get('only-diff').checked = true;
-  page.get('only-diff').events.change();
-  await settle();
+  await page.get('only-diff').events.change();
   assert.equal(page.get('tree-left').querySelectorAll('.entry').some((row) => row.dataset.path === '/spare'), false);
   page.get('only-diff').checked = false;
-  page.get('only-diff').events.change();
-  await settle();
+  await page.get('only-diff').events.change();
   assert.equal(page.get('tree-left').querySelectorAll('.entry').some((row) => row.dataset.path === '/spare/n'), true);
   await page.setCompareView('text');
   await page.setCompareView('struct');
   await settle();
-  assert.equal(page.state.leftData, undefined);
 
   hold('tree');
   const pending = page.treeViews.left.setOpen('/spare', false);
@@ -157,10 +143,8 @@ test('large comparison preserves paired toggles, filters and snapshot navigation
   await settle();
   assert.equal(workers.length, 2);
   assert.equal(workers[1].requests[0].action, 'diff');
-  assert.equal(workers[1].requests[0].includeData, false);
   assert.equal(page.state.result.total, 1);
   assert.equal(page.state.result.pairs.length, 2);
-  assert.equal(page.state.leftData, undefined);
   page.doClear();
   assert.equal(page.get('tree-left').children.length, 0);
   assert.equal(page.get('tree-right').children.length, 0);

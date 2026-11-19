@@ -13,6 +13,11 @@ function setup() {
   return { page, ...worker };
 }
 
+function findEntry(page, path) {
+  return page.get('tree').querySelectorAll('.entry').find((entry) =>
+    entry.dataset.path === path && !entry.classList.contains('virtual-close'));
+}
+
 function assertView(page, expected) {
   assert.equal(page.state.view, expected);
   assert.equal(page.get('view-' + expected).classList.contains('active'), true);
@@ -48,7 +53,7 @@ for (const failure of ['cancel', 'parse error', 'worker error']) {
       page.get('input').events.input();
     }
     await showTree(page);
-    assert.equal(page.state.data.value, 1);
+    assert.equal(findEntry(page, '/value').querySelector('.v').textContent, '1');
     page.doClear();
   });
 }
@@ -66,8 +71,8 @@ test('successful format fulfills the last pending view choice after building the
   workers[0].complete(workers[0].requests[0]);
   await pending;
   assertView(page, 'tree');
-  assert.equal(page.state.numberLiterals['/value'], '1.20');
-  assert.deepEqual(workers[0].requests.map((request) => request.action), ['format', 'parseSnapshot']);
+  assert.equal(findEntry(page, '/value').querySelector('.v').textContent, '1.20');
+  assert.deepEqual(workers[0].requests.map((request) => request.action), ['format', 'tree']);
   page.doClear();
 });
 
@@ -104,17 +109,17 @@ for (const action of ['edit', 'clear']) {
     assertView(page, 'text');
     assert.equal(page.getTree(), null);
     await showTree(page);
-    assert.equal(page.state.data.fresh, 2);
-    assert.equal(page.state.data.old, undefined);
+    assert.equal(findEntry(page, '/fresh').querySelector('.v').textContent, '2');
+    assert.equal(findEntry(page, '/old'), undefined);
     page.doClear();
   });
 }
 
 for (const failure of ['cancel', 'worker error']) {
-  test(`completed text remains usable when the follow-up tree transfer ends with ${failure}`, async () => {
+  test(`completed text remains usable when the follow-up tree window ends with ${failure}`, async () => {
     const { page, workers, held } = setup();
     held.add('format');
-    held.add('parseSnapshot');
+    held.add('tree');
     page.get('input').value = '{"fresh":2}';
     const pending = page.doFormat();
     await page.get('view-tree').click();
@@ -128,30 +133,31 @@ for (const failure of ['cancel', 'worker error']) {
     await pending;
     held.clear();
     await showTree(page);
-    assert.equal(page.state.data.fresh, 2);
-    assert.deepEqual(workers[1].requests.map((request) => request.action), ['parse']);
+    assert.equal(findEntry(page, '/fresh').querySelector('.v').textContent, '2');
+    assert.deepEqual(workers[1].requests.map((request) => request.action), ['parse', 'tree']);
     page.doClear();
   });
 }
 
-test('a late tree parse cannot override a newer request to keep text visible', async () => {
+test('a late tree window cannot override a newer request to keep text visible', async () => {
   const { page, workers, held } = setup();
   page.get('input').value = '{"value":1}';
   await page.doFormat();
-  held.add('parseSnapshot');
+  held.add('tree');
   const pending = page.get('view-tree').click();
+  await new Promise(setImmediate);
   await page.get('view-text').click();
   held.clear();
   workers[0].complete(workers[0].requests.at(-1));
   await pending;
   assertView(page, 'text');
   await showTree(page);
-  assert.equal(page.state.data.value, 1);
+  assert.equal(findEntry(page, '/value').querySelector('.v').textContent, '1');
   page.doClear();
 });
 
 for (const outcome of ['worker error', 'cancel', 'return to text', 'crash after returning to text']) {
-  test(`first remote window keeps formatted text visible during ${outcome} and permits retry`, async () => {
+  test(`first large tree window keeps formatted text visible during ${outcome} and permits retry`, async () => {
     const { page, workers, held } = setup();
     page.get('input').value = JSON.stringify({ data: 'x'.repeat(LARGE_INPUT_THRESHOLD) });
     await page.doFormat();
@@ -193,7 +199,7 @@ test('cancelling a search after switching views leaves a built and usable tree',
   await new Promise(setImmediate);
   assertView(page, 'tree');
   await showTree(page);
-  assert.equal(page.state.data.value, 1);
+  assert.equal(findEntry(page, '/value').querySelector('.v').textContent, '1');
   page.doClear();
 });
 
@@ -212,8 +218,8 @@ test('cancelling a new format preserves the old output and lets its tree be open
   assert.equal(page.state.outputText, previousOutput);
   held.clear();
   await showTree(page);
-  assert.equal(page.state.data.old, 1);
-  assert.equal(page.state.data.fresh, undefined);
+  assert.equal(findEntry(page, '/old').querySelector('.v').textContent, '1');
+  assert.equal(findEntry(page, '/fresh'), undefined);
   page.doClear();
 });
 
@@ -245,7 +251,7 @@ test('formatting an active tree does not build an unused text view', async () =>
   page.get('input').value = '{"fresh":2}';
   await page.doFormat();
   assertView(page, 'tree');
-  assert.equal(page.state.data.fresh, 2);
+  assert.equal(findEntry(page, '/fresh').querySelector('.v').textContent, '2');
   assert.equal(page.get('output-text').children.length, 0);
   assert.equal(page.get('output-text').textContent, '');
   page.doClear();

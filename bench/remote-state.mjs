@@ -65,7 +65,6 @@ try {
         this.reviewId = ++nextWorker;
         this.reviewPending = new Map();
         this.addEventListener('message', ({ data }) => {
-          if (data.treeChunk) return;
           const request = this.reviewPending.get(data.id);
           if (this.reviewPending.delete(data.id)) remoteStatePending--;
           remoteStateReplies.push({ phase: remoteStatePhase, worker: this.reviewId,
@@ -202,8 +201,8 @@ try {
   // This fixture adds unchanged branches so a lost onlyRequired option is visible.
   await page.goto(base + '/__remote-state.html');
   const recovery = await page.evaluate(async (moduleBase) => {
-    const [{ createRemoteTree }, { createTaskRunner }, { createChildPathIndex }] = await Promise.all([
-      import(moduleBase + 'shared/remote-tree.js'), import(moduleBase + 'shared/worker-client.js'), import(moduleBase + 'core/json-path.js'),
+    const [{ createVirtualTree }, { createTaskRunner }, { createChildPathIndex }] = await Promise.all([
+      import(moduleBase + 'shared/virtual-tree.js'), import(moduleBase + 'shared/worker-client.js'), import(moduleBase + 'core/json-path.js'),
     ]);
     const source = JSON.stringify({ branch: { child: { n: 1 }, hidden: 99 },
       rows: Array.from({ length: 20000 }, () => ({ n: 1, hidden: 99 })), ignored: true });
@@ -215,7 +214,7 @@ try {
     const run = createTaskRunner({ serialize: true, onReset: () => { snapshotId = null; parsing = null; } });
     const request = async (payload) => {
       if (snapshotId === null) {
-        parsing ||= run('parse', { text: source, includeData: false, retainSnapshot: true });
+        parsing ||= run('parse', { text: source, retainSnapshot: true });
         const parsed = await parsing;
         if (!parsed.ok) return parsed;
         snapshotId = parsed.result.snapshotId;
@@ -224,7 +223,7 @@ try {
       return run('tree', { ...payload, kind: 'document', snapshotId });
     };
     remoteStatePhase = 'recovery-setup';
-    const tree = createRemoteTree(document.getElementById('recovery-tree'), { request,
+    const tree = createVirtualTree(document.getElementById('recovery-tree'), { request,
       expanded, collapsed, onlyRequired: true, requiredChildren,
       forceExpand: new Set(['/branch', '/branch/child', '/rows']),
     });

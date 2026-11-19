@@ -1,13 +1,11 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
-import { createChildPathIndex } from '../core/json-path.js';
 import { hasNonWhitespace } from '../core/text-lines.js';
 import { createComparisonSession } from '../shared/comparison-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
-import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createFileImport } from '../shared/file-import.js';
-import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
+import { createTextInput } from '../shared/text-input.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
 initializePage();
@@ -40,17 +38,10 @@ const state = {
   textResult: null,    // 文本 diff 结果（每次对比后失效重算）
   treesDirty: true,
   indexesReady: false,
-  children: { left: new Map(), right: new Map() },
-  remote: false,
-  leftData: undefined,
-  rightData: undefined,
-  leftNumberLiterals: null,
-  rightNumberLiterals: null,
   onlyDiff: false,
   diffIndex: -1,
   expanded: { left: new Set(), right: new Set() },     // 用户手动展开
   collapsed: { left: new Set(), right: new Set() },
-  force: { left: new Set(), right: new Set() },        // 差异祖先，自动展开
   diffMap: { left: new Map(), right: new Map() },      // path → diff 记录
   pairLR: new Map(),   // 主键配对导致的左路径 → 右路径
   pairRL: new Map(),
@@ -110,19 +101,14 @@ async function doCompare() {
     .map((s) => s.trim())
     .filter(Boolean);
   const keyField = arrayModeSel.value === 'key' ? keyFieldInput.value.trim() : '';
-  const remote = Math.max(lt.length, rt.length) > LARGE_INPUT_THRESHOLD;
   let applied = false;
-  const res = await session.compare({
-    text: lt, text2: rt, keyField, ignorePaths, remote,
-    includeData: state.view === 'struct' && !remote,
-  }, (response) => {
+  const res = await session.compare({ text: lt, text2: rt, keyField, ignorePaths }, (response) => {
     applied = true;
     if (!response.ok) {
       showParseError(response.side === 'right' ? rt : lt, response, 'errCompareFailed');
       return;
     }
     comparison = response.comparison;
-    state.remote = remote;
     state.result = response.result;
     state.textResult = null;
     state.treesDirty = true;
@@ -132,39 +118,16 @@ async function doCompare() {
     textRenderer.clear();
     destroyTrees();
     clearIndexes();
-    state.leftData = response.result.leftData;
-    state.rightData = response.result.rightData;
-    state.leftNumberLiterals = response.result.leftNumberLiterals || null;
-    state.rightNumberLiterals = response.result.rightNumberLiterals || null;
     state.diffIndex = -1;
     resultEl.hidden = false;
   });
   if (!applied || !res.ok) return;
   let followup;
   const started = session.apply(res, () => {
-    followup = state.view === 'text'
-      ? loadTextDiff(res.comparison)
-      : ensureComparisonData(res.comparison, refreshTrees);
+    followup = state.view === 'text' ? loadTextDiff(res.comparison) : refreshTrees();
   });
   if (!started || !(await followup)) return;
   session.apply(res, updateStatus);
-}
-
-async function ensureComparisonData(displayed = comparison, onReady = () => {}) {
-  if (!displayed) return false;
-  const res = await displayed.ensureData();
-  const applied = session.apply(res, () => {
-    if (!res.ok) {
-      showError(t('errCompareFailed') + taskErrorMessage(res));
-      return;
-    }
-    state.leftData = res.result.leftData;
-    state.rightData = res.result.rightData;
-    state.leftNumberLiterals = res.result.leftNumberLiterals || null;
-    state.rightNumberLiterals = res.result.rightNumberLiterals || null;
-    onReady();
-  });
-  return applied && res.ok;
 }
 
 function clearIndexes() {
@@ -172,10 +135,8 @@ function clearIndexes() {
   pendingToggles.clear();
   for (const side of ['left', 'right']) {
     state.diffMap[side].clear();
-    state.force[side].clear();
     state.expanded[side].clear();
     state.collapsed[side].clear();
-    state.children[side].clear();
   }
   state.pairLR.clear();
   state.pairRL.clear();
@@ -190,12 +151,6 @@ function buildIndexes() {
   for (const d of r.diffs) {
     if (d.leftPath !== null) state.diffMap.left.set(d.leftPath, d);
     if (d.rightPath !== null) state.diffMap.right.set(d.rightPath, d);
-  }
-  if (!state.remote) {
-    for (const side of ['left', 'right']) {
-      state.children[side] = createChildPathIndex(state.diffMap[side].keys());
-      state.force[side] = new Set(state.children[side].keys());
-    }
   }
   state.indexesReady = true;
 }
@@ -217,10 +172,19 @@ function updateStatus() {
 }
 
 /* ================= 双树渲染 ================= */
-function refreshTrees() {
-  renderTrees();
-  if (state.result && state.result.diffs.length) goToDiff(0);
-  else updateDiffInfo();
+async function refreshTrees() {
+  const updates = renderTrees();
+  if (state.result && state.result.diffs.length) {
+    const navigation = navigateToDiff(0);
+    const results = await Promise.all([
+      navigation.left ?? updates.left,
+      navigation.right ?? updates.right,
+    ]);
+    return results.every((value) => value !== false);
+  }
+  updateDiffInfo();
+  const results = await Promise.all([updates.left, updates.right]);
+  return results.every((value) => value !== false);
 }
 
 function destroyTrees() {
@@ -274,12 +238,12 @@ async function syncToggle(displayed, side, path, open) {
 
 function renderTrees() {
   const displayed = comparison;
+  if (!displayed) return { left: Promise.resolve(false), right: Promise.resolve(false) };
   if (!state.indexesReady) buildIndexes();
   state.treesDirty = false;
+  const pending = {};
   for (const side of ['left', 'right']) {
     const options = {
-      data: side === 'left' ? state.leftData : state.rightData,
-      numberLiterals: side === 'left' ? state.leftNumberLiterals : state.rightNumberLiterals,
       expanded: state.expanded[side],
       collapsed: state.collapsed[side],
       onlyRequired: state.onlyDiff,
@@ -288,18 +252,14 @@ function renderTrees() {
         suspendScrollSync(syncToggle(displayed, side, path, open));
       },
     };
-    if (!state.remote) {
-      options.forceExpand = state.force[side];
-      options.requiredChildren = state.children[side];
-    }
-    if (treeViews[side]) treeViews[side].update(options);
+    if (treeViews[side]) pending[side] = treeViews[side].update(options);
     else {
       const element = side === 'left' ? treeLeftEl : treeRightEl;
-      treeViews[side] = state.remote
-        ? createRemoteTree(element, { ...options, request: (payload) => requestTree(displayed, side, payload) })
-        : createVirtualTree(element, options);
+      treeViews[side] = createVirtualTree(element, { ...options, request: (payload) => requestTree(displayed, side, payload) });
+      pending[side] = treeViews[side].ready;
     }
   }
+  return pending;
 }
 
 async function requestTree(displayed, side, payload) {
@@ -313,24 +273,29 @@ async function requestTree(displayed, side, payload) {
 }
 
 /* ================= 差异导航 ================= */
-function goToDiff(i) {
+function navigateToDiff(i) {
   const diffs = state.result ? state.result.diffs : [];
   if (!diffs.length) {
     state.diffIndex = -1;
     updateDiffInfo();
-    return;
+    return {};
   }
   state.diffIndex = ((i % diffs.length) + diffs.length) % diffs.length;
   const diff = diffs[state.diffIndex];
   // 配对后的两侧行号可能相距很远；本次导航各自定位，避免 scroll 事件互相覆盖。
-  const pending = [];
+  const pending = {};
   for (const side of ['left', 'right']) {
     const path = side === 'left' ? diff.leftPath : diff.rightPath;
-    if (path !== null) pending.push(treeViews[side]?.reveal(path));
+    if (path !== null && treeViews[side]) pending[side] = treeViews[side].reveal(path);
     treeViews[side]?.setCurrent(path);
   }
-  suspendScrollSync(Promise.allSettled(pending));
+  suspendScrollSync(Promise.allSettled(Object.values(pending)));
   updateDiffInfo();
+  return pending;
+}
+
+function goToDiff(i) {
+  return Promise.all(Object.values(navigateToDiff(i)));
 }
 
 function updateDiffInfo() {
@@ -374,10 +339,10 @@ async function setCompareView(view) {
   diffNavEl.style.visibility = view === 'struct' ? '' : 'hidden';
   if (!state.result || session.pending) return;
   if (view === 'text') await loadTextDiff();
-  else if (state.treesDirty) await ensureComparisonData(comparison, () => {
-    if (state.view === 'struct') refreshTrees();
-  });
-  else if (state.view === 'struct') {
+  else if (state.treesDirty) {
+    const ok = await refreshTrees();
+    if (!ok) state.treesDirty = true;
+  } else {
     treeViews.left?.refresh();
     treeViews.right?.refresh();
   }
@@ -406,11 +371,6 @@ function doClear() {
   state.result = null;
   state.treesDirty = true;
   state.textResult = null;
-  state.remote = false;
-  state.leftData = undefined;
-  state.rightData = undefined;
-  state.leftNumberLiterals = null;
-  state.rightNumberLiterals = null;
   state.diffIndex = -1;
   resultEl.hidden = true;
   treeLeftEl.replaceChildren();
@@ -454,8 +414,8 @@ const nextScrollFrame = globalThis.requestAnimationFrame || ((callback) => setTi
 function suspendScrollSync(pending) {
   scrollSyncing = true;
   scrollSyncHolds++;
-  // Remote navigation can take longer than two frames. Keep both positions
-  // independent until every operation settles and its scroll events paint.
+  // Tree navigation settles asynchronously across Worker windows. Keep both
+  // positions independent until every operation settles and its scroll paints.
   const release = () => nextScrollFrame(() => nextScrollFrame(() => {
     if (--scrollSyncHolds === 0) scrollSyncing = false;
   }));
@@ -495,7 +455,7 @@ arrayModeSel.addEventListener('change', () => {
 onlyDiffChk.addEventListener('change', () => {
   state.onlyDiff = onlyDiffChk.checked;
   state.treesDirty = true;
-  if (state.result && state.view === 'struct' && !session.pending && (state.remote || state.leftData !== undefined)) refreshTrees();
+  if (state.result && state.view === 'struct' && !session.pending) return refreshTrees();
 });
 
 for (const side of ['left', 'right']) {

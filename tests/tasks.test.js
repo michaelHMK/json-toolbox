@@ -10,29 +10,40 @@ function run(action, text, options = {}, handler = createTaskHandler()) {
   return response.result;
 }
 
+function treeRow(handler, snapshotId, path) {
+  return run('tree', undefined, { operation: 'reveal', kind: 'document', snapshotId, options: {}, path, count: 10 }, handler).activeRow;
+}
+
 test('format/minify preserve number spelling, precision and escaped paths', () => {
+  const handler = createTaskHandler();
   const text = '{"a/b":{"~":[9007199254740993,1.2300,1e400,-0]},"exp":1E+02}';
-  const formatted = run('format', text);
+  const formatted = run('format', text, { retainSnapshot: true }, handler);
   assert.equal(formatted.text, '{\n  "a/b": {\n    "~": [\n      9007199254740993,\n      1.2300,\n      1e400,\n      -0\n    ]\n  },\n  "exp": 1E+02\n}');
-  assert.equal(formatted.numberLiterals['/a~1b/~0/0'], '9007199254740993');
-  assert.equal(formatted.numberLiterals['/a~1b/~0/2'], '1e400');
+  assert.equal(Object.hasOwn(formatted, 'data'), false);
+  assert.equal(Object.hasOwn(formatted, 'numberLiterals'), false);
+  assert.equal(treeRow(handler, formatted.snapshotId, '/a~1b/~0/0').literal, '9007199254740993');
+  assert.equal(treeRow(handler, formatted.snapshotId, '/a~1b/~0/2').literal, '1e400');
   assert.equal(run('minify', formatted.text).text, text);
 });
 
 test('fallback keeps native key ordering, duplicate-key semantics and normalized strings', () => {
+  const handler = createTaskHandler();
   const text = '{"2":2.00,"1":1.00,"x":{"old":1e9},"x":3,"s":"\\u4e2d\\/","__proto__":4.00}';
   const expected = '{"1":1.00,"2":2.00,"x":3,"s":"中/","__proto__":4.00}';
   assert.equal(run('minify', text).text, expected);
-  const parsed = run('parse', text);
-  assert.equal(parsed.numberLiterals['/x/old'], undefined);
-  assert.equal(parsed.data.__proto__, 4);
-  assert.equal(parsed.numberLiterals['/__proto__'], '4.00');
+  const parsed = run('parse', text, { retainSnapshot: true }, handler);
+  const root = run('tree', undefined, { operation: 'update', kind: 'document', snapshotId: parsed.snapshotId, options: { expandLevel: 1 }, count: 20 }, handler);
+  const entries = root.rows.filter((row) => row.kind === 'entry' && row.depth === 1);
+  assert.deepEqual(entries.map((row) => row.key), ['1', '2', 'x', 's', '__proto__']);
+  assert.equal(entries.find((row) => row.path === '/x').value, 3);
+  assert.equal(entries.find((row) => row.path === '/__proto__').literal, '4.00');
+  assert.equal(run('tree', undefined, { operation: 'reveal', kind: 'document', snapshotId: parsed.snapshotId, path: '/x/old' }, handler).revealIndex, -1);
 });
 
 test('cache retention does not change formatting semantics', () => {
   const text = '{"a/b":{"~":[9007199254740993,1.2300,1e400,-0]},"exp":1E+02}';
   for (const indent of ['2', '4', 'tab']) {
-    const preferred = run('format', text, { indent, includeData: false, retainSnapshot: false, retainSearch: false });
+    const preferred = run('format', text, { indent, retainSnapshot: false, retainSearch: false });
     assert.equal(preferred.text, run('format', text, { indent }).text);
     assert.equal(preferred.snapshotId, undefined);
   }
@@ -44,7 +55,7 @@ test('large text-only formatting handles deep JSON without a recursive stack', (
   const source = '['.repeat(depth) + '0' + ']'.repeat(depth);
   const handler = createTaskHandler();
   const formatted = run('format', ' '.repeat(2 * 1024 * 1024) + source, {
-    indent: 'tab', includeData: false, retainSnapshot: false, retainSearch: false,
+    indent: 'tab', retainSnapshot: false, retainSearch: false,
   }, handler);
   assert.deepEqual(Object.keys(formatted), ['text']);
   assert.equal(formatted.text.length, depth * depth + 4 * depth + 1);
@@ -68,20 +79,21 @@ test('deep serialization normalizes keys and strings while preserving number lit
   assert.equal(run('minify', source, { retainSearch: false }).text, expected);
 });
 
-test('large numeric documents preserve every literal and lazily populate retained snapshots', () => {
+test('large numeric documents preserve every literal and lazily populate retained snapshots', (t) => {
   const tokens = Array.from({ length: 1200 }, (_, i) => ['1.20', '9007199254740993', '1e400', '-0'][i % 4]);
   const compact = '[' + tokens.join(',') + ']';
   const source = ' '.repeat(2 * 1024 * 1024) + compact;
   assert.equal(run('minify', source, { retainSearch: false }).text, compact);
   const handler = createTaskHandler();
-  const formatted = run('format', source, { includeData: false, retainSnapshot: true }, handler);
+  const formatted = run('format', source, { retainSnapshot: true }, handler);
   assert.equal(formatted.text, '[\n  ' + tokens.join(',\n  ') + '\n]');
-  const parsed = run('parseSnapshot', undefined, { snapshotId: formatted.snapshotId }, handler);
-  assert.equal(Object.keys(parsed.numberLiterals).length, tokens.length);
-  for (let i = 0; i < tokens.length; i++) assert.equal(parsed.numberLiterals['/' + i], tokens[i]);
+  for (const index of [0, 1, 2, 3, 1199]) {
+    assert.equal(treeRow(handler, formatted.snapshotId, '/' + index).literal, tokens[index]);
+  }
+  const parseSpy = t.mock.method(JSON, 'parse');
   const repeated = run('format', source, { retainSnapshot: true }, handler);
   assert.equal(repeated.text, formatted.text);
-  assert.strictEqual(repeated.numberLiterals, parsed.numberLiterals);
+  assert.equal(parseSpy.mock.callCount(), 0);
 });
 
 test('large numeric documents still normalize strings and discard overwritten literals', () => {
@@ -90,10 +102,11 @@ test('large numeric documents still normalize strings and discard overwritten li
     '{"x":[' + numbers + '],"x":null,"2":2.00,"1":1e400,"a/b":{"~":[' + numbers + ']},"s":"\\u4e2d\\/"}';
   const expected = '{"1":1e400,"2":2.00,"x":null,"a/b":{"~":[' + numbers + ']},"s":"中/"}';
   assert.equal(run('minify', source, { retainSearch: false }).text, expected);
-  const parsed = run('format', source);
-  assert.equal(parsed.numberLiterals['/x/0'], undefined);
-  assert.equal(parsed.numberLiterals['/a~1b/~0/1199'], '1.20');
-  assert.equal(parsed.numberLiterals['/1'], '1e400');
+  const handler = createTaskHandler();
+  const formatted = run('format', source, { retainSnapshot: true }, handler);
+  assert.equal(run('tree', undefined, { operation: 'reveal', kind: 'document', snapshotId: formatted.snapshotId, options: {}, path: '/x/0' }, handler).revealIndex, -1);
+  assert.equal(treeRow(handler, formatted.snapshotId, '/a~1b/~0/1199').literal, '1.20');
+  assert.equal(treeRow(handler, formatted.snapshotId, '/1').literal, '1e400');
 });
 
 for (const [indent, unit] of [['2', '  '], ['4', '    '], ['tab', '\t']]) {
@@ -109,11 +122,11 @@ test('format handles primitive roots and empty containers', () => {
   }
 });
 
-test('search cache belongs to each session and survives omitted data and invalid input', () => {
+test('search cache belongs to each session and survives invalid input', () => {
   const handler = createTaskHandler();
   const other = createTaskHandler();
   assert.equal(other({ action: 'search', text: 'needle' }).ok, false);
-  const formatted = run('format', '{"a/b":{"~":"Needle"}}', { includeData: false }, handler);
+  const formatted = run('format', '{"a/b":{"~":"Needle"}}', {}, handler);
   assert.deepEqual(Object.keys(formatted), ['text']);
   assert.equal(handler({ action: 'parse', text: '{' }).ok, false);
   assert.deepEqual(run('search', 'needle', {}, handler), {
@@ -193,7 +206,7 @@ test('worker errors preserve request ids, locale-neutral codes and JSON location
     assert.deepEqual([response.position, response.line, response.column], [position, line, column]);
   }
   assert.equal(handler({ action: 'search', text: 'x' }).code, 'SEARCH_NOT_READY');
-  assert.equal(handler({ action: 'parseSnapshot', snapshotId: 42 }).code, 'SNAPSHOT_UNAVAILABLE');
+  assert.equal(handler({ action: 'tree', kind: 'document', snapshotId: 42, options: {} }).code, 'SNAPSHOT_UNAVAILABLE');
   const unknown = handler({ action: 'unknown', text: '{' });
   assert.equal(unknown.ok, false);
   assert.equal(unknown.code, 'UNKNOWN_ACTION');
@@ -203,7 +216,7 @@ test('worker errors preserve request ids, locale-neutral codes and JSON location
 test('search retains displayed numeric literals through every parsing route', () => {
   const handler = createTaskHandler();
   for (const [action, options] of [
-    ['format', {}], ['format', { includeData: false }], ['minify', {}], ['parse', {}],
+    ['format', {}], ['format', { includeNumberLiterals: true }], ['minify', {}], ['parse', {}],
   ]) {
     run(action, '{"value":1.20,"large":9007199254740993}', options, handler);
     assert.equal(run('search', '1.20', {}, handler).matchCount, 1, action);

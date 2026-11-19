@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRemoteTree } from '../src/shared/remote-tree.js';
+import { createVirtualTree } from '../src/shared/virtual-tree.js';
 import { createTaskHandler } from '../src/worker/tasks.js';
 import { Element, withDom } from './helpers/page-dom.js';
 
@@ -11,7 +11,7 @@ function session(text) {
   const requests = [];
   const reset = () => {
     handler = createTaskHandler();
-    const response = handler({ action: 'parse', text, includeData: false, retainSnapshot: true });
+    const response = handler({ action: 'parse', text, retainSnapshot: true });
     assert.equal(response.ok, true);
     assert.equal(Object.hasOwn(response.result, 'data'), false);
     snapshotId = response.result.snapshotId;
@@ -56,7 +56,7 @@ async function press(container, key) {
 test('remote tree renders bounded windows and keeps the active ARIA row mounted', () => withDom(async () => {
   const worker = session(JSON.stringify(Array.from({ length: 20_000 }, (_, i) => ({ id: i }))));
   const container = new Element();
-  const tree = createRemoteTree(container, { request: worker.request });
+  const tree = createVirtualTree(container, { request: worker.request });
   await tree.ready;
   assert.equal(tree.rowCount, 20_002);
   assert.equal(activeEntry(container).dataset.path, '');
@@ -82,7 +82,7 @@ test('remote previews preserve sizes, literal spellings and truncation metadata'
   const worker = session('{"wide":[' + Array(100).fill('1').join(',') + '],"long":'
     + JSON.stringify('😀'.repeat(3000)) + ',"precise":9007199254740993}');
   const container = new Element();
-  const tree = createRemoteTree(container, { request: worker.request });
+  const tree = createVirtualTree(container, { request: worker.request });
   await tree.ready;
   const wide = container.querySelectorAll('.entry').find((row) => row.dataset.path === '/wide');
   assert.equal(wide.getAttribute('aria-expanded'), 'false');
@@ -100,7 +100,7 @@ test('stale remote mutations and responses after destroy never replace current r
   const pending = [];
   let delayed = false;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (!delayed) return response;
     return new Promise((resolve) => pending.push(() => resolve(response)));
@@ -127,7 +127,7 @@ test('stale remote mutations and responses after destroy never replace current r
 test('remote cache is bounded and carries expansion state into a replacement Worker', () => withDom(async () => {
   const worker = session(JSON.stringify({ branch: { child: { n: 1 } }, rows: Array(20_000).fill(1) }));
   const container = new Element();
-  const tree = createRemoteTree(container, { request: worker.request });
+  const tree = createVirtualTree(container, { request: worker.request });
   await tree.ready;
   await tree.reveal('/branch/child/n');
   await tree.setOpen('/rows', true);
@@ -155,7 +155,7 @@ test('rapid remote toggles notify every intent and preserve native text nodes on
   const worker = session('{"first":{"n":1},"second":{"n":2}}');
   const container = new Element();
   const changes = [];
-  const tree = createRemoteTree(container, { request: worker.request, onToggle: (...args) => changes.push(args) });
+  const tree = createVirtualTree(container, { request: worker.request, onToggle: (...args) => changes.push(args) });
   await tree.ready;
   const first = container.querySelectorAll('.entry').find((row) => row.dataset.path === '/first');
   const second = container.querySelectorAll('.entry').find((row) => row.dataset.path === '/second');
@@ -172,7 +172,7 @@ test('rapid remote toggles notify every intent and preserve native text nodes on
 test('queued remote keyboard events each advance from the preceding response', () => withDom(async () => {
   const worker = session('[1,2,3,4,5]');
   const container = new Element();
-  const tree = createRemoteTree(container, { request: worker.request });
+  const tree = createVirtualTree(container, { request: worker.request });
   await tree.ready;
   for (let i = 0; i < 4; i++) container.events.keydown({ key: 'ArrowDown', preventDefault() {} });
   await settle();
@@ -184,7 +184,7 @@ test('two clicks before a Worker response restore the original open state', () =
   const worker = session('{"branch":{"n":1}}');
   const container = new Element();
   const changes = [];
-  const tree = createRemoteTree(container, { request: worker.request, onToggle: (...args) => changes.push(args) });
+  const tree = createVirtualTree(container, { request: worker.request, onToggle: (...args) => changes.push(args) });
   await tree.ready;
   const branch = container.querySelectorAll('.entry').find((row) => row.dataset.path === '/branch');
   branch.querySelector('.toggle').click();
@@ -202,7 +202,7 @@ test('manual remote expansion survives page options refresh and a stale window c
   let release;
   let hold = false;
   const container = new Element();
-  const tree = createRemoteTree(container, { expanded, collapsed, request: async (payload) => {
+  const tree = createVirtualTree(container, { expanded, collapsed, request: async (payload) => {
     const result = await worker.request(payload);
     if (hold && payload.operation === 'rows') {
       hold = false;
@@ -239,7 +239,7 @@ test('an initial reveal grows the scroller before browsers clamp its scroll posi
       top = Math.max(0, Math.min(Math.max(0, height - container.clientHeight), value));
     },
   });
-  const tree = createRemoteTree(container, { request: worker.request });
+  const tree = createVirtualTree(container, { request: worker.request });
   await tree.reveal('/19999');
   await tree.ready;
   assert.ok(container.scrollTop > 400_000);
@@ -252,7 +252,7 @@ test('routine windows, toggles and keyboard navigation do not resend the complet
   const worker = session(JSON.stringify({ branch: { n: 1 }, rows: Array(2000).fill(1) }));
   const requiredChildren = new Map(Array.from({ length: 5000 }, (_, index) => [`/unused/${index}`, new Set([`/unused/${index}/n`])]));
   const container = new Element();
-  const tree = createRemoteTree(container, { request: worker.request, requiredChildren });
+  const tree = createVirtualTree(container, { request: worker.request, requiredChildren });
   await tree.ready;
   await tree.setOpen('/branch', true);
   await tree.reveal('/branch');
@@ -279,7 +279,7 @@ test('routine windows, toggles and keyboard navigation do not resend the complet
 test('concurrent windows and a toggle share one configuration restore after Worker replacement', () => withDom(async () => {
   const worker = session(JSON.stringify({ branch: { n: 1 }, rows: Array(2000).fill(1), hidden: 2 }));
   const container = new Element();
-  const tree = createRemoteTree(container, {
+  const tree = createVirtualTree(container, {
     request: worker.request, onlyRequired: true,
     requiredChildren: new Map([
       ['', new Set(['/branch', '/rows'])], ['/branch', new Set(['/branch/n'])],
@@ -312,7 +312,7 @@ test('a superseded recovery never replays an old toggle over the latest state', 
   let delay = false;
   let release;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (delay && payload.operation === 'update') return new Promise((resolve) => { release = () => resolve(response); });
     return response;
@@ -335,7 +335,7 @@ test('destroy during model recovery prevents its queued operation from being rep
   let delay = false;
   let release;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (delay && payload.operation === 'update') return new Promise((resolve) => { release = () => resolve(response); });
     return response;
@@ -358,7 +358,7 @@ test('a delayed expansion keeps a newer pointer selection and resolves its shift
   const worker = session('{"first":{"n":1},"second":2,"third":3}');
   let release;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'setOpen') return new Promise((resolve) => { release = () => resolve(response); });
     return response;
@@ -384,7 +384,7 @@ test('a pointer selection hidden by a pending collapse falls back to its visible
   const worker = session('{"branch":{"leaf":1},"next":2}');
   let release;
   const container = new Element();
-  const tree = createRemoteTree(container, { expandLevel: Infinity, request: async (payload) => {
+  const tree = createVirtualTree(container, { expandLevel: Infinity, request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'setOpen') return new Promise((resolve) => { release = () => resolve(response); });
     return response;
@@ -407,7 +407,7 @@ test('a second pointer choice during active-path resolution wins without losing 
   const releases = [];
   let heldResolve = false;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'setOpen' || (payload.operation === 'resolve' && !heldResolve)) {
       if (payload.operation === 'resolve') heldResolve = true;
@@ -435,7 +435,7 @@ test('a delayed reveal cannot override a pointer selection made after navigation
   const worker = session('{"branch":{"leaf":1},"next":2}');
   let release;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'reveal') return new Promise((resolve) => { release = () => resolve(response); });
     return response;
@@ -455,7 +455,7 @@ test('pointer activation supersedes older queued keyboard movements as well as t
   const worker = session('[0,1,2,3,4,5]');
   let release;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: async (payload) => {
+  const tree = createVirtualTree(container, { request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'move') return new Promise((resolve) => { release = () => resolve(response); });
     return response;
@@ -477,7 +477,7 @@ test('keyboard movement waits for a pending pointer-path correction before readi
   let releaseCollapse;
   let releaseResolve;
   const container = new Element();
-  const tree = createRemoteTree(container, { expandLevel: Infinity, request: async (payload) => {
+  const tree = createVirtualTree(container, { expandLevel: Infinity, request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'setOpen') return new Promise((resolve) => { releaseCollapse = () => resolve(response); });
     if (payload.operation === 'resolve') return new Promise((resolve) => { releaseResolve = () => resolve(response); });
@@ -505,7 +505,7 @@ test('ArrowRight waits for active-path correction before deciding which containe
   let releaseCollapse;
   let releaseResolve;
   const container = new Element();
-  const tree = createRemoteTree(container, { expandLevel: Infinity, request: async (payload) => {
+  const tree = createVirtualTree(container, { expandLevel: Infinity, request: async (payload) => {
     const response = await worker.request(payload);
     if (payload.operation === 'setOpen') return new Promise((resolve) => { releaseCollapse = () => resolve(response); });
     if (payload.operation === 'resolve') return new Promise((resolve) => { releaseResolve = () => resolve(response); });
@@ -531,7 +531,7 @@ test('window-driven recovery refreshes the active index after a cancelled expans
   const worker = session(JSON.stringify({ first: { n: 1 }, rows: Array(2000).fill(1) }));
   let cancelToggle = false;
   const container = new Element();
-  const tree = createRemoteTree(container, { request: (payload) => {
+  const tree = createVirtualTree(container, { request: (payload) => {
     if (cancelToggle && payload.operation === 'setOpen') return Promise.resolve({ ok: false, cancelled: true });
     return worker.request(payload);
   } });
@@ -555,7 +555,7 @@ test('window-driven recovery refreshes the active index after a cancelled expans
 test('ArrowRight stays on a filtered container with no visible children, while ArrowDown reaches its sibling', () => withDom(async () => {
   const worker = session('{"branch":{"hidden":1},"next":2}');
   const container = new Element();
-  const tree = createRemoteTree(container, {
+  const tree = createVirtualTree(container, {
     request: worker.request, expandLevel: Infinity, onlyRequired: true,
     requiredChildren: new Map([['', new Set(['/branch', '/next'])]]),
   });

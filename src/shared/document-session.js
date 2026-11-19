@@ -46,14 +46,12 @@ export function createDocumentSession({
     return true;
   }
 
-  function createDocument(source, remote, result, searchReady) {
+  function createDocument(source, result, searchReady) {
     let snapshotId = result.snapshotId ?? null;
-    let data = result.data;
-    let numberLiterals = result.numberLiterals || null;
+    let ready = snapshotId !== null;
     let recovery = null;
     const record = {
       source,
-      setRemote(value) { remote = value; if (remote) data = undefined; },
       reset() { snapshotId = null; searchReady = false; recovery = null; },
       invalidate() { recovery = null; },
     };
@@ -61,23 +59,20 @@ export function createDocumentSession({
 
     // Both tree windows and search share recovery of this displayed source, not
     // the editable input. A superseded recovery must not publish its snapshot.
-    function restore({ requireData = false, requireSearch = false } = {}) {
+    function restore({ requireSearch = false } = {}) {
       const version = guard.generation;
       if (!current(version)) return Promise.resolve(cancelledResponse());
-      if ((!requireData || data !== undefined || remote) && (!requireSearch || searchReady) && snapshotId !== null) {
-        return Promise.resolve({ ok: true, result: { data, numberLiterals } });
+      if (snapshotId !== null && (!requireSearch || searchReady)) {
+        return Promise.resolve({ ok: true, result: {} });
       }
       if (recovery?.version === version) return recovery.promise;
       const request = { version, promise: null };
       request.promise = (async () => {
-        const response = snapshotId !== null && !requireSearch
-          ? await runTask('parseSnapshot', { snapshotId, includeData: !remote })
-          : await runTask('parse', { text: source, retainSnapshot: true, includeData: !remote });
+        const response = await runTask('parse', { text: source, retainSnapshot: true });
         if (!current(version)) return cancelledResponse();
         if (response.ok) {
           snapshotId = response.result.snapshotId ?? snapshotId;
-          if (response.result.data !== undefined) data = response.result.data;
-          if (response.result.numberLiterals !== undefined) numberLiterals = response.result.numberLiterals;
+          ready = true;
           searchReady = true;
         }
         return response;
@@ -87,18 +82,13 @@ export function createDocumentSession({
     }
 
     record.handle = {
-      get remote() { return remote; },
-      get data() { return data; },
-      get numberLiterals() { return numberLiterals; },
-      get ready() { return data !== undefined || (remote && snapshotId !== null); },
-      async ensureData() {
+      get ready() { return ready; },
+      async ensureSnapshot() {
         const version = guard.generation;
         if (!current(version)) return cancelledResponse();
-        const response = data !== undefined
-          ? { ok: true, result: { data, numberLiterals } }
-          : await restore({ requireData: true });
+        const response = await restore();
         if (!current(version)) return cancelledResponse();
-        return reply(response.ok ? { ...response, result: { data, numberLiterals } } : response, version, record);
+        return reply(response.ok ? { ...response, result: {} } : response, version, record);
       },
       async search(query) {
         const version = guard.generation;
@@ -147,30 +137,28 @@ export function createDocumentSession({
 
   return {
     get pending() { return formatting !== null; },
-    async format(text, { indent = '2', remote = false, tree = false } = {}, onResult) {
+    async format(text, { indent = '2', retainSnapshot = true, includeNumberLiterals = false } = {}, onResult) {
       cancel({ onlyIfBusy: true });
       const version = guard.generation;
       const request = {};
       formatting = request;
-      const retainDocument = tree || !remote;
       const response = await runTask('format', {
-        text, indent, includeData: tree && !remote, includeNumberLiterals: tree,
-        includeTextIndex: true, retainSnapshot: retainDocument, retainSearch: retainDocument,
+        text, indent, includeNumberLiterals,
+        includeTextIndex: true, retainSnapshot, retainSearch: retainSnapshot,
       }, { key: 'format' });
       if (formatting === request) formatting = null;
       if (!guard.isCurrent(version) || response.cancelled) return cancelledResponse();
-      if (response.ok) displayed = createDocument(response.result.text, remote, response.result, retainDocument);
+      if (response.ok) displayed = createDocument(response.result.text, response.result, retainSnapshot);
       const value = reply(response, version, displayed);
       // Publish the handle and its initial UI state in the same continuation.
       // Later asynchronous view work can still use apply() to reject stale work.
       if (onResult) apply(value, onResult);
       return value;
     },
-    async parse(text, { remote = false } = {}, onResult) {
+    async parse(text, onResult) {
       if (formatting !== null) return cancelledResponse();
       if (displayed?.source === text) {
-        displayed.setRemote(remote);
-        const response = await displayed.handle.ensureData();
+        const response = await displayed.handle.ensureSnapshot();
         if (onResult) apply(response, onResult);
         return response;
       }
@@ -178,10 +166,10 @@ export function createDocumentSession({
       if (!parsing || parsing.source !== text || parsing.version !== version) {
         const request = { source: text, version, promise: null, callbacks: [] };
         request.promise = (async () => {
-          const response = await runTask('parse', { text, retainSnapshot: true, includeData: !remote });
+          const response = await runTask('parse', { text, retainSnapshot: true });
           if (!guard.isCurrent(version) || formatting !== null || parsing !== request) return cancelledResponse();
           parsing = null;
-          if (response.ok) displayed = createDocument(text, remote, response.result, true);
+          if (response.ok) displayed = createDocument(text, response.result, true);
           const value = reply(response, version, displayed);
           for (const callback of request.callbacks) apply(value, callback);
           return value;

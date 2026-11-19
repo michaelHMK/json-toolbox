@@ -9,43 +9,30 @@ function setup() {
   return { ...worker, session: createComparisonSession({ createRunner: worker.createRunner }) };
 }
 
-test('text-first comparison transfers data only on demand and deduplicates concurrent requests', async () => {
-  const { session, workers, held } = setup();
-  const compared = await session.compare({ text: '{"amount":1.20}', text2: '{"amount":2.30}', includeData: false });
+test('comparison reuses its Worker snapshot for text diff and tree windows without transferring object graphs', async () => {
+  const { session, workers } = setup();
+  const compared = await session.compare({ text: '{"amount":1.20}', text2: '{"amount":2.30}' });
   assert.equal(compared.ok, true);
   assert.equal(Object.hasOwn(compared.result, 'snapshotId'), false);
-  assert.equal(compared.result.leftData, undefined);
+  assert.equal(Object.hasOwn(compared.result, 'leftData'), false);
   const comparison = compared.comparison;
   const text = await comparison.textDiff();
   assert.match(text.result.aText, /1\.20/);
   assert.match(text.result.bText, /2\.30/);
-  assert.ok(!workers[0].requests.some((request) => request.action === 'comparisonData'));
-  held.add('comparisonData');
-  const first = comparison.ensureData();
-  const second = comparison.ensureData();
-  await settle();
-  const requests = workers[0].requests.filter((request) => request.action === 'comparisonData');
-  assert.equal(requests.length, 1);
-  held.clear();
-  workers[0].complete(requests[0]);
-  const responses = await Promise.all([first, second]);
-  for (const response of responses) {
-    assert.equal(response.ok, true);
-    assert.equal(response.result.leftData.amount, 1.2);
-    assert.equal(response.result.leftNumberLiterals['/amount'], '1.20');
-    assert.equal(Object.hasOwn(response.result, 'snapshotId'), false);
-  }
-  await comparison.ensureData();
-  assert.equal(workers[0].requests.filter((request) => request.action === 'comparisonData').length, 1);
+  const left = await comparison.requestTree('left', { operation: 'update', options: {}, count: 20 });
+  const right = await comparison.requestTree('right', { operation: 'update', options: {}, count: 20 });
+  assert.equal(left.result.rows.find((row) => row.path === '/amount').literal, '1.20');
+  assert.equal(right.result.rows.find((row) => row.path === '/amount').literal, '2.30');
+  assert.deepEqual(workers[0].requests.map((request) => request.action), ['diff', 'textDiff', 'tree', 'tree']);
   session.clear();
 });
 
-test('both remote comparison trees share recovery with the completed comparison options', async () => {
+test('both comparison trees share recovery with the completed comparison options', async () => {
   const { session, workers, held } = setup();
   const compared = await session.compare({
     text: '[{"id":1,"value":1,"ignored":0},{"id":2,"value":2}]',
     text2: '[{"id":2,"value":2},{"id":1,"value":3,"ignored":9}]',
-    keyField: 'id', ignorePaths: ['ignored'], remote: true, includeData: false,
+    keyField: 'id', ignorePaths: ['ignored'],
   });
   assert.equal(compared.ok, true);
   session.cancel();
@@ -55,7 +42,6 @@ test('both remote comparison trees share recovery with the completed comparison 
   await settle();
   assert.deepEqual(workers[1].requests.map((request) => request.action), ['diff']);
   const recovery = workers[1].requests[0];
-  assert.equal(recovery.includeData, false);
   assert.equal(recovery.keyField, 'id');
   assert.deepEqual(recovery.ignorePaths, ['ignored']);
   held.clear();
@@ -64,17 +50,16 @@ test('both remote comparison trees share recovery with the completed comparison 
   assert.equal(windows[0].result.rows.find((row) => row.path === '/0/id').value, 1);
   assert.equal(windows[1].result.rows.find((row) => row.path === '/0/id').value, 2);
   assert.equal(workers[1].requests.filter((request) => request.action === 'diff').length, 1);
-  assert.equal(compared.result.leftData, undefined);
   session.clear();
 });
 
 test('a pending replacement blocks old snapshot work and success permanently revokes the old handle', async () => {
   const { session, workers, held } = setup();
-  const old = await session.compare({ text: '{"old":1}', text2: '{"old":2}', includeData: false });
+  const old = await session.compare({ text: '{"old":1}', text2: '{"old":2}' });
   held.add('diff');
-  const pending = session.compare({ text: '{"fresh":3}', text2: '{"fresh":4}', includeData: false });
+  const pending = session.compare({ text: '{"fresh":3}', text2: '{"fresh":4}' });
   assert.equal(session.pending, true);
-  assert.equal((await old.comparison.ensureData()).cancelled, true);
+  assert.equal((await old.comparison.ensureSnapshot()).cancelled, true);
   assert.equal((await old.comparison.textDiff()).cancelled, true);
   assert.deepEqual(workers[0].requests.map((request) => request.action), ['diff', 'diff']);
   held.clear();
@@ -88,16 +73,16 @@ test('a pending replacement blocks old snapshot work and success permanently rev
   assert.equal(JSON.parse(text.result.aText).fresh, 3);
   assert.equal(JSON.parse(text.result.bText).fresh, 4);
   session.clear();
-  assert.equal((await replacement.comparison.ensureData()).cancelled, true);
+  assert.equal((await replacement.comparison.ensureSnapshot()).cancelled, true);
   assert.equal(workers.length, 1);
 });
 
 test('cancellation after Worker completion but before comparison acceptance restores the previous pair', async () => {
   const { session, workers, held } = setup();
-  const old = await session.compare({ text: '{"original":1}', text2: '{"original":2}', remote: true });
+  const old = await session.compare({ text: '{"original":1}', text2: '{"original":2}' });
   held.add('diff');
   let notifications = 0;
-  const pending = session.compare({ text: '{"replacement":3}', text2: '{"replacement":4}', remote: true }, () => { notifications++; });
+  const pending = session.compare({ text: '{"replacement":3}', text2: '{"replacement":4}' }, () => { notifications++; });
   workers[0].complete(workers[0].requests.at(-1));
   queueMicrotask(() => session.cancel({ onlyIfBusy: true }));
   assert.equal((await pending).cancelled, true);
@@ -112,11 +97,11 @@ test('cancellation after Worker completion but before comparison acceptance rest
 
 test('comparison commits its displayed handle before a promise continuation can cancel it', async () => {
   const { session, workers, held } = setup();
-  const old = await session.compare({ text: '{"original":1}', text2: '{"original":2}', remote: true });
+  const old = await session.compare({ text: '{"original":1}', text2: '{"original":2}' });
   let displayed = old.comparison;
   const order = [];
   held.add('diff');
-  const pending = session.compare({ text: '{"replacement":3}', text2: '{"replacement":4}', remote: true }, (response) => {
+  const pending = session.compare({ text: '{"replacement":3}', text2: '{"replacement":4}' }, (response) => {
     assert.equal(response.ok, true);
     displayed = response.comparison;
     order.push('display');
@@ -133,7 +118,7 @@ test('comparison commits its displayed handle before a promise continuation can 
   const rows = await displayed.requestTree('left', { options: {} });
   assert.equal(rows.ok, true);
   assert.ok(rows.result.rows.some((row) => row.path === '/replacement' && row.value === 3));
-  assert.equal((await old.comparison.ensureData()).cancelled, true);
+  assert.equal((await old.comparison.ensureSnapshot()).cancelled, true);
   session.clear();
 });
 

@@ -5,7 +5,6 @@ import { createDocumentSession } from '../shared/document-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
-import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
@@ -32,9 +31,6 @@ const state = {
   view: 'text',        // 'text' | 'tree'
   outputText: '',      // 最近一次操作产出的文本
   outputLineIndex: null,
-  remote: false,      // 大文档只在 Worker 保存对象图，页面持有行窗口
-  data: undefined,     // 小文档的解析对象；大文档对象图只保存在 Worker
-  numberLiterals: null, // 数字在原文中的字面量（path → 文本）
   expanded: new Set(), // 用户手动展开的路径
   collapsed: new Set(), // 用户折叠优先于层级展开
   expandLevel: 1,      // 按需判断可见节点，不预先遍历整棵树
@@ -112,17 +108,17 @@ function showText(text) {
 }
 
 async function showTree(requestVersion) {
-  if (!treeView || !state.remote || treeDocument !== displayedDocument) renderTree(false);
+  if (!treeView || treeDocument !== displayedDocument) renderTree(false);
   const candidate = treeView;
-  if (candidate.ready && await candidate.ready === false) {
-    if (candidate === treeView) destroyTree();
+  if (!candidate || await candidate.ready === false) {
+    if (candidate && candidate === treeView) destroyTree();
     return false;
   }
   if (requestVersion !== viewRequestVersion || candidate !== treeView) return false;
   state.view = 'tree';
   updateViewButtons();
   candidate.refresh();
-  if (searchInput.value.trim()) runSearch();
+  if (searchInput.value.trim()) void runSearch();
   return true;
 }
 
@@ -130,7 +126,7 @@ function currentText() {
   return state.outputText || textInput.getText();
 }
 
-// 树视图需要解析后的数据；若源文本没变则复用
+// 树视图需要 Worker 快照；若源文本没变则复用
 async function ensureTreeData() {
   if (session.pending) return false;
   const text = currentText();
@@ -138,19 +134,15 @@ async function ensureTreeData() {
     showError(t('errNothingToParse'));
     return false;
   }
-  const remote = text.length > LARGE_INPUT_THRESHOLD;
   hideError();
   let applied = false;
-  const res = await session.parse(text, { remote }, (res) => {
+  const res = await session.parse(text, (res) => {
     applied = true;
     if (!res.ok) {
       showParseError(text, res);
       return;
     }
     displayedDocument = res.document;
-    state.remote = displayedDocument.remote;
-    state.data = displayedDocument.data;
-    state.numberLiterals = displayedDocument.numberLiterals;
   });
   return applied && res.ok;
 }
@@ -187,10 +179,14 @@ async function doFormat() {
     return;
   }
   hideError();
-  const large = text.length > LARGE_INPUT_THRESHOLD;
+  const retainSnapshot = state.view === 'tree' || text.length <= LARGE_INPUT_THRESHOLD;
   let applied = false;
   let followup;
-  const res = await session.format(text, { indent: indentSel.value, remote: large, tree: state.view === 'tree' }, (res) => {
+  const res = await session.format(text, {
+    indent: indentSel.value,
+    retainSnapshot,
+    includeNumberLiterals: state.view === 'tree',
+  }, (res) => {
     applied = true;
     if (!res.ok) {
       invalidateViewRequest();
@@ -204,15 +200,12 @@ async function doFormat() {
     state.outputText = res.result.text;
     state.outputLineIndex = res.result.lineIndex ?? null;
     displayedDocument = res.document;
-    state.data = displayedDocument.data;
-    state.numberLiterals = displayedDocument.numberLiterals;
-    state.remote = displayedDocument.remote && displayedDocument.ready;
     state.matchIndex = -1;
-    if (nextView === 'tree' && displayedDocument.ready && !state.remote) {
+    if (nextView === 'tree' && state.view === 'tree' && displayedDocument.ready) {
       followup = showTree(viewRequestVersion);
     } else {
       // Keep the formatted text usable during both parsing and the first
-      // remote window request, including when formatting from the tree view.
+      // tree window request when switching from the text view.
       showText(state.outputText);
       if (nextView === 'tree') followup = setView('tree');
     }
@@ -240,9 +233,6 @@ function resetDocument() {
   textInput.clear();
   state.outputText = '';
   state.outputLineIndex = null;
-  state.remote = false;
-  state.data = undefined;
-  state.numberLiterals = null;
   state.expanded.clear();
   state.collapsed.clear();
   state.expandLevel = 1;
@@ -298,23 +288,21 @@ function destroyTree() {
 }
 
 function renderTree(navigate = true) {
+  if (!displayedDocument) return Promise.resolve(false);
   const options = {
-    data: state.data,
-    numberLiterals: state.numberLiterals,
     expandLevel: state.expandLevel,
     expanded: state.expanded,
     collapsed: state.collapsed,
     forceExpand: state.searchForce,
     highlights: state.highlights,
   };
-  if (treeView && (Boolean(treeDocument) !== state.remote || (treeDocument && treeDocument !== displayedDocument))) {
-    destroyTree();
-  }
-  if (treeView) treeView.update(options);
-  else if (state.remote) {
+  if (treeView && treeDocument !== displayedDocument) destroyTree();
+  let pending;
+  if (treeView) pending = treeView.update(options);
+  else {
     treeDocument = displayedDocument;
     const document = treeDocument;
-    const candidate = createRemoteTree(treeEl, { ...options, request: async (payload) => {
+    const candidate = createVirtualTree(treeEl, { ...options, request: async (payload) => {
       const response = await document.requestTree(payload);
       if (treeView !== candidate) return { ok: false, cancelled: true };
       const applied = session.apply(response, () => {
@@ -323,23 +311,24 @@ function renderTree(navigate = true) {
       return applied ? response : { ok: false, cancelled: true };
     } });
     treeView = candidate;
-  } else treeView = createVirtualTree(treeEl, options);
-  if (navigate && state.searchQuery && state.matchCount > 0) updateMatchNav(0);
-  else {
-    treeView.setCurrent(null);
-    updateMatchInfo();
+    pending = candidate.ready;
   }
+  if (navigate && state.searchQuery && state.matchCount > 0) return updateMatchNav(0);
+  treeView.setCurrent(null);
+  updateMatchInfo();
+  return pending;
 }
 
 /* ================= 层级展开 ================= */
 function applyLevel(value) {
-  if ((!state.remote && state.data === undefined) || !value) return;
+  if (!displayedDocument?.ready || !value) return Promise.resolve(false);
   const level = value === 'all' ? Infinity : Number(value);
   state.expandLevel = level;
   state.expanded.clear();
   state.collapsed.clear();
-  renderTree();
+  const pending = renderTree();
   setStatus(level === Infinity ? t('expandedAll') : t('expandedLevel', [String(level)]));
+  return pending;
 }
 
 /* ================= 搜索 ================= */
@@ -358,7 +347,7 @@ async function runSearch() {
   // A queued parse of the displayed old document would overwrite the new
   // format's Worker cache. doFormat searches the current query once it settles.
   if (session.pending) return;
-  if (!state.remote && state.data === undefined) {
+  if (!displayedDocument?.ready) {
     updateMatchInfo();
     return;
   }
@@ -368,10 +357,11 @@ async function runSearch() {
     state.searchForce = new Set();
     state.matchCount = 0;
     state.matchTruncated = false;
-    renderTree();
+    await renderTree();
     return;
   }
   const res = await displayedDocument.search(q);
+  let rendered;
   session.apply(res, () => {
     if (!res.ok) {
       showError(t('errSearchFailed') + taskErrorMessage(res));
@@ -381,8 +371,9 @@ async function runSearch() {
     state.searchForce = new Set(res.result.forceExpand);
     state.matchCount = res.result.matchCount;
     state.matchTruncated = res.result.truncated;
-    renderTree();
+    rendered = renderTree();
   });
+  if (rendered) await rendered;
 }
 
 function updateMatchNav(index) {
@@ -390,13 +381,14 @@ function updateMatchNav(index) {
   if (!paths.length || !treeView) {
     state.matchIndex = -1;
     updateMatchInfo();
-    return;
+    return Promise.resolve(false);
   }
   state.matchIndex = ((index % paths.length) + paths.length) % paths.length;
   const path = paths[state.matchIndex];
-  treeView.reveal(path);
+  const pending = treeView.reveal(path);
   treeView.setCurrent(path);
   updateMatchInfo();
+  return pending;
 }
 
 function updateMatchInfo() {
@@ -423,7 +415,7 @@ $('match-prev').addEventListener('click', () => updateMatchNav(state.matchIndex 
 $('match-next').addEventListener('click', () => updateMatchNav(state.matchIndex + 1));
 
 levelSelect.addEventListener('change', () => {
-  applyLevel(levelSelect.value);
+  void applyLevel(levelSelect.value);
   levelSelect.value = ''; // 当作动作菜单用，选完复位到占位项
 });
 
@@ -431,7 +423,7 @@ searchInput.addEventListener('input', scheduleSearch);
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
-    updateMatchNav(state.matchIndex + (e.shiftKey ? -1 : 1));
+    void updateMatchNav(state.matchIndex + (e.shiftKey ? -1 : 1));
   }
 });
 

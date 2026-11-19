@@ -25,6 +25,11 @@ function setup(name, action = 'minify') {
   return { page, ...worker };
 }
 
+function findEntry(page, id, path) {
+  return page.get(id).querySelectorAll('.entry').find((entry) =>
+    entry.dataset.path === path && !entry.classList.contains('virtual-close'));
+}
+
 test('busy exposes cancel after one second and hides it once all work settles', (context) => {
   context.mock.timers.enable({ apis: ['setTimeout'] });
   const busyEl = new Element();
@@ -65,7 +70,7 @@ test('formatter restores search data after cancellation and can format after a w
   hold(null);
   await page.runSearch();
   assert.equal(workers.length, 2);
-  assert.deepEqual(workers[1].requests.map((r) => r.action), ['parse', 'search']);
+  assert.deepEqual(workers[1].requests.slice(0, 2).map((r) => r.action), ['parse', 'search']);
   assert.equal(page.state.matchCount, 1);
   workers[1].onerror({ message: 'crash', preventDefault() {} });
   await page.doFormat();
@@ -74,7 +79,7 @@ test('formatter restores search data after cancellation and can format after a w
   page.doClear();
 });
 
-test('comparison restores lazy data and text after cancelling its snapshot worker', async () => {
+test('comparison restores lazy tree and text after cancelling its snapshot worker', async () => {
   const { page, workers, hold } = setup('compare');
   await page.setCompareView('text');
   page.get('array-mode').value = 'key';
@@ -93,7 +98,8 @@ test('comparison restores lazy data and text after cancelling its snapshot worke
   await page.setCompareView('struct');
   assert.equal(page.state.result.total, 1, 'rehydration must preserve the keyed comparison');
   assert.equal(page.state.result.pairs.length, 2);
-  assert.equal(page.state.leftData[0].v, 1);
+  assert.equal(findEntry(page, 'tree-left', '/0/v').querySelector('.v').textContent, '1');
+  assert.equal(findEntry(page, 'tree-right', '/1/v').querySelector('.v').textContent, '9');
   await page.setCompareView('text');
   assert.ok(page.state.textResult);
   assert.equal(workers.length, 2);
@@ -122,8 +128,10 @@ test('search during a new format cannot restore an old document into the worker'
   await format;
   await search;
   await new Promise(setImmediate);
-  assert.deepEqual(workers[1].requests.map((request) => request.action), ['format', 'search']);
-  assert.equal(page.state.data.amount, 2);
+  assert.equal(workers[1].requests.some((request) => request.action === 'parse'), false);
+  assert.equal(workers[1].requests[0].action, 'format');
+  assert.equal(workers[1].requests.some((request) => request.action === 'search'), true);
+  assert.equal(findEntry(page, 'tree', '/amount').querySelector('.v').textContent, '2');
   assert.equal(page.state.matchCount, 0, 'the displayed new document has no value 1');
   page.get('search').value = '2';
   await page.runSearch();
@@ -145,7 +153,7 @@ test('cancelled and invalid formats release the guard for searching the displaye
   await pending;
   hold(null);
   await page.runSearch();
-  assert.deepEqual(workers[1].requests.map((request) => request.action), ['parse', 'search']);
+  assert.deepEqual(workers[1].requests.slice(0, 2).map((request) => request.action), ['parse', 'search']);
   assert.equal(page.state.matchCount, 1);
   page.get('input').value = '{';
   await page.doFormat();
@@ -176,9 +184,11 @@ test('view changes during a new comparison cannot restore the previous compariso
   hold(null);
   workers[1].complete(workers[1].requests[0]);
   await pending;
-  assert.deepEqual(workers[1].requests.map((request) => request.action), ['diff', 'comparisonData']);
-  assert.equal(page.state.leftData.fresh, 10);
-  assert.equal(page.state.rightData.fresh, 20);
+  assert.equal(workers[1].requests.filter((request) => request.action === 'diff').length, 1);
+  assert.equal(workers[1].requests[0].action, 'diff');
+  assert.equal(workers[1].requests.some((request) => request.action === 'tree'), true);
+  assert.equal(findEntry(page, 'tree-left', '/fresh').querySelector('.v').textContent, '10');
+  assert.equal(findEntry(page, 'tree-right', '/fresh').querySelector('.v').textContent, '20');
   assert.equal(page.state.result.diffs[0].leftPath, '/fresh');
   await page.setCompareView('text');
   assert.deepEqual(JSON.parse(page.state.textResult.aText), { fresh: 10 });
@@ -200,8 +210,8 @@ test('swapping inputs cancels the first pending comparison before any result exi
   assert.equal(page.get('input-right').value, '{"value":1}');
   hold(null);
   await page.doCompare();
-  assert.equal(page.state.leftData.value, 2);
-  assert.equal(page.state.rightData.value, 1);
+  assert.equal(findEntry(page, 'tree-left', '/value').querySelector('.v').textContent, '2');
+  assert.equal(findEntry(page, 'tree-right', '/value').querySelector('.v').textContent, '1');
   page.doClear();
 });
 

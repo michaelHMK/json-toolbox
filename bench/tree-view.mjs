@@ -104,7 +104,9 @@ try {
   await page.locator('#input-right').fill(JSON.stringify(right));
   const started = performance.now();
   await page.locator('#btn-compare').click();
-  await page.waitForFunction(() => document.getElementById('diff-info').textContent.startsWith('1 / 4000'));
+  await page.waitForFunction(() => document.getElementById('diff-info').textContent.startsWith('1 / 4000')
+    && document.querySelector('#tree-left .entry.current')?.dataset.path === '/0/nested/changed'
+    && document.querySelector('#tree-right .entry.current')?.dataset.path === '/3999/nested/changed');
   let selected = await selectedRows();
   console.log(JSON.stringify({ case: 'reversed-keyed-first', elapsedMs: performance.now() - started, selected }));
   assert.deepEqual(selected.map((row) => row.path), ['/0/nested/changed', '/3999/nested/changed']);
@@ -114,17 +116,22 @@ try {
   assert.ok(selected[1].text.includes('2'));
 
   await page.locator('#diff-next').click();
+  await page.waitForFunction(() => document.querySelector('#tree-left .entry.current')?.dataset.path === '/1/nested/changed'
+    && document.querySelector('#tree-right .entry.current')?.dataset.path === '/3998/nested/changed');
   selected = await selectedRows();
   console.log(JSON.stringify({ case: 'reversed-keyed-next', selected }));
   assert.deepEqual(selected.map((row) => row.path), ['/1/nested/changed', '/3998/nested/changed']);
   assert.ok(selected.every((row) => row.visible));
 
+  await settle();
   await page.evaluate(() => { document.getElementById('tree-left').scrollTop = 250; });
   await settle();
   const scroll = await page.evaluate(() => ['left', 'right'].map((side) => document.getElementById('tree-' + side).scrollTop));
   assert.ok(Math.abs(scroll[0] - scroll[1]) < 1, 'manual scrolling must continue to synchronize');
 
   await page.locator('#diff-prev').click();
+  await page.waitForFunction(() => document.querySelector('#tree-left .entry.current')?.dataset.path === '/0/nested/changed'
+    && document.querySelector('#tree-right .entry.current')?.dataset.path === '/3999/nested/changed');
   await settle();
   const leftEntry = page.locator('#tree-left .entry[role="treeitem"][data-path="/0/nested"]');
   const leftToggle = leftEntry.locator('.toggle');
@@ -186,7 +193,8 @@ try {
   await page.locator('#input-left').fill(deepJson(1));
   await page.locator('#input-right').fill(deepJson(2));
   await page.locator('#btn-compare').click();
-  await page.waitForFunction(() => document.getElementById('diff-info').textContent.startsWith('1 / 1'));
+  await page.waitForFunction(() => document.getElementById('diff-info').textContent.startsWith('1 / 1')
+    && document.querySelector('#tree-left .entry.current') && document.querySelector('#tree-right .entry.current'));
   const deepDiff = await selectedTextBounds(['tree-left', 'tree-right']);
   console.log(JSON.stringify({ case: 'depth-200-diff-text-visible', selected: deepDiff }));
   assert.ok(deepDiff.every((row) => row.text.length === 2 && row.text.every((text) => text.visible)), 'deep diff must bring both keys and values into each horizontal viewport');
