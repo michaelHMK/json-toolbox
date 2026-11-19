@@ -46,6 +46,16 @@ try {
     await page.waitForFunction((expected) => document.querySelector('#output-text').textContent === expected, output);
   }
 
+  // Exercise lazy CodeMirror loading under the packaged extension's strict CSP.
+  await page.goto(base + 'formatter.html');
+  await page.locator('#file-input').setInputFiles({
+    name: 'large.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{ "cspCheck": true }' + ' '.repeat(256 * 1024)),
+  });
+  await page.locator('.large-input-editor .cm-content').waitFor();
+  await page.waitForFunction(() => document.querySelector('#output-text').textContent.includes('"cspCheck": true'));
+
   await page.goto(base + 'compare.html');
   await page.locator('#input-left').fill(input);
   await page.locator('#input-right').fill('{"units":8}');

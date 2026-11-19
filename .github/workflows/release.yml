@@ -4,6 +4,8 @@ on:
   release:
     types: [published]
 
+permissions: {}
+
 concurrency:
   group: extension-package-${{ github.event.release.id }}
   cancel-in-progress: false
@@ -11,15 +13,44 @@ concurrency:
 jobs:
   package:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.x'
+
+      - name: Verify release tag matches manifest version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python3 -c 'import json, os, sys
+          version = json.load(open("src/manifest.json", encoding="utf-8"))["version"]
+          raw_tag = os.environ["RELEASE_TAG"]
+          if raw_tag.removeprefix("v") != version:
+            sys.exit(f"Release tag ({raw_tag}) does not match manifest version ({version})")'
+
+      - name: Run unit and release checks
+        run: npm test
 
       - name: Build extension ZIP and checksum
         run: python3 scripts/build_release.py
+
+      - name: Smoke-test the packaged extension
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/chromium
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke"
+          cp scripts/smoke-deps/package.json scripts/smoke-deps/package-lock.json "$RUNNER_TEMP/smoke/"
+          npm ci --prefix "$RUNNER_TEMP/smoke" --ignore-scripts --no-audit --no-fund
+          PLAYWRIGHT_MODULE="$RUNNER_TEMP/smoke/node_modules/playwright-core/index.mjs" node bench/release-smoke.mjs dist/json-toolbox-*.zip
 
       - name: Upload release assets
         env:
