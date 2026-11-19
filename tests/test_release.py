@@ -133,12 +133,62 @@ class ReleaseTests(unittest.TestCase):
                 mutate.assert_not_called()
 
     def test_omitted_import_and_worker_entry_are_rejected(self):
-        for omitted in ['core/json.js', 'worker/index.js']:
+        for omitted in ['core/json.js', 'worker/index.js', 'shared/large-input-editor.js']:
             with self.subTest(omitted=omitted):
                 files = tuple(name for name in build_release.RUNTIME_FILES if name != omitted)
                 with patch.object(build_release, 'RUNTIME_FILES', files):
                     with self.assertRaisesRegex(ValueError, '引用了未打包的文件'):
                         self.check()
+
+    def test_manifest_security_invariants_reject_permissions_and_weak_csp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'src'
+            shutil.copytree(build_release.ROOT, root)
+            manifest_path = root / 'manifest.json'
+            baseline = json.loads(manifest_path.read_text(encoding='utf-8'))
+            cases = [
+                ({**baseline, 'permissions': ['storage']}, '隐私门禁'),
+                ({**baseline, 'host_permissions': ['<all_urls>']}, '隐私门禁'),
+                ({**baseline, 'content_security_policy': {'extension_pages': "script-src 'self'; object-src 'self'; connect-src 'none'"}}, 'default-src'),
+                ({**baseline, 'content_security_policy': {'extension_pages': baseline['content_security_policy']['extension_pages'].replace("object-src 'none'", "object-src 'self'")}}, 'object-src'),
+                ({**baseline, 'content_security_policy': {'extension_pages': baseline['content_security_policy']['extension_pages'].replace("style-src 'self' 'unsafe-inline'", "style-src 'self' https://evil.example")}}, 'style-src'),
+            ]
+            for mutated, pattern in cases:
+                with self.subTest(pattern=pattern), patch.object(build_release, 'ROOT', root):
+                    manifest_path.write_text(json.dumps(mutated), encoding='utf-8')
+                    with self.assertRaisesRegex(ValueError, pattern):
+                        self.check()
+
+    def test_orphan_files_inline_html_and_unused_i18n_keys_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'src'
+            shutil.copytree(build_release.ROOT, root)
+            orphan = root / 'shared/orphan.js'
+            orphan.write_text('export const x = 1;\n', encoding='utf-8')
+            with patch.object(build_release, 'ROOT', root):
+                with self.assertRaisesRegex(ValueError, '孤立文件'):
+                    self.check()
+            orphan.unlink()
+
+            html = root / 'formatter.html'
+            original_html = html.read_text(encoding='utf-8')
+            html.write_text(original_html.replace('</body>', '<script>alert(1)</script></body>'), encoding='utf-8')
+            with patch.object(build_release, 'ROOT', root):
+                with self.assertRaisesRegex(ValueError, '内联 <script>'):
+                    self.check()
+            html.write_text(original_html.replace('<body ', '<body onclick="x()" '), encoding='utf-8')
+            with patch.object(build_release, 'ROOT', root):
+                with self.assertRaisesRegex(ValueError, '内联事件'):
+                    self.check()
+            html.write_text(original_html, encoding='utf-8')
+
+            for path in (root / '_locales').glob('*/messages.json'):
+                data = json.loads(path.read_text(encoding='utf-8'))
+                data['unusedTestKey'] = {'message': 'unused'}
+                path.write_text(json.dumps(data), encoding='utf-8')
+            with patch.object(build_release, 'ROOT', root):
+                with self.assertRaisesRegex(ValueError, '未使用的翻译键.*unusedTestKey'):
+                    self.check()
 
     def test_nested_relative_reference_is_resolved_from_importer(self):
         build_release.check_reference('shared/worker-client.js', '../worker/index.js', {'worker/index.js'})

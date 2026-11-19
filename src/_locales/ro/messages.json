@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Șterge"
   },
-  "linkCompare": {
-    "message": "Comparare JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "Deschide pagina de comparare JSON"
-  },
   "paneInput": {
     "message": "Intrare"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Diferența următoare"
-  },
-  "linkFormatter": {
-    "message": "← Înapoi la formatare"
   },
   "paneOld": {
     "message": "Vechi (stânga)"

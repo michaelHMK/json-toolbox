@@ -4,7 +4,9 @@ import { performance } from 'node:perf_hooks';
 import vm from 'node:vm';
 import { Element } from '../tests/helpers/page-dom.js';
 import { appendJsonPath, createChildPathIndex, PATH_SEP } from '../src/core/json-path.js';
-import { createTreeModel } from '../src/core/tree-model.js';
+import { createTreeModel, MODEL_OPTIONS } from '../src/core/tree-model.js';
+import { PREVIEW_LIMIT, previewPrefix } from '../src/core/preview.js';
+import { hasNonWhitespace } from '../src/core/text-lines.js';
 import { createDocumentSession } from '../src/shared/document-session.js';
 import { createComparisonSession } from '../src/shared/comparison-session.js';
 
@@ -46,10 +48,12 @@ function page(name) {
     createVirtualTextView: () => ({ setText() {}, setDiff() {}, refresh() {}, clear() {} }),
     createFeedback: () => ({ setStatus() {}, showError() {}, hideError() {}, showParseError() {} }),
     createBusyFeedback: () => () => {},
-    t: (key) => key, appendJsonPath, createChildPathIndex, createTreeModel, PATH_SEP,
+    t: (key) => key, appendJsonPath, createChildPathIndex, createTreeModel, MODEL_OPTIONS,
+    PREVIEW_LIMIT, previewPrefix, hasNonWhitespace, PATH_SEP,
     copyText: async () => {}, setTimeout, clearTimeout,
   });
-  vm.runInContext(compile(read('src/shared/json-tree.js')), context);
+  try { vm.runInContext(compile(read('src/shared/json-tree.js')), context); }
+  catch (error) { if (error.code !== 'ENOENT' && error.status !== 128) throw error; }
   try { vm.runInContext(compile(read('src/shared/virtual-tree.js')), context); }
   catch (error) { if (!revision || error.status !== 128) throw error; }
   const expose = name === 'formatter'

@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "清除"
   },
-  "linkCompare": {
-    "message": "JSON 比較 →"
-  },
-  "linkCompareTitle": {
-    "message": "開啟 JSON 比較頁面"
-  },
   "paneInput": {
     "message": "輸入"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "下一處差異"
-  },
-  "linkFormatter": {
-    "message": "← 返回格式化"
   },
   "paneOld": {
     "message": "舊版本（左）"

@@ -25,11 +25,17 @@ function originalPosition(s, wrappedPosition) {
  * 内容中的原始控制字符仍可直接使用；错误偏移始终指向原始输入。
  */
 export function unescapeJsonString(s) {
-  try {
-    const parsed = JSON.parse(s);
-    if (typeof parsed === 'string') return parsed;
-  } catch (error) {
-    if (s.trimStart().startsWith('"')) {
+  let first = 0;
+  while (first < s.length) {
+    const c = s.charCodeAt(first);
+    if (c === 32 || c === 9 || c === 10 || c === 13) first++;
+    else break;
+  }
+  if (first < s.length && s.charCodeAt(first) === 34) {
+    try {
+      const parsed = JSON.parse(s);
+      if (typeof parsed === 'string') return parsed;
+    } catch (error) {
       error.code = 'INVALID_ESCAPE';
       Object.assign(error, parseErrorLocation(error.message, s));
       throw error;

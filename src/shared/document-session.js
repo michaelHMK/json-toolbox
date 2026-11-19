@@ -1,6 +1,5 @@
 import { createTaskRunner } from './worker-client.js';
-
-const cancelled = () => ({ ok: false, cancelled: true });
+import { cancelledResponse, createSessionGuard } from './session-guard.js';
 
 /** Owns the displayed document and its Worker cache independently of input edits.
  * Cancellation invalidates pending work, but only clear or a successful replacement
@@ -14,12 +13,11 @@ export function createDocumentSession({
   onBusyChange = () => {},
   onReset = () => {},
 } = {}) {
-  let generation = 0;
+  const guard = createSessionGuard();
   let formatting = null;
   let displayed = null;
   let parsing = null;
   let searchVersion = 0;
-  const responses = new WeakMap();
   const runTask = createRunner({
     serialize: true,
     onBusyChange,
@@ -32,17 +30,16 @@ export function createDocumentSession({
   });
 
   function reply(response, version, record) {
-    if (version !== generation) return cancelled();
+    if (!guard.isCurrent(version)) return cancelledResponse();
     const result = response.result && { ...response.result };
     if (result) delete result.snapshotId;
     const value = { ...response, ...(result ? { result } : {}), ...(response.ok ? { document: record.handle } : {}) };
-    responses.set(value, { version, record });
-    return value;
+    return guard.bind(value, version, { record });
   }
 
   function apply(response, callback) {
-    const scope = responses.get(response);
-    if (!scope || response.cancelled || scope.version !== generation || scope.record !== displayed
+    const scope = guard.meta(response);
+    if (!scope || response.cancelled || !guard.isCurrent(scope.version) || scope.record !== displayed
         || formatting !== null || parsing !== null
         || (scope.search !== undefined && scope.search !== searchVersion)) return false;
     callback(response);
@@ -60,13 +57,13 @@ export function createDocumentSession({
       reset() { snapshotId = null; searchReady = false; recovery = null; },
       invalidate() { recovery = null; },
     };
-    const current = (version) => version === generation && displayed === record && formatting === null && parsing === null;
+    const current = (version) => guard.isCurrent(version) && displayed === record && formatting === null && parsing === null;
 
     // Both tree windows and search share recovery of this displayed source, not
     // the editable input. A superseded recovery must not publish its snapshot.
     function restore({ requireData = false, requireSearch = false } = {}) {
-      const version = generation;
-      if (!current(version)) return Promise.resolve(cancelled());
+      const version = guard.generation;
+      if (!current(version)) return Promise.resolve(cancelledResponse());
       if ((!requireData || data !== undefined || remote) && (!requireSearch || searchReady) && snapshotId !== null) {
         return Promise.resolve({ ok: true, result: { data, numberLiterals } });
       }
@@ -76,7 +73,7 @@ export function createDocumentSession({
         const response = snapshotId !== null && !requireSearch
           ? await runTask('parseSnapshot', { snapshotId, includeData: !remote })
           : await runTask('parse', { text: source, retainSnapshot: true, includeData: !remote });
-        if (!current(version)) return cancelled();
+        if (!current(version)) return cancelledResponse();
         if (response.ok) {
           snapshotId = response.result.snapshotId ?? snapshotId;
           if (response.result.data !== undefined) data = response.result.data;
@@ -95,42 +92,42 @@ export function createDocumentSession({
       get numberLiterals() { return numberLiterals; },
       get ready() { return data !== undefined || (remote && snapshotId !== null); },
       async ensureData() {
-        const version = generation;
-        if (!current(version)) return cancelled();
+        const version = guard.generation;
+        if (!current(version)) return cancelledResponse();
         const response = data !== undefined
           ? { ok: true, result: { data, numberLiterals } }
           : await restore({ requireData: true });
-        if (!current(version)) return cancelled();
+        if (!current(version)) return cancelledResponse();
         return reply(response.ok ? { ...response, result: { data, numberLiterals } } : response, version, record);
       },
       async search(query) {
-        const version = generation;
+        const version = guard.generation;
         const search = ++searchVersion;
         const active = () => current(version) && search === searchVersion;
         const searchReply = (response) => {
           const value = reply(response, version, record);
-          responses.get(value).search = search;
+          guard.meta(value).search = search;
           return value;
         };
-        if (!active()) return cancelled();
+        if (!active()) return cancelledResponse();
         if (!query) return searchReply({ ok: true, result: { highlights: [], forceExpand: [], matchCount: 0, truncated: false } });
         if (!searchReady) {
           const restored = await restore({ requireSearch: true });
-          if (!active()) return cancelled();
+          if (!active()) return cancelledResponse();
           if (!restored.ok) return searchReply(restored);
         }
         const response = await runTask('search', { text: query }, { key: 'search' });
-        if (!active()) return cancelled();
+        if (!active()) return cancelledResponse();
         return searchReply(response);
       },
       async requestTree(payload) {
-        const version = generation;
-        if (!current(version)) return cancelled();
+        const version = guard.generation;
+        if (!current(version)) return cancelledResponse();
         const restored = await restore();
-        if (!current(version)) return cancelled();
+        if (!current(version)) return cancelledResponse();
         if (!restored.ok) return reply(restored, version, record);
         const response = await runTask('tree', { ...payload, kind: 'document', snapshotId });
-        if (!current(version)) return cancelled();
+        if (!current(version)) return cancelledResponse();
         return reply(response, version, record);
       },
     };
@@ -139,7 +136,7 @@ export function createDocumentSession({
 
   function cancel(options = {}) {
     const replacing = formatting !== null || parsing !== null;
-    generation++;
+    guard.advance();
     searchVersion++;
     formatting = null;
     parsing = null;
@@ -152,7 +149,7 @@ export function createDocumentSession({
     get pending() { return formatting !== null; },
     async format(text, { indent = '2', remote = false, tree = false } = {}, onResult) {
       cancel({ onlyIfBusy: true });
-      const version = generation;
+      const version = guard.generation;
       const request = {};
       formatting = request;
       const retainDocument = tree || !remote;
@@ -161,7 +158,7 @@ export function createDocumentSession({
         includeTextIndex: true, retainSnapshot: retainDocument, retainSearch: retainDocument,
       }, { key: 'format' });
       if (formatting === request) formatting = null;
-      if (version !== generation || response.cancelled) return cancelled();
+      if (!guard.isCurrent(version) || response.cancelled) return cancelledResponse();
       if (response.ok) displayed = createDocument(response.result.text, remote, response.result, retainDocument);
       const value = reply(response, version, displayed);
       // Publish the handle and its initial UI state in the same continuation.
@@ -170,19 +167,19 @@ export function createDocumentSession({
       return value;
     },
     async parse(text, { remote = false } = {}, onResult) {
-      if (formatting !== null) return cancelled();
+      if (formatting !== null) return cancelledResponse();
       if (displayed?.source === text) {
         displayed.setRemote(remote);
         const response = await displayed.handle.ensureData();
         if (onResult) apply(response, onResult);
         return response;
       }
-      const version = generation;
+      const version = guard.generation;
       if (!parsing || parsing.source !== text || parsing.version !== version) {
         const request = { source: text, version, promise: null, callbacks: [] };
         request.promise = (async () => {
           const response = await runTask('parse', { text, retainSnapshot: true, includeData: !remote });
-          if (version !== generation || formatting !== null || parsing !== request) return cancelled();
+          if (!guard.isCurrent(version) || formatting !== null || parsing !== request) return cancelledResponse();
           parsing = null;
           if (response.ok) displayed = createDocument(text, remote, response.result, true);
           const value = reply(response, version, displayed);
@@ -196,7 +193,7 @@ export function createDocumentSession({
     },
     cancel,
     clear() {
-      generation++;
+      guard.advance();
       searchVersion++;
       formatting = null;
       parsing = null;
@@ -204,10 +201,7 @@ export function createDocumentSession({
       void runTask('clear', {}, { discardQueued: true });
     },
     invalidateSearch() { searchVersion++; },
-    defer(callback) {
-      const version = generation;
-      return setTimeout(() => { if (version === generation) callback(); }, 0);
-    },
+    defer: guard.defer,
     apply,
   };
 }

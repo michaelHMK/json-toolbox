@@ -1,5 +1,6 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
+import { hasNonWhitespace } from '../core/text-lines.js';
 import { createDocumentSession } from '../shared/document-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
 import { createFileImport } from '../shared/file-import.js';
@@ -133,7 +134,7 @@ function currentText() {
 async function ensureTreeData() {
   if (session.pending) return false;
   const text = currentText();
-  if (!text.trim()) {
+  if (!hasNonWhitespace(text)) {
     showError(t('errNothingToParse'));
     return false;
   }
@@ -181,7 +182,7 @@ async function setView(view) {
 /* ================= 操作 ================= */
 async function doFormat() {
   const text = textInput.getText();
-  if (!text.trim()) {
+  if (!hasNonWhitespace(text)) {
     showError(t('errNeedInput'));
     return;
   }
@@ -253,7 +254,7 @@ function resetDocument() {
   state.searchQuery = '';
   searchInput.value = '';
   levelSelect.value = '';
-  treeEl.innerHTML = '';
+  treeEl.replaceChildren();
   outputView.clear();
   hideError();
   setStatus('');
@@ -268,11 +269,20 @@ function doClear() {
 
 function fillSample() {
   fileImport.reset();
-  const appName = t('appName');
+  const label = (key, fallback) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   textInput.setText(JSON.stringify({
-    name: appName === 'appName' ? 'JSON 工具箱' : appName,
+    name: label('appName', 'JSON Toolbox'),
     free: true,
-    features: ['格式化', '压缩', '转义互转', '树形视图', '搜索', 'JSON 对比'],
+    features: [
+      label('navFormat', 'JSON Formatter'),
+      label('navMinify', 'JSON Minify'),
+      label('navEscape', 'JSON Escape'),
+      label('viewTree', 'Tree'),
+      label('navCompare', 'JSON Compare'),
+    ],
     limits: { ads: 0, tracking: null },
     nested: Array.from({ length: 3 }, (_, i) => ({ id: i + 1, done: i % 2 === 0 })),
   }, null, 2));

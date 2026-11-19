@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "清空"
   },
-  "linkCompare": {
-    "message": "JSON 对比 →"
-  },
-  "linkCompareTitle": {
-    "message": "打开 JSON 对比页"
-  },
   "paneInput": {
     "message": "输入"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "下一处差异"
-  },
-  "linkFormatter": {
-    "message": "← 返回格式化"
   },
   "paneOld": {
     "message": "旧版本（左）"

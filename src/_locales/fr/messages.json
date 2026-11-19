@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "Effacer"
   },
-  "linkCompare": {
-    "message": "Comparaison JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "Ouvrir la page de comparaison JSON"
-  },
   "paneInput": {
     "message": "Entrée"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "Différence suivante"
-  },
-  "linkFormatter": {
-    "message": "← Retour au formatage"
   },
   "paneOld": {
     "message": "Ancien (gauche)"

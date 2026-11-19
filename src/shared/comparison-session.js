@@ -1,6 +1,6 @@
 import { createTaskRunner } from './worker-client.js';
+import { cancelledResponse, createSessionGuard } from './session-guard.js';
 
-const cancelled = () => ({ ok: false, cancelled: true });
 const dataKeys = ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals'];
 
 // A displayed comparison survives input edits and Worker replacement. Its
@@ -8,10 +8,9 @@ const dataKeys = ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLit
 // compare optionally publishes through onResult before resolving; apply guards
 // later UI effects. Cancelled/stale operations never publish; failures do.
 export function createComparisonSession({ createRunner = createTaskRunner, onBusyChange } = {}) {
-  let generation = 0;
+  const guard = createSessionGuard();
   let comparing = null;
   let current = null;
-  const responses = new WeakMap();
   const run = createRunner({
     serialize: true,
     onBusyChange,
@@ -19,12 +18,11 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
   });
 
   function remember(response, version, comparison = null) {
-    responses.set(response, { version, comparison });
-    return response;
+    return guard.bind(response, version, { comparison });
   }
 
   function isCurrent(comparison, version) {
-    return version === generation && comparison === current && comparing === null;
+    return guard.isCurrent(version) && comparison === current && comparing === null;
   }
 
   function makeComparison(options, initial) {
@@ -51,8 +49,8 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     };
 
     async function ensureData(requireSnapshot = false) {
-      const version = generation;
-      if (!isCurrent(comparison, version)) return cancelled();
+      const version = guard.generation;
+      if (!isCurrent(comparison, version)) return cancelledResponse();
       const hasData = options.remote || data.leftData !== undefined;
       const hasSnapshot = snapshotId !== undefined;
       if (hasData && (!(options.remote || requireSnapshot) || hasSnapshot)) {
@@ -66,9 +64,9 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
             : await run('diff', {
               text: options.text, text2: options.text2,
               keyField: options.keyField, ignorePaths: options.ignorePaths,
-              retainSnapshot: true, includeData: !options.remote,
+              retainSnapshot: true, includeData: !options.remote, includePreviews: false,
             });
-          if (!isCurrent(comparison, version)) return cancelled();
+          if (!isCurrent(comparison, version)) return cancelledResponse();
           if (!response.ok) return remember(response, version, comparison);
           if (response.result.snapshotId !== undefined) snapshotId = response.result.snapshotId;
           // Rehydration must preserve the original keyed/filtered diff summary.
@@ -85,8 +83,8 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     }
 
     async function textDiff() {
-      const version = generation;
-      if (!isCurrent(comparison, version)) return cancelled();
+      const version = guard.generation;
+      if (!isCurrent(comparison, version)) return cancelledResponse();
       if (textResult) return remember({ ok: true, result: textResult }, version, comparison);
       if (!textRequest) {
         const request = { promise: null };
@@ -97,7 +95,7 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
               : { snapshotId }),
             indent: '2', includeTextIndex: true,
           });
-          if (!isCurrent(comparison, version)) return cancelled();
+          if (!isCurrent(comparison, version)) return cancelledResponse();
           if (response.ok) textResult = response.result;
           return remember(response, version, comparison);
         })().finally(() => {
@@ -109,12 +107,12 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     }
 
     async function requestSnapshot(action, payload) {
-      const version = generation;
+      const version = guard.generation;
       const ready = await ensureData(true);
-      if (!isCurrent(comparison, version)) return cancelled();
+      if (!isCurrent(comparison, version)) return cancelledResponse();
       if (!ready.ok) return ready;
       const response = await run(action, { ...payload, snapshotId });
-      if (!isCurrent(comparison, version)) return cancelled();
+      if (!isCurrent(comparison, version)) return cancelledResponse();
       return remember(response, version, comparison);
     }
 
@@ -128,7 +126,7 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
 
   function cancel({ onlyIfBusy = false } = {}) {
     const replacing = comparing !== null;
-    generation++;
+    guard.advance();
     comparing = null;
     // Transport may already be idle while a completed replacement response is
     // awaiting this session's continuation. Its snapshot has replaced the old
@@ -139,8 +137,8 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
   }
 
   function apply(response, callback) {
-    const context = responses.get(response);
-    if (!context || response.cancelled || context.version !== generation
+    const context = guard.meta(response);
+    if (!context || response.cancelled || !guard.isCurrent(context.version)
         || (context.comparison && !isCurrent(context.comparison, context.version))) return false;
     callback(response);
     return true;
@@ -148,15 +146,15 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
 
   async function compare({ text, text2, keyField = '', ignorePaths = [], remote = false, includeData = !remote }, onResult) {
     cancel({ onlyIfBusy: true });
-    const version = generation;
+    const version = guard.generation;
     const operation = {};
     comparing = operation;
     const options = { text, text2, keyField, ignorePaths: [...ignorePaths], remote };
     const response = await run('diff', {
       text, text2, keyField, ignorePaths: options.ignorePaths,
-      includeData: includeData && !remote, retainSnapshot: true,
+      includeData: includeData && !remote, retainSnapshot: true, includePreviews: false,
     }, { key: 'diff' });
-    if (version !== generation || comparing !== operation) return cancelled();
+    if (!guard.isCurrent(version) || comparing !== operation) return cancelledResponse();
     comparing = null;
     let value;
     if (!response.ok) value = remember(response, version);
@@ -174,16 +172,13 @@ export function createComparisonSession({ createRunner = createTaskRunner, onBus
     compare,
     cancel,
     clear() {
-      generation++;
+      guard.advance();
       comparing = null;
       current = null;
       void run('clear', {}, { discardQueued: true });
     },
     get pending() { return comparing !== null; },
-    defer(callback) {
-      const version = generation;
-      return setTimeout(() => { if (version === generation) callback(); }, 0);
-    },
+    defer: guard.defer,
     apply,
   };
 }

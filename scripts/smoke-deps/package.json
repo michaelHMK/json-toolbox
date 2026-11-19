@@ -1,0 +1,7 @@
+{
+  "name": "json-toolbox-smoke-deps",
+  "private": true,
+  "devDependencies": {
+    "playwright-core": "1.65.1"
+  }
+}

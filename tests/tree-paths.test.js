@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createChildPathIndex } from '../src/shared/json-tree.js';
+import { createChildPathIndex } from '../src/core/json-path.js';
 
 test('child-path index preserves encoded keys and deduplicates shared ancestors', () => {
   const index = createChildPathIndex([

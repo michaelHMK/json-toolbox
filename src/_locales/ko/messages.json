@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "지우기"
   },
-  "linkCompare": {
-    "message": "JSON 비교 →"
-  },
-  "linkCompareTitle": {
-    "message": "JSON 비교 페이지 열기"
-  },
   "paneInput": {
     "message": "입력"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "다음 차이"
-  },
-  "linkFormatter": {
-    "message": "← 포맷으로 돌아가기"
   },
   "paneOld": {
     "message": "이전 (왼쪽)"

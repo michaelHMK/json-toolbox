@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTreeModel, createVirtualTree } from '../src/shared/virtual-tree.js';
-import { createChildPathIndex } from '../src/shared/json-tree.js';
+import { createChildPathIndex } from '../src/core/json-path.js';
 import { Element, withDom } from './helpers/page-dom.js';
 
 const rows = (model) => Array.from({ length: model.rowCount }, (_, index) => model.rowAt(index));
@@ -274,13 +274,13 @@ test('pointer activation preserves value text nodes and native selections after 
   const entry = container.querySelectorAll('.entry').find((item) => item.dataset.path === '/50');
   const row = entry.querySelector('.row');
   const value = entry.querySelector('.v');
-  row.events.pointerdown();
+  row.dispatchEvent({ type: 'pointerdown' });
   container.focus();
-  row.events.click({ target: value });
+  value.dispatchEvent({ type: 'click' });
   assert.equal(activeEntry(container), entry);
   assert.equal(activeEntry(container).querySelector('.v'), value, 'pointer focus must not replace selectable text');
   document.getSelection = () => ({ isCollapsed: false, anchorNode: value, focusNode: value });
-  row.events.click({ target: value });
+  value.dispatchEvent({ type: 'click' });
   assert.equal(activeEntry(container).querySelector('.v'), value);
   assert.equal(container.scrollTop, 1200, 'clicking a visible row must not jump back to the old active row');
   tree.destroy();
@@ -346,3 +346,82 @@ test('reopening a large subtree does not exceed the function argument limit', ()
   assert.equal(model.rowCount, count);
   assert.equal(model.rowAt(model.indexOf('/49999/value')).value, 49_999);
 });
+
+test('wide-object indexOf and sibling collapse range merging stay exact and reuse DOM rows on scroll', () => withDom(() => {
+  const wide = {};
+  for (let i = 0; i < 200; i++) wide[`key_${i}`] = { nested: i };
+  const model = createTreeModel({ data: wide });
+  assert.equal(model.indexOf('/key_199'), 200);
+  assert.equal(model.indexOf('/key_0'), 1);
+  assert.equal(model.indexOf('/missing'), -1);
+  // Open three consecutive siblings then close in middle-first and edge orders to test range merges.
+  for (const key of ['/key_10', '/key_11', '/key_12']) model.setOpen(key, true);
+  assert.equal(model.rowCount, 202 + 6);
+  model.setOpen('/key_11', false);
+  model.setOpen('/key_10', false);
+  model.setOpen('/key_12', false);
+  assert.equal(model.rowCount, 202);
+  assert.equal(model.rowAt(model.indexOf('/key_11')).path, '/key_11');
+  assert.equal(model.rowAt(model.indexOf('/key_199')).path, '/key_199');
+
+  const container = new Element();
+  const tree = createVirtualTree(container, { data: Array.from({ length: 200 }, (_, i) => i) });
+  const before = container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/10');
+  // Micro-scroll inside the same row range keeps the exact mounted DOM node.
+  container.scrollTop = 4;
+  tree.refresh();
+  assert.strictEqual(container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/10'), before);
+  // Shifting the viewport slightly still reuses overlapping DOM nodes.
+  container.scrollTop = 96;
+  tree.refresh();
+  assert.strictEqual(container.querySelectorAll('.entry').find((entry) => entry.dataset.path === '/10'), before);
+  tree.destroy();
+}));
+
+test('layer ResizeObserver defers spacer minWidth writes to the next frame without synchronous relayout', () => withDom(() => {
+  const previousRO = globalThis.ResizeObserver;
+  const previousRAF = globalThis.requestAnimationFrame;
+  const previousCAF = globalThis.cancelAnimationFrame;
+  const observers = [];
+  const frames = new Map();
+  let nextFrameId = 1;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; this.targets = []; observers.push(this); }
+    observe(target) { this.targets.push(target); }
+    disconnect() { this.disconnected = true; }
+  };
+  globalThis.requestAnimationFrame = (callback) => { const id = nextFrameId++; frames.set(id, callback); return id; };
+  globalThis.cancelAnimationFrame = (id) => { frames.delete(id); };
+  try {
+    const container = new Element();
+    container.clientWidth = 480;
+    const tree = createVirtualTree(container, { data: { nested: { wide: 'x'.repeat(200) } } });
+    const spacer = container.children[0];
+    const layerObserver = observers.find((observer) => observer.targets.includes(spacer.children[0]));
+    assert.ok(layerObserver);
+    // Fits within viewport (even with subpixel rounding): must not introduce a horizontal scrollbar.
+    layerObserver.callback([{ contentRect: { width: 480.4 } }]);
+    for (const callback of [...frames.values()]) callback();
+    frames.clear();
+    assert.equal(spacer.style.minWidth, undefined);
+
+    // Overflowing layer must NOT mutate spacer synchronously inside ResizeObserver.
+    layerObserver.callback([{ contentRect: { width: 1104.4 } }]);
+    assert.equal(spacer.style.minWidth, undefined);
+    assert.equal(frames.size, 1);
+    for (const callback of [...frames.values()]) callback();
+    frames.clear();
+    assert.equal(spacer.style.minWidth, '1104.4px');
+
+    // Collapsing resets horizontal extent and cancels any queued width frame.
+    layerObserver.callback([{ contentRect: { width: 1400 } }]);
+    tree.setOpen('', false);
+    assert.equal(spacer.style.minWidth, '');
+    assert.equal(frames.size, 0);
+    tree.destroy();
+  } finally {
+    globalThis.ResizeObserver = previousRO;
+    globalThis.requestAnimationFrame = previousRAF;
+    globalThis.cancelAnimationFrame = previousCAF;
+  }
+}));

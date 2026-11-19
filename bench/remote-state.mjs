@@ -203,7 +203,7 @@ try {
   await page.goto(base + '/__remote-state.html');
   const recovery = await page.evaluate(async (moduleBase) => {
     const [{ createRemoteTree }, { createTaskRunner }, { createChildPathIndex }] = await Promise.all([
-      import(moduleBase + 'shared/remote-tree.js'), import(moduleBase + 'shared/worker-client.js'), import(moduleBase + 'shared/json-tree.js'),
+      import(moduleBase + 'shared/remote-tree.js'), import(moduleBase + 'shared/worker-client.js'), import(moduleBase + 'core/json-path.js'),
     ]);
     const source = JSON.stringify({ branch: { child: { n: 1 }, hidden: 99 },
       rows: Array.from({ length: 20000 }, () => ({ n: 1, hidden: 99 })), ignored: true });

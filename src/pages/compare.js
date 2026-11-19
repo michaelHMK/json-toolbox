@@ -1,8 +1,9 @@
 import { initializePage } from '../shared/page.js';
 import { t } from '../shared/i18n.js';
+import { createChildPathIndex } from '../core/json-path.js';
+import { hasNonWhitespace } from '../core/text-lines.js';
 import { createComparisonSession } from '../shared/comparison-session.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
-import { createChildPathIndex } from '../shared/json-tree.js';
 import { createRemoteTree } from '../shared/remote-tree.js';
 import { createVirtualTree } from '../shared/virtual-tree.js';
 import { createFileImport } from '../shared/file-import.js';
@@ -86,7 +87,7 @@ for (const side of ['left', 'right']) {
     onImport: ({ text }) => {
       session.cancel({ onlyIfBusy: true });
       textInputs[side].setText(text);
-      if (textInputs.left.getText().trim() && textInputs.right.getText().trim()) {
+      if (textInputs.left.hasContent() && textInputs.right.hasContent()) {
         // Preparing the editor and cloning both inputs must not share one
         // long UI task. A later edit, clear or manual compare supersedes this.
         session.defer(() => { void doCompare(); });
@@ -99,7 +100,7 @@ for (const side of ['left', 'right']) {
 async function doCompare() {
   const lt = textInputs.left.getText();
   const rt = textInputs.right.getText();
-  if (!lt.trim() || !rt.trim()) {
+  if (!hasNonWhitespace(lt) || !hasNonWhitespace(rt)) {
     showError(t('errNeedBothSides'));
     return;
   }
@@ -126,8 +127,8 @@ async function doCompare() {
     state.textResult = null;
     state.treesDirty = true;
     // 文本模式也释放上一轮结构视图，避免隐藏 DOM 的闭包保留旧数据。
-    treeLeftEl.innerHTML = '';
-    treeRightEl.innerHTML = '';
+    treeLeftEl.replaceChildren();
+    treeRightEl.replaceChildren();
     textRenderer.clear();
     destroyTrees();
     clearIndexes();
@@ -412,8 +413,8 @@ function doClear() {
   state.rightNumberLiterals = null;
   state.diffIndex = -1;
   resultEl.hidden = true;
-  treeLeftEl.innerHTML = '';
-  treeRightEl.innerHTML = '';
+  treeLeftEl.replaceChildren();
+  treeRightEl.replaceChildren();
   textRenderer.clear();
   hideError();
   setStatus('');
@@ -427,16 +428,16 @@ function fillSample() {
   textInputs.left.setText(JSON.stringify({
     version: 1,
     users: [
-      { id: 1, name: '甲', role: 'admin' },
-      { id: 2, name: '乙', role: 'user' },
+      { id: 1, name: 'Alice', role: 'admin' },
+      { id: 2, name: 'Bob', role: 'user' },
     ],
     updatedAt: '2026-08-01',
   }, null, 2));
   textInputs.right.setText(JSON.stringify({
     version: 2,
     users: [
-      { id: 2, name: '乙', role: 'admin' },
-      { id: 3, name: '丙', role: 'user' },
+      { id: 2, name: 'Bob', role: 'admin' },
+      { id: 3, name: 'Carol', role: 'user' },
     ],
     updatedAt: '2026-08-24',
   }, null, 2));
@@ -472,7 +473,7 @@ function syncScroll(from, to) {
     to.scrollLeft = from.scrollLeft;
     // 忽略这次赋值产生的回传事件，不阻塞连续的用户滚动。
     copiedScroll.set(to, { top: to.scrollTop, left: to.scrollLeft });
-  });
+  }, { passive: true });
 }
 syncScroll(treeLeftEl, treeRightEl);
 syncScroll(treeRightEl, treeLeftEl);

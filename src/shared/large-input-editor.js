@@ -1,6 +1,7 @@
 import {
   EditorState, EditorView, Transaction, history, historyKeymap, isolateHistory, keymap, standardKeymap,
 } from '../vendor/codemirror.js';
+import { hasNonWhitespace } from '../core/text-lines.js';
 
 export function createLargeInputEditor(host, { text, label, onChange }) {
   const extensions = [
@@ -38,6 +39,12 @@ export function createLargeInputEditor(host, { text, label, onChange }) {
       });
     },
     getText() { return view.state.sliceDoc(); },
+    hasContent() {
+      for (const iter = view.state.doc.iter(); !iter.next().done;) {
+        if (hasNonWhitespace(iter.value)) return true;
+      }
+      return false;
+    },
     get length() { return view.state.doc.length; },
     select(start, end) {
       view.dispatch({ selection: { anchor: start, head: end }, scrollIntoView: true });

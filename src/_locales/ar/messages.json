@@ -176,12 +176,6 @@
   "btnClear": {
     "message": "مسح"
   },
-  "linkCompare": {
-    "message": "مقارنة JSON →"
-  },
-  "linkCompareTitle": {
-    "message": "فتح صفحة مقارنة JSON"
-  },
   "paneInput": {
     "message": "الإدخال"
   },
@@ -415,9 +409,6 @@
   },
   "diffNextTitle": {
     "message": "الفرق التالي"
-  },
-  "linkFormatter": {
-    "message": "← العودة إلى التنسيق"
   },
   "paneOld": {
     "message": "القديم (يسار)"

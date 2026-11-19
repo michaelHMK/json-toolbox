@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { postTaskResponse, decodeTaskResponse, createTaskResponseDecoder } from '../src/shared/worker-protocol.js';
+import { postTaskResponse, createTaskResponseDecoder } from '../src/shared/worker-protocol.js';
 import { createTaskHandler } from '../src/worker/tasks.js';
 import { createTaskRunner } from '../src/shared/worker-client.js';
 
@@ -51,7 +51,8 @@ test('ordinary responses use native cloning without snapshot reads or main-threa
   assert.equal(result.wire.ok, true);
   assert.equal(Object.hasOwn(result.wire.result, 'serializedData'), false);
   t.mock.method(JSON, 'parse', () => { throw new Error('Ordinary decode must not parse JSON'); });
-  assert.strictEqual(decodeTaskResponse(result.wire), result.wire);
+  const decode = createTaskResponseDecoder();
+  assert.strictEqual(decode(result.wire), result.wire);
 });
 
 test('document transfer fallback preserves source semantics, literals and response metadata', () => {
@@ -132,8 +133,6 @@ test('missing, stale and mismatched snapshot ids fail without exposing a replace
     { action: 'parseSnapshot' },
     { action: 'parseSnapshot', snapshotId: previous.result.snapshotId },
     { action: 'comparisonData', snapshotId: current.result.snapshotId },
-    { action: 'snapshotText', kind: 'document' },
-    { action: 'snapshotText', kind: 'document', snapshotId: previous.result.snapshotId },
   ]) {
     const { wire, calls, attempts } = transfer(handler, { id: 14, ...request });
     assert.equal(wire.ok, false);
@@ -142,7 +141,6 @@ test('missing, stale and mismatched snapshot ids fail without exposing a replace
     assert.equal(calls.length, 1);
     assert.equal(Object.hasOwn(wire, 'result'), false);
   }
-  assert.deepEqual(handler({ action: 'snapshotText', kind: 'document', snapshotId: current.result.snapshotId }).result, { data: '{"current":true}' });
 });
 
 test('fallback uses the exact result without a retained or still-current snapshot', () => {
@@ -169,6 +167,7 @@ test('failed fallback transfer returns a single task error and leaves the Worker
   const handler = createTaskHandler();
   const failedFallback = transfer(handler, { id: 17, action: 'parse', text: source, retainSnapshot: true }, { rejectFallback: true });
   assert.equal(failedFallback.decoded.ok, false);
+  assert.equal(failedFallback.decoded.code, 'TASK_FAILED');
   assert.equal(failedFallback.decoded.error, 'Fallback transfer failed');
   assert.equal(failedFallback.attempts, 3);
   assert.equal(handler({ action: 'parse', text: '{"alive":true}' }).ok, true);
@@ -189,6 +188,7 @@ test('transfer errors on results without data never try to recover an unrelated 
   assert.equal(calls.length, 1);
   assert.equal(messages.length, 1);
   assert.equal(messages[0].ok, false);
+  assert.equal(messages[0].code, 'TASK_FAILED');
   assert.equal(messages[0].error, 'Response transfer failed');
   assert.equal(handler({ action: 'search', text: '中/' }).result.matchCount, 1);
 });
@@ -199,12 +199,44 @@ test('missing chunks become a task error and failures release partial transfers'
   const decoded = decode(response);
   assert.equal(decoded.id, 19);
   assert.equal(decoded.ok, false);
+  assert.equal(decoded.code, 'TASK_FAILED');
   assert.equal(decoded.duration, 12);
   assert.match(decoded.error, /Incomplete/);
   assert.equal(decode({ id: 20, treeChunk: [[-1, '', 2], [0, 'data', 2]] }), null);
   const failure = { id: 20, ok: false, error: 'Worker error' };
   assert.strictEqual(decode(failure), failure);
   assert.equal(decode({ id: 20, ok: true, result: { streamedData: true } }).ok, false);
+  const corrupted = decode({ id: 21, treeChunk: [null] });
+  assert.equal(corrupted.ok, false);
+  assert.equal(corrupted.code, 'TASK_FAILED');
+});
+
+test('large uncached text indexes are passed in the transferable list without detaching cached textDiff', () => {
+  const handler = createTaskHandler();
+  const large = '[' + '1,'.repeat(140000) + '2]';
+  let transfers = null;
+  postTaskResponse({ id: 22, action: 'format', text: large, includeData: false, includeTextIndex: true }, handler, (response, transfer) => {
+    transfers = transfer;
+    assert.ok(response.result.lineIndex.starts instanceof Uint32Array);
+  });
+  assert.equal(transfers?.length, 1);
+  assert.ok(transfers[0] instanceof ArrayBuffer);
+
+  let diffTransfers = null;
+  postTaskResponse({ id: 23, action: 'textDiff', text: large, text2: large.replace('2]', '3]'), includeTextIndex: true }, handler, (response, transfer) => {
+    diffTransfers = transfer;
+    assert.ok(response.result.aLineIndex.starts instanceof Uint32Array);
+    assert.ok(response.result.bLineIndex.starts instanceof Uint32Array);
+  });
+  assert.equal(diffTransfers?.length, 2);
+
+  // Cached snapshot textDiff must not transfer buffers that a subsequent read could reuse.
+  const diff = handler({ id: 24, action: 'diff', text: large, text2: large.replace('2]', '3]'), includeData: false, retainSnapshot: true });
+  let cachedTransfers;
+  postTaskResponse({ id: 25, action: 'textDiff', snapshotId: diff.result.snapshotId, includeTextIndex: true }, handler, (_response, transfer) => {
+    cachedTransfers = transfer;
+  });
+  assert.equal(cachedTransfers, undefined);
 });
 
 test('client queue continues after fallback success and unrecoverable response-transfer errors', async () => {

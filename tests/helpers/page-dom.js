@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { createTreeModel } from '../../src/core/tree-model.js';
+import { createTreeModel, MODEL_OPTIONS } from '../../src/core/tree-model.js';
 import { appendJsonPath, PATH_SEP, createChildPathIndex } from '../../src/core/json-path.js';
-import { createPlainTextRows, createDiffTextRows, safeTextWindow } from '../../src/core/text-lines.js';
+import { PREVIEW_LIMIT, previewPrefix } from '../../src/core/preview.js';
+import { createPlainTextRows, createDiffTextRows, safeTextWindow, hasNonWhitespace } from '../../src/core/text-lines.js';
+import { createSessionGuard } from '../../src/shared/session-guard.js';
 import { createDocumentSession } from '../../src/shared/document-session.js';
 import { createComparisonSession } from '../../src/shared/comparison-session.js';
 
@@ -82,7 +84,26 @@ export class Element {
   setAttribute(name, value) { this.attributes[name] = String(value); }
   getAttribute(name) { return this.attributes[name] ?? null; }
   removeAttribute(name) { delete this.attributes[name]; }
-  click() { return this.events.click?.({ target: this }); }
+  closest(selector) {
+    const classes = selector.split('.').filter(Boolean);
+    let node = this;
+    while (node) {
+      if (classes.every((name) => node.classList?.contains(name))) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+  dispatchEvent(event) {
+    const dispatched = { target: this, ...event };
+    let node = this;
+    let result;
+    while (node) {
+      if (node.events[dispatched.type]) result = node.events[dispatched.type](dispatched);
+      node = node.parentElement;
+    }
+    return result;
+  }
+  click() { return this.dispatchEvent({ type: 'click', target: this }); }
   focus() { this.focused = true; }
   setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
   scrollIntoView() {}
@@ -154,6 +175,7 @@ export function loadPage(name, {
     },
     initializePage: () => {},
     createTaskRunner: createRunner,
+    createSessionGuard,
     createDocumentSession: (options) => createDocumentSession({ ...options, createRunner }),
     createComparisonSession: (options) => createComparisonSession({ ...options, createRunner }),
     createFileImport,
@@ -182,9 +204,10 @@ export function loadPage(name, {
       return host.editor;
     },
     t: translate,
-    appendJsonPath, createChildPathIndex, createTreeModel,
+    appendJsonPath, createChildPathIndex, createTreeModel, MODEL_OPTIONS,
+    PREVIEW_LIMIT, previewPrefix,
     PATH_SEP,
-    createPlainTextRows, createDiffTextRows, safeTextWindow,
+    createPlainTextRows, createDiffTextRows, safeTextWindow, hasNonWhitespace,
     getComputedStyle: () => ({ lineHeight: '21px', fontSize: '13px', font: '13px monospace', fontFamily: 'monospace', paddingTop: '0', paddingBottom: '0', paddingLeft: '0', paddingRight: '0' }),
     requestAnimationFrame: (callback) => setTimeout(callback, 0),
     cancelAnimationFrame: clearTimeout,
@@ -193,7 +216,7 @@ export function loadPage(name, {
     setTimeout,
     clearTimeout,
   });
-  for (const module of ['json-tree', 'virtual-tree', 'remote-tree', 'virtual-text', 'text-input', 'feedback']) {
+  for (const module of ['virtual-tree', 'remote-tree', 'virtual-text', 'text-input', 'feedback']) {
     let source = readFileSync(new URL(`../../src/shared/${module}.js`, import.meta.url), 'utf8')
       .replace(/^(?:import .*;|export \{.*\} from .*;)\n/gm, '').replace(/^export /gm, '');
     // Remote and local tree modules intentionally have private names in common.

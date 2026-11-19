@@ -83,10 +83,18 @@ export function createTaskHandler() {
         return {};
       case 'format': {
         const includeData = options.includeData !== false;
+        const retainSnapshot = Boolean(options.retainSnapshot);
+        const retainSearchFlag = options.retainSearch !== false;
+        const needData = includeData || retainSnapshot || retainSearchFlag;
         const cached = document?.source === text ? document : null;
-        const formatted = formatJson(text, { indent, includeNumberLiterals: includeData || options.includeNumberLiterals === true, parsed: cached });
-        retainSearch(formatted.data, text, formatted.numberLiterals, options.retainSearch !== false);
-        document = options.retainSnapshot ? {
+        const formatted = formatJson(text, {
+          indent,
+          includeData: needData,
+          includeNumberLiterals: includeData || options.includeNumberLiterals === true,
+          parsed: cached,
+        });
+        retainSearch(formatted.data, text, formatted.numberLiterals, retainSearchFlag);
+        document = retainSnapshot ? {
           id: ++snapshotSequence, source: text, output: formatted.text,
           data: formatted.data, numberLiterals: formatted.numberLiterals,
         } : null;
@@ -95,8 +103,9 @@ export function createTaskHandler() {
         return result;
       }
       case 'minify': {
-        const formatted = formatJson(text, { indent: null });
-        retainSearch(formatted.data, text, formatted.numberLiterals, options.retainSearch !== false);
+        const retainSearchFlag = options.retainSearch !== false;
+        const formatted = formatJson(text, { indent: null, includeData: retainSearchFlag });
+        retainSearch(formatted.data, text, formatted.numberLiterals, retainSearchFlag);
         document = null;
         return { text: formatted.text };
       }
@@ -144,13 +153,6 @@ export function createTaskHandler() {
         const snapshot = requireSnapshot(document, options.snapshotId);
         return treeTask(snapshot, documentData(snapshot), options);
       }
-      case 'snapshotText': {
-        if (options.kind === 'document') {
-          return { data: requireSnapshot(document, options.snapshotId).source };
-        }
-        const snapshot = requireSnapshot(comparison, options.snapshotId);
-        return { leftData: snapshot.left.source, rightData: snapshot.right.source };
-      }
       case 'escape':
         return { text: escapeJsonString(text) };
       case 'unescape':
@@ -179,18 +181,21 @@ export function createTaskHandler() {
         return result;
       }
       case 'textDiff': {
+        const indexOptions = options.includeTextIndex
+          ? { includeTextIndex: true, textIndexThreshold: TEXT_INDEX_THRESHOLD }
+          : undefined;
         if (options.snapshotId === undefined) {
-          const left = withInputSide(text, 'left', () => formatJson(text, { indent }).text);
+          const left = withInputSide(text, 'left', () => formatJson(text, { indent, includeData: false }).text);
           const right = text === options.text2 ? left
-            : withInputSide(options.text2, 'right', () => formatJson(options.text2, { indent }).text);
-          return diffFormattedText(left, right);
+            : withInputSide(options.text2, 'right', () => formatJson(options.text2, { indent, includeData: false }).text);
+          return diffFormattedText(left, right, indexOptions);
         }
         const snapshot = requireSnapshot(comparison, options.snapshotId);
         if (!snapshot.textDiff || snapshot.indent !== indent) {
           const left = formatJson(snapshot.left.source, { indent, parsed: snapshot.left }).text;
           const right = snapshot.left === snapshot.right ? left
             : formatJson(snapshot.right.source, { indent, parsed: snapshot.right }).text;
-          snapshot.textDiff = diffFormattedText(left, right);
+          snapshot.textDiff = diffFormattedText(left, right, indexOptions);
           snapshot.indent = indent;
         }
         return snapshot.textDiff;

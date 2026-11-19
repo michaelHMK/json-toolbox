@@ -1,8 +1,9 @@
+import { MODEL_OPTIONS } from '../core/tree-model.js';
 import { createVirtualTree } from './virtual-tree.js';
 
 const CACHE_ROWS = 1024;
 const WINDOW_ROWS = 256;
-const MODEL_OPTIONS = ['expandLevel', 'expanded', 'collapsed', 'forceExpand', 'onlyRequired', 'requiredChildren'];
+const REMOTE_MODEL_OPTIONS = MODEL_OPTIONS.filter((key) => key !== 'data');
 
 // Only window descriptors live in this model. The parsed document, container
 // index, expansion state and path resolution remain in the Worker snapshot.
@@ -134,7 +135,7 @@ function createRemoteModel(request) {
     setActive(path, index) { activeVersion++; active = { path, index }; },
     update(next) {
       const changes = {};
-      for (const key of MODEL_OPTIONS) if (Object.hasOwn(next, key)) changes[key] = next[key];
+      for (const key of REMOTE_MODEL_OPTIONS) if (Object.hasOwn(next, key)) changes[key] = next[key];
       if (initialized && !Object.keys(changes).length) return;
       options = { ...options, ...changes };
       initialized = true;

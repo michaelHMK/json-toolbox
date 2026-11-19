@@ -1,34 +1,62 @@
 import { createTreeModel } from '../core/tree-model.js';
 export { createTreeModel } from '../core/tree-model.js';
-import { span } from './json-tree.js';
+import { PREVIEW_LIMIT, previewPrefix } from '../core/preview.js';
 import { t } from './i18n.js';
 
 const isContainer = (value) => value !== null && typeof value === 'object';
-const PREVIEW_LIMIT = 2000;
 const MAX_SCROLL_HEIGHT = 8_000_000;
 let nextTreeId = 0;
 
-function prefix(text) {
-  let end = Math.min(text.length, PREVIEW_LIMIT);
-  const last = text.charCodeAt(end - 1);
-  const next = text.charCodeAt(end);
-  if (last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) end--;
-  return text.slice(0, end);
+function span(className, text) {
+  const element = document.createElement('span');
+  element.className = className;
+  element.textContent = text;
+  return element;
 }
 
 function literalPreview(text, length = text.length) {
-  return length > PREVIEW_LIMIT ? prefix(text) + t('strTruncated', [length.toLocaleString()]) : text;
+  return length > PREVIEW_LIMIT ? previewPrefix(text) + t('strTruncated', [length.toLocaleString()]) : text;
 }
 
 function preview(value, length = typeof value === 'string' ? value.length : undefined) {
   if (typeof value === 'string') {
-    const encoded = JSON.stringify(prefix(value));
+    const encoded = JSON.stringify(previewPrefix(value));
     if (length > PREVIEW_LIMIT || encoded.length > PREVIEW_LIMIT) {
-      return prefix(encoded) + t('strTruncated', [length.toLocaleString()]);
+      return previewPrefix(encoded) + t('strTruncated', [length.toLocaleString()]);
     }
     return encoded;
   }
   return literalPreview(String(value));
+}
+
+function patchChildren(parent, nextChildren) {
+  if (!parent.children.length) {
+    if (!nextChildren.length) return;
+    const fragment = document.createDocumentFragment();
+    for (const node of nextChildren) fragment.appendChild(node);
+    parent.appendChild(fragment);
+    return;
+  }
+  const keep = new Set(nextChildren);
+  let reused = false;
+  for (let i = parent.children.length - 1; i >= 0; i--) {
+    const child = parent.children[i];
+    if (keep.has(child)) reused = true;
+    else child.remove();
+  }
+  if (!reused) {
+    const fragment = document.createDocumentFragment();
+    for (const node of nextChildren) fragment.appendChild(node);
+    parent.replaceChildren(fragment);
+    return;
+  }
+  for (let i = 0; i < nextChildren.length; i++) {
+    const node = nextChildren[i];
+    const current = parent.children[i];
+    if (current === node) continue;
+    if (current) current.before(node);
+    else parent.appendChild(node);
+  }
 }
 
 /**
@@ -50,9 +78,21 @@ export function createVirtualTree(container, initial = {}) {
   const itemId = (index) => `${treeId}-item-${index}`;
   const originalAttributes = new Map(['role', 'tabindex', 'aria-activedescendant'].map((name) => [name, container.getAttribute(name)]));
   let frame = null;
+  let widthFrame = null;
+  let pendingWidth = 0;
   let destroyed = false;
   let navigation = Promise.resolve();
   let maxWidth = 0;
+  let lastRowHeight = null;
+  let lastSpacerHeight = null;
+  let lastLayerTop = null;
+  let structureVersion = 0;
+  let renderedVersion = -1;
+  let renderedStart = -1;
+  let renderedEnd = -1;
+  let renderedPinned = -1;
+  let mountedRows = new Map();
+  let pinnedNode = null;
   const requestFrame = globalThis.requestAnimationFrame || ((callback) => setTimeout(callback, 0));
   const cancelFrame = globalThis.cancelAnimationFrame || clearTimeout;
   const spacer = document.createElement('div');
@@ -75,11 +115,35 @@ export function createVirtualTree(container, initial = {}) {
     return { viewport, physicalHeight, physicalRange, logicalRange, scale };
   }
 
+  function resetHorizontalExtent() {
+    if (widthFrame !== null) {
+      cancelFrame(widthFrame);
+      widthFrame = null;
+    }
+    pendingWidth = 0;
+    maxWidth = 0;
+    spacer.style.minWidth = '';
+  }
+
+  function flushWidth() {
+    widthFrame = null;
+    if (destroyed) return;
+    const width = pendingWidth;
+    pendingWidth = 0;
+    const viewportWidth = container.clientWidth || 0;
+    if (width > maxWidth && (!viewportWidth || width > viewportWidth + 0.5)) {
+      maxWidth = width;
+      spacer.style.minWidth = `${maxWidth}px`;
+    }
+  }
+
   function renderRow(descriptor, index) {
     const { value, key, path, depth, kind, open } = descriptor;
     const entry = document.createElement('div');
     entry.className = 'entry';
     entry.dataset.path = path;
+    entry.dataset.index = String(index);
+    entry.dataset.kind = kind;
     entry.style.paddingLeft = `${6 + depth * 20}px`;
     const row = document.createElement('div');
     row.className = 'row';
@@ -90,13 +154,6 @@ export function createVirtualTree(container, initial = {}) {
       row.classList.add('close-row');
       row.appendChild(span('toggle-spacer', ''));
       row.appendChild(span('punct', Array.isArray(value) ? ']' : '}'));
-      row.addEventListener('click', () => {
-        activationVersion++;
-        activePath = path;
-        model.setActive?.(path, -1);
-        setOpen(path, false, { notify: true });
-        container.focus({ preventScroll: true });
-      });
       return entry;
     }
     entry.id = itemId(index);
@@ -113,14 +170,13 @@ export function createVirtualTree(container, initial = {}) {
     const toggle = span(containerValue ? 'toggle' : 'toggle-spacer', containerValue ? open ? '▾' : '▸' : '');
     toggle.setAttribute('aria-hidden', 'true');
     row.appendChild(toggle);
-    const activate = () => setActive(path, index);
-    // Set the active row before the browser focuses the tree on pointer-down.
-    row.addEventListener('pointerdown', activate);
     if (key !== null) {
       row.appendChild(span('key', descriptor.isIndex ? String(key) : preview(String(key), descriptor.keyLength)));
       row.appendChild(span('punct', ': '));
     }
     if (containerValue) {
+      entry.dataset.container = '1';
+      entry.dataset.open = open ? '1' : '0';
       const isArray = Array.isArray(value);
       row.appendChild(span('punct', isArray ? '[' : '{'));
       const size = descriptor.size ?? model.sizeOf(value);
@@ -132,37 +188,83 @@ export function createVirtualTree(container, initial = {}) {
         row.appendChild(summary);
         row.appendChild(span('punct', isArray ? ']' : '}'));
       }
-      const flip = () => {
-        activate();
-        setOpen(path, !(model.openState?.(path, open) ?? open), { notify: true });
-        container.focus({ preventScroll: true });
-      };
-      toggle.addEventListener('click', flip);
-      summary.addEventListener('click', flip);
-      row.addEventListener('click', (event) => {
-        if (event.target === toggle || event.target === summary || hasTextSelection()) return;
-        if (event.target === row || event.target.classList.contains('punct')) flip();
-        else { activate(); container.focus({ preventScroll: true }); }
-      });
     } else {
       const type = value === null ? 'null' : typeof value === 'boolean' ? 'bool' : typeof value;
       const literal = descriptor.literal ?? (typeof value === 'number' ? options.numberLiterals?.[path] : undefined);
       row.appendChild(span('v ' + type, literal === undefined ? preview(value, descriptor.valueLength)
         : literalPreview(String(literal), descriptor.literalLength)));
-      row.addEventListener('click', () => {
-        if (hasTextSelection()) return;
-        activate();
-        container.focus({ preventScroll: true });
-      });
     }
     return entry;
+  }
+
+  function createPlaceholder() {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'entry virtual-placeholder';
+    placeholder.setAttribute('aria-hidden', 'true');
+    return placeholder;
+  }
+
+  function onLayerPointerDown(event) {
+    const entry = event.target?.closest?.('.entry');
+    if (!entry || entry.classList.contains('virtual-placeholder') || entry.dataset.kind === 'close') return;
+    // Set the active row before the browser focuses the tree on pointer-down.
+    setActive(entry.dataset.path, Number(entry.dataset.index));
+  }
+
+  function onLayerClick(event) {
+    const target = event.target;
+    const entry = target?.closest?.('.entry');
+    if (!entry || entry.classList.contains('virtual-placeholder')) return;
+    const path = entry.dataset.path;
+    if (entry.dataset.kind === 'close') {
+      activationVersion++;
+      activePath = path;
+      model.setActive?.(path, -1);
+      setOpen(path, false, { notify: true });
+      container.focus({ preventScroll: true });
+      return;
+    }
+    const index = Number(entry.dataset.index);
+    if (entry.dataset.container === '1') {
+      const open = entry.dataset.open === '1';
+      const flip = () => {
+        setActive(path, index);
+        setOpen(path, !(model.openState?.(path, open) ?? open), { notify: true });
+        container.focus({ preventScroll: true });
+      };
+      if (target.classList?.contains('toggle') || target.classList?.contains('summary')) {
+        flip();
+        return;
+      }
+      if (hasTextSelection()) return;
+      if (target.classList?.contains('row') || target.classList?.contains('punct')) flip();
+      else {
+        setActive(path, index);
+        container.focus({ preventScroll: true });
+      }
+      return;
+    }
+    if (hasTextSelection()) return;
+    setActive(path, index);
+    container.focus({ preventScroll: true });
+  }
+
+  function syncActiveAttribute(hasActive) {
+    if (hasActive) container.setAttribute('aria-activedescendant', itemId(activeIndex));
+    else container.removeAttribute('aria-activedescendant');
   }
 
   function refresh() {
     if (destroyed) return;
     const g = geometry();
-    container.style.setProperty?.('--tree-row-height', `${options.rowHeight}px`);
-    spacer.style.height = `${g.physicalHeight}px`;
+    if (lastRowHeight !== options.rowHeight) {
+      container.style.setProperty?.('--tree-row-height', `${options.rowHeight}px`);
+      lastRowHeight = options.rowHeight;
+    }
+    if (lastSpacerHeight !== g.physicalHeight) {
+      spacer.style.height = `${g.physicalHeight}px`;
+      lastSpacerHeight = g.physicalHeight;
+    }
     const scrollTop = Math.min(Math.max(0, container.scrollTop || 0), g.physicalRange);
     if (container.scrollTop !== scrollTop) container.scrollTop = scrollTop;
     const logicalTop = scrollTop * g.scale;
@@ -170,37 +272,75 @@ export function createVirtualTree(container, initial = {}) {
     const end = Math.min(model.rowCount, Math.ceil((logicalTop + g.viewport) / options.rowHeight) + options.overscan);
     const loading = model.ensureRange?.(start, end);
     if (loading) loading.then((changed) => {
-      if (changed && !destroyed) { restoreActive(); refresh(); }
+      if (changed && !destroyed) {
+        structureVersion++;
+        restoreActive();
+        refresh();
+      }
     });
-    layer.style.top = `${scrollTop - logicalTop + start * options.rowHeight}px`;
-    const fragment = document.createDocumentFragment();
+    const nextLayerTop = scrollTop - logicalTop + start * options.rowHeight;
+    if (lastLayerTop !== nextLayerTop) {
+      layer.style.top = `${nextLayerTop}px`;
+      lastLayerTop = nextLayerTop;
+    }
+    const activeDescriptor = activeIndex >= 0 ? model.rowAt(activeIndex) : null;
+    const nextPinned = activeDescriptor && (activeIndex < start || activeIndex >= end) ? activeIndex : -1;
+    if (renderedVersion === structureVersion && renderedStart === start && renderedEnd === end && renderedPinned === nextPinned) {
+      syncActiveAttribute(Boolean(activeDescriptor));
+      return;
+    }
+
+    const canReuse = renderedVersion === structureVersion;
+    const nextMounted = new Map();
+    const nextChildren = [];
+
     // Keep the active descendant mounted when wheel scrolling recycles its row.
     // This costs one extra row, independent of the size or depth of the JSON.
-    let pinned = null;
-    if (activeIndex >= 0 && (activeIndex < start || activeIndex >= end)) {
-      const descriptor = model.rowAt(activeIndex);
-      if (descriptor) {
-        pinned = renderRow(descriptor, activeIndex);
-        pinned.classList.add('virtual-active-outside');
+    let nextPinnedNode = null;
+    if (nextPinned >= 0) {
+      if (canReuse && pinnedNode?.index === nextPinned) {
+        nextPinnedNode = pinnedNode;
+      } else {
+        const entry = renderRow(activeDescriptor, nextPinned);
+        entry.classList.add('virtual-active-outside');
+        nextPinnedNode = { index: nextPinned, entry };
       }
+      nextPinnedNode.entry.classList.toggle('keyboard-active', nextPinnedNode.entry.dataset.path === activePath);
+      nextPinnedNode.entry.classList.toggle('current', nextPinnedNode.entry.dataset.path === currentPath);
     }
-    if (pinned && activeIndex < start) fragment.appendChild(pinned);
+
+    if (nextPinnedNode && nextPinned < start) nextChildren.push(nextPinnedNode.entry);
     for (let index = start; index < end; index++) {
       const descriptor = model.rowAt(index);
-      if (descriptor) fragment.appendChild(renderRow(descriptor, index));
-      else {
-        const placeholder = document.createElement('div');
-        placeholder.className = 'entry virtual-placeholder';
-        placeholder.setAttribute('aria-hidden', 'true');
-        fragment.appendChild(placeholder);
+      const existing = canReuse ? mountedRows.get(index) : null;
+      if (existing && Boolean(descriptor) === !existing.placeholder) {
+        const entry = existing.entry;
+        if (!existing.placeholder && entry.dataset.kind !== 'close') {
+          entry.classList.toggle('keyboard-active', entry.dataset.path === activePath);
+          entry.classList.toggle('current', entry.dataset.path === currentPath);
+        }
+        nextMounted.set(index, existing);
+        nextChildren.push(entry);
+      } else if (descriptor) {
+        const entry = renderRow(descriptor, index);
+        nextMounted.set(index, { entry, placeholder: false });
+        nextChildren.push(entry);
+      } else {
+        const placeholder = createPlaceholder();
+        nextMounted.set(index, { entry: placeholder, placeholder: true });
+        nextChildren.push(placeholder);
       }
     }
-    if (pinned && activeIndex >= end) fragment.appendChild(pinned);
-    layer.replaceChildren(fragment);
-    if (activeIndex >= 0 && model.rowAt(activeIndex)) container.setAttribute('aria-activedescendant', itemId(activeIndex));
-    else container.removeAttribute('aria-activedescendant');
-    maxWidth = Math.max(maxWidth, layer.scrollWidth || 0);
-    if (maxWidth) spacer.style.minWidth = `${maxWidth}px`;
+    if (nextPinnedNode && nextPinned >= end) nextChildren.push(nextPinnedNode.entry);
+
+    patchChildren(layer, nextChildren);
+    mountedRows = nextMounted;
+    pinnedNode = nextPinnedNode;
+    renderedVersion = structureVersion;
+    renderedStart = start;
+    renderedEnd = end;
+    renderedPinned = nextPinned;
+    syncActiveAttribute(Boolean(activeDescriptor));
   }
 
   function schedule() {
@@ -211,13 +351,16 @@ export function createVirtualTree(container, initial = {}) {
     if (Object.hasOwn(next, 'data') && next.data !== options.data) {
       container.scrollTop = 0;
       container.scrollLeft = 0;
-      maxWidth = 0;
-      spacer.style.minWidth = '';
       currentPath = null;
       activePath = null;
     }
+    resetHorizontalExtent();
     options = { ...options, ...next };
-    return after(model.update(next), () => { restoreActive(); refresh(); });
+    return after(model.update(next), () => {
+      structureVersion++;
+      restoreActive();
+      refresh();
+    });
   }
   // The local model is synchronous. Remote models keep the same rendering and
   // interaction code, but settle mutations only after their Worker response.
@@ -229,11 +372,13 @@ export function createVirtualTree(container, initial = {}) {
     return apply(result);
   }
   function setOpen(path, open, { notify = false } = {}) {
+    if (!open) resetHorizontalExtent();
     const result = model.setOpen(path, open);
     // Synchronize paired trees for every user intention, including quick
     // successive clicks whose older rendering response is superseded.
     if (notify && result?.then) options.onToggle?.(path, open);
     return after(result, () => {
+      structureVersion++;
       restoreActive();
       refresh();
       if (model.move) ensureActiveVisible();
@@ -241,12 +386,16 @@ export function createVirtualTree(container, initial = {}) {
     });
   }
   function reveal(path) {
-    return navigateResult(model.reveal(path), (index) => showPath(path, index));
+    return navigateResult(model.reveal(path), (index) => {
+      structureVersion++;
+      return showPath(path, index);
+    });
   }
   function navigateResult(result, apply) {
     const selected = activationVersion;
     return after(result, (value) => {
       if (model.active && selected !== activationVersion) {
+        structureVersion++;
         restoreActive();
         refresh();
         ensureActiveVisible();
@@ -266,6 +415,7 @@ export function createVirtualTree(container, initial = {}) {
     // its initial update). Grow the physical scroller before assigning its
     // position, otherwise browsers clamp that assignment to the old height.
     spacer.style.height = `${g.physicalHeight}px`;
+    lastSpacerHeight = g.physicalHeight;
     container.scrollTop = logicalTop / g.scale;
     refresh();
     // Nested indentation can put the actual key/value thousands of pixels to
@@ -304,8 +454,13 @@ export function createVirtualTree(container, initial = {}) {
     // Pointer activation must not replace text nodes: doing so clears the
     // browser's text selection, including double-click selection of a value.
     for (const entry of [...layer.children]) {
-      if (entry.classList.contains('virtual-active-outside')) entry.remove();
-      else entry.classList.toggle('keyboard-active', entry.id === itemId(index));
+      if (entry.classList.contains('virtual-active-outside')) {
+        entry.remove();
+        pinnedNode = null;
+        renderedPinned = -1;
+      } else {
+        entry.classList.toggle('keyboard-active', entry.id === itemId(index));
+      }
     }
     container.setAttribute('aria-activedescendant', itemId(index));
   }
@@ -328,6 +483,7 @@ export function createVirtualTree(container, initial = {}) {
   }
   function moveActive(index, step) {
     if (model.move) return navigateResult(model.move(index, step), (next) => {
+      structureVersion++;
       if (next >= 0) return showPath(model.active.path, next);
     });
     let row = model.rowAt(index);
@@ -349,6 +505,7 @@ export function createVirtualTree(container, initial = {}) {
         if (expandable && !row.open) return setOpen(row.path, true, { notify: true });
         else if (expandable) {
           if (model.child) return navigateResult(model.child(row.path), (index) => {
+            structureVersion++;
             if (index >= 0) return showPath(model.active.path, index);
           });
           const child = model.rowAt(activeIndex + 1);
@@ -403,7 +560,11 @@ export function createVirtualTree(container, initial = {}) {
   function destroy() {
     destroyed = true;
     if (frame !== null) cancelFrame(frame);
+    if (widthFrame !== null) cancelFrame(widthFrame);
     resizeObserver?.disconnect();
+    layerObserver?.disconnect();
+    layer.removeEventListener('pointerdown', onLayerPointerDown);
+    layer.removeEventListener('click', onLayerClick);
     container.removeEventListener('scroll', schedule);
     container.removeEventListener('keydown', keydown);
     container.removeEventListener('focus', focus);
@@ -411,6 +572,8 @@ export function createVirtualTree(container, initial = {}) {
       if (value === null) container.removeAttribute(name);
       else container.setAttribute(name, value);
     }
+    mountedRows.clear();
+    pinnedNode = null;
     layer.replaceChildren();
     spacer.replaceChildren();
     container.replaceChildren();
@@ -422,11 +585,25 @@ export function createVirtualTree(container, initial = {}) {
     activePath = null;
     activeIndex = -1;
   }
+  layer.addEventListener('pointerdown', onLayerPointerDown);
+  layer.addEventListener('click', onLayerClick);
   container.addEventListener('keydown', keydown);
   container.addEventListener('focus', focus);
   container.addEventListener('scroll', schedule, { passive: true });
   const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
   resizeObserver?.observe(container);
+  // Track content width after layout instead of forcing synchronous scrollWidth
+  // reads during every scroll frame. Mutate spacer.style.minWidth in the next
+  // animation frame so ResizeObserver never re-triggers within the same delivery.
+  const layerObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
+    if (destroyed) return;
+    const width = entries[entries.length - 1]?.contentRect?.width || 0;
+    if (width > maxWidth && width > pendingWidth) {
+      pendingWidth = width;
+      if (widthFrame === null) widthFrame = requestFrame(flushWidth);
+    }
+  });
+  layerObserver?.observe(layer);
   refresh();
   return { update, refresh, setOpen, reveal, setCurrent, destroy, get rowCount() { return model.rowCount; } };
 }

@@ -50,8 +50,9 @@ test('buffered formatting agrees with native semantics and exact numeric tokens'
     '{"ab":1.0,"cd":2.0,"ab":3.0}',
     '{"a\\nb":1.0,"a\\nb":2}',
     '{"z":1.0,"2":2.00,"10":10.0,"01":3.0,"1":1e0}',
+    '{"2026-11-19":1.20,"01":2.00,"4294967295":3.00,"4294967294":4.00,"0":5.00,"1.5.1":6.00,"3f2504e0-4f89":7.00}',
     '{"key\\u0061":1.0,"keya":2.0,"slash":"\\/"}',
-    '{"emoji":"😀","lone":"\ud800","escaped":"\\ud800","number":1.20}',
+    '{"emoji":"😀","pair":"🚀漢字𠀀","lone":"\ud800","escaped":"\\ud800","number":1.20}',
     '{"outer":{"old":[1.0,2.0]},"outer":{"new":3.0},"after":4.0}',
     '{"nested":[{"a":1.0},{"b":{"c":2.0}},[3.0,4.0],5.0],"last":6.0}',
   ]) assertMatchesReference(text);
@@ -85,24 +86,57 @@ test('ASCII and wide buffers grow without changing output or literal paths', () 
 });
 
 test('invalid source is rejected before direct formatting can accept a token', () => {
-  for (const text of ['[1,]', '{"a":01}', '"\\x"', '[true false]', '{"a":1,"b":}']) {
-    assert.throws(() => formatJson(text), SyntaxError);
+  const invalid = [
+    '', ' ', '[1,]', '{"a":01}', '{"a":-01}', '"\\x"', '[true false]', '{"a":1,"b":}',
+    '[1.]', '[1e+]', '[-]', '"unterminated', '"raw\nnewline"', '{a:1}', '[1}', '{1:2}',
+    '{"a":1} extra', 'tru', 'fals', 'nul', 'NaN', 'Infinity', undefined,
+  ];
+  for (const text of invalid) {
+    assert.throws(() => formatJson(text), SyntaxError, `includeData=true: ${String(text)}`);
+    assert.throws(() => formatJson(text, { includeData: false }), SyntaxError, `includeData=false: ${String(text)}`);
+    assert.throws(() => formatJson(text, { indent: null, includeData: false }), SyntaxError, `minify: ${String(text)}`);
+  }
+});
+
+test('text-only formatting skips object graph allocation while matching native semantics', () => {
+  for (const text of [
+    '{"2026-11-19":1.20,"emoji":"😀🚀","01":2.00,"4294967295":3.00}',
+    '{"2":2.00,"1":1.00,"dup":1,"dup":2.00,"s":"\\u4e2d\\/"}',
+    '[1.20,9007199254740993,-0,1e400,true,false,null,{},[]]',
+  ]) {
+    for (const indent of [null, '2', 'tab']) {
+      const expected = reference(text, indent);
+      const actual = formatJson(text, { indent, includeData: false });
+      assert.equal(actual.data, undefined);
+      assert.equal(actual.text, expected.text);
+    }
   }
 });
 
 // Exercise the real formatter at a reduced VM ceiling instead of allocating
 // half a gigabyte merely to reach Chrome's string-length boundary.
-test('buffer growth rejects output beyond the string ceiling with a recoverable error', () => {
+test('buffer growth, iterative fallback and chunked UTF-16 decoding enforce limits without splitting surrogates', () => {
   const source = readFileSync(new URL('../src/core/json.js', import.meta.url), 'utf8');
   assert.ok(source.includes('const MAX_OUTPUT_LENGTH = 0x1fffffe8;'));
+  assert.ok(source.includes('const UTF16_DECODE_CHUNK = 16 * 1024 * 1024;'));
   const boundedSource = source.replace("import { appendJsonPath } from './json-path.js';", '')
     .replace('const MAX_OUTPUT_LENGTH = 0x1fffffe8;', 'const MAX_OUTPUT_LENGTH = 256;')
+    .replace('const UTF16_DECODE_CHUNK = 16 * 1024 * 1024;', 'const UTF16_DECODE_CHUNK = 16;')
     .replaceAll('export function ', 'function ');
   const boundedFormat = new Function('appendJsonPath', boundedSource + '; return formatJson;')(appendJsonPath);
   for (const leaf of ['0', '"中文"']) {
-    const source = '['.repeat(16) + leaf + ']'.repeat(16);
-    assert.throws(() => boundedFormat(source), /maximum string length/);
-    assert.equal(boundedFormat(source, { indent: null }).text, source);
+    const deep = '['.repeat(16) + leaf + ']'.repeat(16);
+    assert.throws(() => boundedFormat(deep), /maximum string length/);
+    assert.throws(() => boundedFormat(deep, { includeData: false }), /maximum string length/);
+    assert.equal(boundedFormat(deep, { indent: null }).text, deep);
     assert.equal(boundedFormat('[1.20]', { indent: null }).text, '[1.20]');
   }
+  // Unclosed deep brackets must still report SyntaxError, not maximum string length.
+  assert.throws(() => boundedFormat('['.repeat(64), { includeData: false }), SyntaxError);
+  // Chunked UTF-16 decoding must preserve surrogate pairs landing on the exact chunk boundary.
+  const surrogateSpan = '{"a":"' + '中'.repeat(9) + '😀' + '文'.repeat(9) + '"}';
+  assert.equal(boundedFormat(surrogateSpan, { indent: null }).text, surrogateSpan);
+  // Fallback path (array-index key) must also reject outputs beyond the ceiling.
+  const deepFallback = '{"0":' + '['.repeat(16) + '0' + ']'.repeat(16) + '}';
+  assert.throws(() => boundedFormat(deepFallback), /maximum string length/);
 });
