@@ -166,7 +166,7 @@ try {
     await page.goto(`${base}/formatter.html`);
     await page.locator('#input').fill(JSON.stringify({ branch: { one: 1, two: 2 }, empty: {}, tail: Array(2000).fill('value') }));
     await page.locator('#view-tree').click();
-    await page.waitForFunction(() => document.querySelector('#tree').getAttribute('role') === 'tree');
+    await page.waitForFunction(() => !document.querySelector('#tree').hidden && document.querySelector('#tree').getAttribute('role') === 'tree');
     assert.equal(await page.locator('#view-tree').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#view-text').getAttribute('aria-pressed'), 'false');
     await page.locator('#match-next').focus();

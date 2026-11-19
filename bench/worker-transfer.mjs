@@ -1,5 +1,5 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node bench/worker-transfer.mjs [repo]
-// Exercises real browser module Workers. Deep objects never cross Playwright's own transport.
+// Exercises real browser module Workers under the unified Worker-tree protocol.
 import { resolveExtension } from './extension-root.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -29,7 +29,6 @@ const page = await browser.newPage();
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/__worker-transfer.html`);
   const results = await page.evaluate(async (moduleBase) => {
-    const { createTaskResponseDecoder } = await import(moduleBase + 'shared/worker-protocol.js');
     const rows = [];
     const median = (values) => +values.sort((a, b) => a - b)[Math.floor(values.length / 2)].toFixed(2);
     const settle = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
@@ -40,16 +39,10 @@ try {
     observer.observe({ type: 'longtask' });
 
     function openWorker() {
-      const decodeTaskResponse = createTaskResponseDecoder();
       const worker = new Worker(moduleBase + 'worker/index.js', { type: 'module' });
       let sequence = 0;
       let pending;
-      worker.onmessage = (event) => {
-        const response = decodeTaskResponse(event.data);
-        if (!response) return;
-        Object.defineProperty(response, 'transportFallback', { value: !!event.data.result?.streamedData });
-        pending?.(response);
-      };
+      worker.onmessage = (event) => pending?.(event.data);
       worker.onerror = (event) => {
         event.preventDefault();
         pending?.({ ok: false, event: 'workererror', error: event.message });
@@ -82,18 +75,16 @@ try {
         const elapsed = [];
         const compute = [];
         let details;
-        let fallbackResponses = 0;
         for (let i = 0; i < 7; i++) {
           const { message, elapsedMs } = await session.send(request);
           if (!message.ok) { rows.push({ name, ...message }); return; }
           elapsed.push(elapsedMs);
           compute.push(message.duration);
-          if (message.transportFallback) fallbackResponses++;
           details = inspect(message.result);
         }
         await settle();
         rows.push({
-          name, medianRoundTripMs: median(elapsed), medianWorkerComputeMs: median(compute), fallbackResponses,
+          name, medianRoundTripMs: median(elapsed), medianWorkerComputeMs: median(compute),
           maxMainThreadLongTaskMs: +Math.max(0, ...longTasks.filter((task) => task.start >= started).map((task) => task.duration)).toFixed(2),
           ...details,
         });
@@ -104,71 +95,41 @@ try {
       id: i, label: `row ${i}`, payload: 'x'.repeat(128), nested: { value: i, active: true },
     })));
     const inputMiB = +(source.length / 1024 / 1024).toFixed(2);
-    rows.push({ name: 'configuration', inputMiB, warmups: 2, samples: 7, note: 'Round trip includes request transfer, computation, and response transfer. Retained snapshots reuse parsing after warm-up; fresh-parse deliberately disables retention. Medians are not additive.' });
-    await measure('ordinary-fresh-parse-with-data', { action: 'parse', text: source }, (result) => ({ count: result.data.length }));
-    await measure('ordinary-cached-parse-with-data', { action: 'parse', text: source, retainSnapshot: true }, (result) => ({ count: result.data.length }));
-    for (const includeData of [true, false]) {
-      await measure(`ordinary-format-data-${includeData}`, {
-        action: 'format', text: source, includeData, retainSnapshot: true,
-      }, (result) => ({ hasData: Object.hasOwn(result, 'data'), outputMiB: +(result.text.length / 1024 / 1024).toFixed(2) }));
-      await measure(`ordinary-diff-data-${includeData}`, {
-        action: 'diff', text: source, text2: source, includeData, retainSnapshot: true,
-      }, (result) => ({ hasData: Object.hasOwn(result, 'leftData'), total: result.total }));
-    }
+    rows.push({ name: 'configuration', inputMiB, warmups: 2, samples: 7, note: 'All parsed object graphs remain in the Worker; responses contain only formatted text, diff summaries, or bounded tree windows.' });
+    await measure('ordinary-fresh-parse', { action: 'parse', text: source }, (result) => ({ hasData: Object.hasOwn(result, 'data') }));
+    await measure('ordinary-cached-parse', { action: 'parse', text: source, retainSnapshot: true }, (result) => ({ hasData: Object.hasOwn(result, 'data'), snapshotId: result.snapshotId }));
+    await measure('ordinary-format', {
+      action: 'format', text: source, retainSnapshot: true,
+    }, (result) => ({ hasData: Object.hasOwn(result, 'data'), outputMiB: +(result.text.length / 1024 / 1024).toFixed(2) }));
+    await measure('ordinary-diff', {
+      action: 'diff', text: source, text2: source, retainSnapshot: true, includePreviews: false,
+    }, (result) => ({ hasData: Object.hasOwn(result, 'leftData'), total: result.total }));
 
-    function nesting(value) {
-      let depth = 0;
-      while (value && typeof value === 'object' && Object.hasOwn(value, 'child')) {
-        depth++;
-        value = value.child;
-      }
-      return { depth, leaf: value };
-    }
     for (const depth of [1000, 3000, 20_000]) {
       const left = '{"child":'.repeat(depth) + '0' + '}'.repeat(depth);
       const right = '{"child":'.repeat(depth) + '1' + '}'.repeat(depth);
-      await measure(`deep-${depth}-parse-data`, { action: 'parse', text: left, retainSnapshot: true }, (result) => nesting(result.data));
-      await measure(`deep-${depth}-diff-data`, {
-        action: 'diff', text: left, text2: right, retainSnapshot: true,
-      }, (result) => ({ ...nesting(result.leftData), total: result.total }));
+      await measure(`deep-${depth}-parse`, { action: 'parse', text: left, retainSnapshot: true }, (result) => ({ snapshotId: result.snapshotId }));
       await measure(`deep-${depth}-diff-summary`, {
-        action: 'diff', text: left, text2: right, includeData: false, retainSnapshot: true,
+        action: 'diff', text: left, text2: right, retainSnapshot: true, includePreviews: false,
       }, (result) => ({ total: result.total, pathLength: result.diffs[0].leftPath.length }));
-      const session = openWorker();
+
+      const treeSession = openWorker();
       try {
-        const saved = await session.send({ action: 'diff', text: left, text2: right, includeData: false, retainSnapshot: true });
+        const saved = await treeSession.send({ action: 'parse', text: left, retainSnapshot: true });
         if (!saved.message.ok) throw new Error(saved.message.error);
-        const recovered = await session.send({ action: 'comparisonData', snapshotId: saved.message.result.snapshotId });
-        rows.push({
-          name: `deep-${depth}-comparisonData`, ok: recovered.message.ok, transportFallback: !!recovered.message.transportFallback,
-          ...(recovered.message.ok ? nesting(recovered.message.result.leftData) : {
-            event: recovered.message.event, error: recovered.message.error,
-          }), roundTripMs: +recovered.elapsedMs.toFixed(2),
+        const windowRes = await treeSession.send({
+          action: 'tree', operation: 'update', kind: 'document',
+          snapshotId: saved.message.result.snapshotId, options: {}, count: 64,
         });
-      } finally { session.close(); }
-      const documentSession = openWorker();
-      try {
-        // Compact output avoids allocating a quadratic-size pretty string for very deep JSON.
-        const saved = await documentSession.send({ action: 'format', text: left, indent: null, includeData: false, retainSnapshot: true });
-        if (!saved.message.ok) throw new Error(saved.message.error);
-        const recovered = await documentSession.send({ action: 'parseSnapshot', snapshotId: saved.message.result.snapshotId });
+        if (!windowRes.message.ok) throw new Error(windowRes.message.error);
         rows.push({
-          name: `deep-${depth}-parseSnapshot`, ok: recovered.message.ok, transportFallback: !!recovered.message.transportFallback,
-          ...(recovered.message.ok ? nesting(recovered.message.result.data) : {
-            event: recovered.message.event, error: recovered.message.error,
-          }), roundTripMs: +recovered.elapsedMs.toFixed(2),
+          name: `deep-${depth}-tree-window`, ok: windowRes.message.ok,
+          rowCount: windowRes.message.result.rowCount, rows: windowRes.message.result.rows.length,
+          roundTripMs: +windowRes.elapsedMs.toFixed(2),
         });
-      } finally { documentSession.close(); }
-      const parseTimes = [];
-      for (let i = 0; i < 9; i++) {
-        const start = performance.now();
-        const parsed = JSON.parse(left);
-        const elapsed = performance.now() - start;
-        if (nesting(parsed).depth !== depth) throw new Error('Fallback JSON.parse changed nesting');
-        if (i >= 2) parseTimes.push(elapsed);
-      }
-      rows.push({ name: `deep-${depth}-main-thread-JSON-parse-only`, inputKiB: +(left.length / 1024).toFixed(2), medianMs: median(parseTimes) });
+      } finally { treeSession.close(); }
     }
+
     const { createTaskRunner } = await import(moduleBase + 'shared/worker-client.js');
     let clientWorker;
     const runTask = createTaskRunner({
@@ -178,16 +139,15 @@ try {
     try {
       const text = '{"child":'.repeat(20_000) + '0' + '}'.repeat(20_000);
       const deep = await runTask('parse', { text, retainSnapshot: true });
-      const withoutSnapshot = await runTask('parse', { text });
-      const next = await runTask('parse', { text: '{"alive":true}' });
+      const windowRes = await runTask('tree', { operation: 'update', kind: 'document', snapshotId: deep.result.snapshotId, options: {}, count: 64 });
+      const next = await runTask('parse', { text: '{"alive":true}', retainSnapshot: true });
       rows.push({
-        name: 'client-continues-after-deep-response-with-and-without-snapshot',
-        deepOk: deep.ok, deepDepth: deep.ok ? nesting(deep.result.data).depth : null,
-        noSnapshotOk: withoutSnapshot.ok, noSnapshotError: withoutSnapshot.error,
-        nextOk: next.ok, nextAlive: next.result?.data?.alive,
+        name: 'client-handles-deep-20k-directly-via-worker-windows',
+        deepOk: deep.ok, windowOk: windowRes.ok, windowRows: windowRes.result?.rows?.length,
+        nextOk: next.ok,
       });
-      if (!deep.ok || nesting(deep.result.data).depth !== 20_000 || !withoutSnapshot.ok || !next.ok || !next.result.data.alive) {
-        throw new Error('Client transfer recovery or later task failed');
+      if (!deep.ok || !windowRes.ok || !next.ok) {
+        throw new Error('Client deep Worker window or later task failed');
       }
     } finally { clientWorker?.terminate(); }
     observer.disconnect();

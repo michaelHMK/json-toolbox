@@ -102,7 +102,7 @@ dist/                  # 生成的扩展 ZIP 与校验文件，已加入 Git 忽
 | `pages → document-session / comparison-session` | 格式化与对比页通过各自会话请求文档操作。会话管理 Worker 快照、取消与恢复，并丢弃过期响应；页面不直接处理快照 id，也不自行重建已丢失的 Worker 数据。 |
 | `pages/shared → core` | 视图使用 JSON Pointer 与文本行偏移索引；JSON 解析、搜索与对比通过 Worker 执行。 |
 | `shared/worker-client → worker/index` | 通信层按 id 配对请求、管理串行队列并报告忙碌与重置事件。同类未发送任务只保留最新输入，被丢弃的请求带 `cancelled: true`。文档生命周期与恢复由会话管理。 |
-| `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。会话通过 `retainSnapshot`/`snapshotId` 复用解析结果；`includeData: false` 省略对象传输。大文档树模型留在 Worker，仅返回最多 256 行的窗口；小文档仍使用同步树。清空使快照失效，压缩页不保留不需要的搜索数据。 |
+| `worker/tasks → core` | 每个 Worker 独立缓存文档与最近一次对比。会话通过 `retainSnapshot`/`snapshotId` 复用解析结果；解析后的对象图与树模型统一留在 Worker，仅向页面返回最多 256 行的有界窗口。清空使快照失效，压缩页和大文件纯文本格式化不保留不需要的搜索或快照数据。 |
 | `core` | 不依赖 DOM、Chrome API 或 Worker 全局对象；无效输入抛出异常，由任务层转换为错误响应。数字原文字面量的扫描与恢复集中在 `json.js`。 |
 
 共享虚拟视图负责窗口索引和 DOM 生命周期；页面保留各自的搜索、配对、筛选和导航逻辑。新增任务时，先将算法放入 `src/core/`，再接入 `src/worker/tasks.js`；新增运行时文件还需加入 `scripts/build_release.py` 的白名单。
@@ -181,7 +181,7 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 `BENCH_FILE_MIB` 调整常规和无效文件的大小，默认 `50`。`BENCH_VERIFY=0` 仍会记录正确性检查失败。可选的 `BENCH_MAX_MS` 和 `BENCH_MAX_LONG_TASK_MS` 分别约束总耗时中位数与最长任务中位数；考虑硬件与浏览器差异，默认不设耗时预算。比较基线和修改后版本时，请使用相同配置串行运行。
 
-大文本编辑器和大结果视图均使用虚拟渲染。浏览器原生查找在这些视图中仅覆盖已渲染部分。需要查找其他内容时，可使用树搜索或复制完整文本。完整输入和结果文本仍由页面保存在内存中，大文档的解析对象图和树索引保留在 Worker。较大的文本差异采用整块替换展示。
+大文本编辑器和大结果视图均使用虚拟渲染。浏览器原生查找在这些视图中仅覆盖已渲染部分。需要查找其他内容时，可使用树搜索或复制完整文本。完整输入和结果文本仍由页面保存在内存中，解析对象图和树索引统一保留在 Worker。较大的文本差异采用整块替换展示。
 
 日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000 --directory src`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
 

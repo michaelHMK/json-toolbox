@@ -91,7 +91,7 @@ await page.addInitScript(() => {
         this.requests.delete(data.id);
         const result = data.result || {};
         benchMessages.push({ action: request?.action, operation: request?.operation, ok: data.ok,
-          includeData: request?.includeData, duration: data.duration,
+          duration: data.duration,
           elapsedMs: request ? performance.now() - request.started : null,
           keys: Object.keys(result), rowCount: result.rowCount, rows: result.rows?.length,
           nestedRowValue: result.rows?.some((row) => row?.value && typeof row.value === 'object' && Object.keys(row.value).length > 0) || false,
@@ -100,7 +100,7 @@ await page.addInitScript(() => {
     }
     postMessage(message, ...args) {
       this.requests.set(message.id, { action: message.action, operation: message.operation,
-        includeData: message.includeData, started: performance.now() });
+        started: performance.now() });
       const start = performance.now();
       const result = super.postMessage(message, ...args);
       benchSendTimings.push({ start, duration: performance.now() - start, action: message.action,
