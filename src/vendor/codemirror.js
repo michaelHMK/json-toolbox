@@ -7243,6 +7243,17 @@ function posAtCoords(view, coords, precise, scanY) {
   let line = view.docView.lineAt(block.from, 2);
   if (!line || line.length != block.length)
     line = view.docView.lineAt(block.from, -2);
+  if (line && scanY == null && block.length > MaxBidiLine && !view.lineWrapping) {
+    let doc2 = view.contentDOM.ownerDocument;
+    let caret = doc2.caretPositionFromPoint?.(x, y);
+    let range = !caret && doc2.caretRangeFromPoint?.(x, y);
+    let node = caret ? caret.offsetNode : range?.startContainer;
+    if (node && Tile.get(node)?.isText() && line.dom.contains(node)) {
+      let offset = caret ? caret.offset : range.startOffset;
+      let prev = offset && textRange(node, offset - 1, offset).getBoundingClientRect();
+      return new PosAssoc(view.posAtDOM(node, offset), prev && x >= prev.left && x <= prev.right ? -1 : 1);
+    }
+  }
   return new InlineCoordsScan(view, x, y, view.textDirectionAt(block.from)).scanTile(line, block.from);
 }
 var InlineCoordsScan = class {
@@ -9358,13 +9369,12 @@ var LineGapWidget = class extends WidgetType {
     return other.size == this.size && other.vertical == this.vertical;
   }
   toDOM() {
-    let elt = document.createElement("div");
+    let elt = document.createElement(this.vertical ? "div" : "span");
     if (this.vertical) {
       elt.style.height = this.size + "px";
     } else {
-      elt.style.width = this.size + "px";
-      elt.style.height = "2px";
-      elt.style.display = "inline-block";
+      elt.style.paddingLeft = this.size + "px";
+      elt.textContent = String.fromCharCode(8206);
     }
     return elt;
   }
@@ -9463,7 +9473,7 @@ var ViewState = class {
     if (viewportChange || !update.changes.empty || update.flags & 2)
       this.updateViewportLines();
     if (this.lineGaps.length || this.viewport.to - this.viewport.from > 2e3 << 1)
-      this.updateLineGaps(this.ensureLineGaps(this.mapLineGaps(this.lineGaps, update.changes)));
+      this.updateLineGaps(this.ensureLineGaps(this.mapLineGaps(this.lineGaps, update)));
     update.flags |= this.computeVisibleRanges(update.changes);
     if (scrollTarget)
       this.scrollTarget = scrollTarget;
@@ -9623,13 +9633,24 @@ var ViewState = class {
       /* VP.MaxCoverMargin */
     ))) && (top2 > visibleTop - 2 * 1e3 && bottom < visibleBottom + 2 * 1e3);
   }
-  mapLineGaps(gaps, changes) {
+  mapLineGaps(gaps, update) {
+    let { changes } = update;
     if (!gaps.length || changes.empty)
       return gaps;
+    let lineBreakChanged = false;
+    changes.iterChanges((from, to, _fromB, _toB, insert2) => {
+      if (insert2.lines > 1 || from < to && update.startState.doc.lineAt(from).to < to)
+        lineBreakChanged = true;
+    });
+    if (lineBreakChanged)
+      return [];
     let mapped = [];
-    for (let gap of gaps)
-      if (!changes.touchesRange(gap.from, gap.to))
-        mapped.push(new LineGap(changes.mapPos(gap.from), changes.mapPos(gap.to), gap.size, gap.displaySize));
+    for (let gap of gaps) {
+      if (changes.touchesRange(gap.from, gap.to))
+        return [];
+      mapped.push(new LineGap(changes.mapPos(gap.from), changes.mapPos(gap.to), gap.size, gap.displaySize));
+    }
+    this.horizontalWrappers = this.horizontalWrappers.map(changes);
     return mapped;
   }
   // Computes positions in the viewport where the start or end of a
@@ -9642,6 +9663,7 @@ var ViewState = class {
   ensureLineGaps(current, mayMeasure) {
     let wrapping = this.heightOracle.lineWrapping;
     let margin = wrapping ? 1e4 : 2e3, halfMargin = margin >> 1, doubleMargin = margin << 1;
+    let previousWrappers = this.horizontalWrappers || RangeSet.empty;
     this.horizontalWrappers = RangeSet.empty;
     if (this.defaultTextDirection != Direction.LTR && !wrapping)
       return [];
@@ -9680,7 +9702,7 @@ var ViewState = class {
       if (structure.total < doubleMargin)
         return;
       let target = this.scrollTarget ? this.scrollTarget.range.head : null;
-      let viewFrom, viewTo, scale = 1;
+      let viewFrom, viewTo, scale = 1, trackWidth = 0;
       if (wrapping) {
         let marginHeight = margin / this.heightOracle.lineLength * this.heightOracle.lineHeight;
         let top2, bot;
@@ -9702,29 +9724,46 @@ var ViewState = class {
         let windowWidth = viewportWidth + 2 * marginWidth;
         let maxWidth = Math.max(2e6, 2 * windowWidth);
         let start = target == null ? left - marginWidth : findFraction(structure, target) * totalWidth - windowWidth / 2;
-        let drawn = null;
-        if (totalWidth > maxWidth) {
-          scale = (maxWidth - windowWidth) / (totalWidth - windowWidth);
-          if (target == null) {
-            start /= scale;
-            if (mayMeasure && current.length && left > 0 && right < maxWidth - 1)
-              drawn = this.drawnHorizontalWindow(line, mayMeasure, halfMargin);
+        let compressed = totalWidth > maxWidth;
+        let lineGaps = current.filter((gap) => gap.from >= line.from && gap.to <= line.to);
+        if (lineGaps.length) {
+          let wrapper = previousWrappers.iter(line.from);
+          let hasWrapper = wrapper.value != null && wrapper.from < line.to && wrapper.to > line.from;
+          if (hasWrapper == compressed && this.canKeepHorizontalGaps(
+            line,
+            lineGaps,
+            mayMeasure,
+            target,
+            windowWidth / this.heightOracle.charWidth + doubleMargin,
+            compressed ? maxWidth : Infinity
+          )) {
+            gaps.push(...lineGaps);
+            if (hasWrapper)
+              wrappers.push(wrapper.value.range(line.from, line.to));
+            return;
           }
+        }
+        if (compressed) {
+          trackWidth = maxWidth;
+          scale = (maxWidth - windowWidth) / (totalWidth - windowWidth);
+          if (target == null)
+            start /= scale;
           start = Math.max(0, Math.min(totalWidth - windowWidth, start));
         }
-        viewFrom = drawn ? drawn.from : findPosition(structure, start / totalWidth);
-        viewTo = drawn ? drawn.to : findPosition(structure, (start + windowWidth) / totalWidth);
-        if (scale < 1) {
-          wrappers.push(BlockWrapper.create({ tagName: "div", attributes: {
-            class: "cm-wideLine",
-            style: `width: ${maxWidth}px; justify-content: ${viewTo == line.to ? "end" : "start"}`
-          } }).range(line.from, line.to));
-        }
+        viewFrom = findPosition(structure, start / totalWidth);
+        viewTo = findPosition(structure, (start + windowWidth) / totalWidth);
       }
       if (viewFrom > line.from)
         addGap(line.from, viewFrom, line, structure, scale);
+      let beforeTail = gaps.length;
       if (viewTo < line.to)
         addGap(viewTo, line.to, line, structure, scale);
+      if (trackWidth) {
+        wrappers.push(BlockWrapper.create({ tagName: "div", attributes: {
+          class: "cm-wideLine",
+          style: `width: ${trackWidth}px; justify-content: ${gaps.length == beforeTail ? "end" : "start"}`
+        } }).range(line.from, line.to));
+      }
     };
     for (let line of this.viewportLines) {
       if (Array.isArray(line.type))
@@ -9735,16 +9774,34 @@ var ViewState = class {
     this.horizontalWrappers = BlockWrapper.set(wrappers);
     return gaps;
   }
-  drawnHorizontalWindow(line, view, minLength) {
+  canKeepHorizontalGaps(line, gaps, view, target, maxDrawn, trackWidth) {
+    let selection = this.state.selection.main, drawn = line.length;
+    for (let gap of gaps) {
+      if (gap.from < selection.from && selection.from < gap.to || gap.from < selection.to && selection.to < gap.to)
+        return false;
+      drawn -= gap.to - gap.from;
+    }
+    if (drawn > maxDrawn)
+      return false;
+    if (!view)
+      return true;
     let { left, right } = this.pixelViewport, origin = view.contentDOM.getBoundingClientRect().left;
+    let atEnd = right >= trackWidth - 1;
+    let domRange = view.contentDOM.ownerDocument.createRange();
     for (let range of view.visibleRanges) {
       let from = Math.max(range.from, line.from), to = Math.min(range.to, line.to);
-      if (to - from < minLength)
+      if (from >= to || target != null && (target < from || target > to) || left <= 0 && from != line.from || atEnd && to != line.to)
         continue;
-      if ((from == line.from || view.docView.coordsAt(from, 1)?.right <= origin + left) && (to == line.to || view.docView.coordsAt(to, -1)?.left >= origin + right))
-        return { from, to };
+      let start = view.docView.domAtPos(from, 1), end = view.docView.domAtPos(to, -1);
+      domRange.setStart(start.node, start.offset);
+      domRange.setEnd(end.node, end.offset);
+      let rect = domRange.getBoundingClientRect();
+      if (atEnd && (rect.right < origin + left || rect.right > origin + right + 1))
+        continue;
+      if ((from == line.from || rect.left <= origin + left) && (to == line.to || rect.right >= origin + right))
+        return true;
     }
-    return null;
+    return false;
   }
   gapSize(line, from, to, structure) {
     let fraction = findFraction(structure, to) - findFraction(structure, from);

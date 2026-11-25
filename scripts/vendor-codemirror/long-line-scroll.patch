@@ -9,7 +9,27 @@
      }
      scrollIntoView(target) {
          if (target.isSnapshot) {
-@@ -6149,7 +6151,7 @@
+@@ -3820,6 +3822,19 @@
+     let line = view.docView.lineAt(block.from, 2);
+     if (!line || line.length != block.length)
+         line = view.docView.lineAt(block.from, -2);
++    // Long lines skip bidi analysis. For a hit on drawn text, use the
++    // browser's layout of the rendered glyphs and their grapheme boundaries.
++    if (line && scanY == null && block.length > MaxBidiLine && !view.lineWrapping) {
++        let doc = view.contentDOM.ownerDocument;
++        let caret = doc.caretPositionFromPoint?.(x, y);
++        let range = !caret && doc.caretRangeFromPoint?.(x, y);
++        let node = caret ? caret.offsetNode : range?.startContainer;
++        if (node && Tile.get(node)?.isText() && line.dom.contains(node)) {
++            let offset = caret ? caret.offset : range.startOffset;
++            let prev = offset && textRange(node, offset - 1, offset).getBoundingClientRect();
++            return new PosAssoc(view.posAtDOM(node, offset), prev && x >= prev.left && x <= prev.right ? -1 : 1);
++        }
++    }
+     return new InlineCoordsScan(view, x, y, view.textDirectionAt(block.from)).scanTile(line, block.from);
+ }
+ class InlineCoordsScan {
+@@ -6149,7 +6164,7 @@
              return false;
          for (let i = 0; i < a.length; i++) {
              let gA = a[i], gB = b[i];
@@ -18,11 +38,72 @@
                  return false;
          }
          return true;
-@@ -6482,10 +6484,11 @@
+@@ -6168,14 +6183,14 @@
+     }
+     eq(other) { return other.size == this.size && other.vertical == this.vertical; }
+     toDOM() {
+-        let elt = document.createElement("div");
++        let elt = document.createElement(this.vertical ? "div" : "span");
+         if (this.vertical) {
+             elt.style.height = this.size + "px";
+         }
+         else {
+-            elt.style.width = this.size + "px";
+-            elt.style.height = "2px";
+-            elt.style.display = "inline-block";
++            // A strong LTR boundary keeps RTL runs on opposite sides of a gap separate.
++            elt.style.paddingLeft = this.size + "px";
++            elt.textContent = String.fromCharCode(0x200e); // LEFT-TO-RIGHT MARK
+         }
+         return elt;
+     }
+@@ -6296,7 +6311,7 @@
+         if (viewportChange || !update.changes.empty || (update.flags & 2 /* UpdateFlag.Height */))
+             this.updateViewportLines();
+         if (this.lineGaps.length || this.viewport.to - this.viewport.from > (2000 /* LG.Margin */ << 1))
+-            this.updateLineGaps(this.ensureLineGaps(this.mapLineGaps(this.lineGaps, update.changes)));
++            this.updateLineGaps(this.ensureLineGaps(this.mapLineGaps(this.lineGaps, update)));
+         update.flags |= this.computeVisibleRanges(update.changes);
+         if (scrollTarget)
+             this.scrollTarget = scrollTarget;
+@@ -6462,13 +6477,26 @@
+                 bottom >= visibleBottom + Math.max(10 /* VP.MinCoverMargin */, Math.min(bias, 250 /* VP.MaxCoverMargin */))) &&
+             (top > visibleTop - 2 * 1000 /* VP.Margin */ && bottom < visibleBottom + 2 * 1000 /* VP.Margin */);
+     }
+-    mapLineGaps(gaps, changes) {
++    mapLineGaps(gaps, update) {
++        let {changes} = update;
+         if (!gaps.length || changes.empty)
+             return gaps;
++        // A split, join or edit through a hidden span changes the scrollbar
++        // proportions. Only carry complete horizontal layouts across edits.
++        let lineBreakChanged = false;
++        changes.iterChanges((from, to, _fromB, _toB, insert) => {
++            if (insert.lines > 1 || from < to && update.startState.doc.lineAt(from).to < to)
++                lineBreakChanged = true;
++        });
++        if (lineBreakChanged)
++            return [];
+         let mapped = [];
+-        for (let gap of gaps)
+-            if (!changes.touchesRange(gap.from, gap.to))
+-                mapped.push(new LineGap(changes.mapPos(gap.from), changes.mapPos(gap.to), gap.size, gap.displaySize));
++        for (let gap of gaps) {
++            if (changes.touchesRange(gap.from, gap.to))
++                return [];
++            mapped.push(new LineGap(changes.mapPos(gap.from), changes.mapPos(gap.to), gap.size, gap.displaySize));
++        }
++        this.horizontalWrappers = this.horizontalWrappers.map(changes);
+         return mapped;
+     }
+     // Computes positions in the viewport where the start or end of a
+@@ -6481,11 +6509,13 @@
+     ensureLineGaps(current, mayMeasure) {
          let wrapping = this.heightOracle.lineWrapping;
          let margin = wrapping ? 10000 /* LG.MarginWrap */ : 2000 /* LG.Margin */, halfMargin = margin >> 1, doubleMargin = margin << 1;
-         // The non-wrapping logic won't work at all in predominantly right-to-left text.
++        let previousWrappers = this.horizontalWrappers || RangeSet.empty;
 +        this.horizontalWrappers = RangeSet.empty;
+         // The non-wrapping logic won't work at all in predominantly right-to-left text.
          if (this.defaultTextDirection != Direction.LTR && !wrapping)
              return [];
 -        let gaps = [];
@@ -32,7 +113,7 @@
              if (to - from < halfMargin)
                  return;
              let sel = this.state.selection.main, avoid = [sel.from];
-@@ -6493,8 +6496,8 @@
+@@ -6493,8 +6523,8 @@
                  avoid.push(sel.to);
              for (let pos of avoid) {
                  if (pos > from && pos < to) {
@@ -43,7 +124,7 @@
                      return;
                  }
              }
-@@ -6510,8 +6513,10 @@
+@@ -6510,8 +6540,10 @@
                          to = lineStart;
                  }
                  let size = this.gapSize(line, from, to, structure);
@@ -56,16 +137,16 @@
              }
              gaps.push(gap);
          };
-@@ -6522,7 +6527,7 @@
+@@ -6522,7 +6554,7 @@
              if (structure.total < doubleMargin)
                  return;
              let target = this.scrollTarget ? this.scrollTarget.range.head : null;
 -            let viewFrom, viewTo;
-+            let viewFrom, viewTo, scale = 1;
++            let viewFrom, viewTo, scale = 1, trackWidth = 0;
              if (wrapping) {
                  let marginHeight = (margin / this.heightOracle.lineLength) * this.heightOracle.lineHeight;
                  let top, bot;
-@@ -6542,32 +6547,39 @@
+@@ -6542,32 +6574,50 @@
              else {
                  let totalWidth = structure.total * this.heightOracle.charWidth;
                  let marginWidth = margin * this.heightOracle.charWidth;
@@ -79,17 +160,19 @@
 +                let windowWidth = viewportWidth + 2 * marginWidth;
 +                let maxWidth = Math.max(2000000 /* VP.MaxHorizGap */, 2 * windowWidth);
 +                let start = target == null ? left - marginWidth : findFraction(structure, target) * totalWidth - windowWidth / 2;
-+                let drawn = null;
-+                if (totalWidth > maxWidth) {
-+                    // Reserve the rendered window at natural width. Both hidden ends
-+                    // share the remaining scrollbar track, even after a thumb jump.
-+                    scale = (maxWidth - windowWidth) / (totalWidth - windowWidth);
-+                    if (target == null) {
-+                        start /= scale;
-+                        // A caret reveal may have scrolled to a measured glyph. Keep
-+                        // the drawn text while it still covers the physical viewport.
-+                        if (mayMeasure && current.length && left > 0 && right < maxWidth - 1)
-+                            drawn = this.drawnHorizontalWindow(line, mayMeasure, halfMargin);
++                let compressed = totalWidth > maxWidth;
++                let lineGaps = current.filter(gap => gap.from >= line.from && gap.to <= line.to);
++                if (lineGaps.length) {
++                    // Keep the whole layout, including text around an offscreen selection.
++                    // Folding just that text would shift every glyph drawn to its right.
++                    let wrapper = previousWrappers.iter(line.from);
++                    let hasWrapper = wrapper.value != null && wrapper.from < line.to && wrapper.to > line.from;
++                    if (hasWrapper == compressed && this.canKeepHorizontalGaps(line, lineGaps, mayMeasure, target,
++                        windowWidth / this.heightOracle.charWidth + doubleMargin, compressed ? maxWidth : Infinity)) {
++                        gaps.push(...lineGaps);
++                        if (hasWrapper)
++                            wrappers.push(wrapper.value.range(line.from, line.to));
++                        return;
                      }
 -                let pxLeft = this.pixelViewport.left + horizOffset, pxRight = this.pixelViewport.right + horizOffset;
 -                let left, right;
@@ -98,65 +181,98 @@
 -                    let spaceFrac = ((pxRight - pxLeft) / 2 + marginWidth) / totalWidth;
 -                    left = targetFrac - spaceFrac;
 -                    right = targetFrac + spaceFrac;
--                }
+                 }
 -                else {
 -                    left = (pxLeft - marginWidth) / totalWidth;
 -                    right = (pxRight + marginWidth) / totalWidth;
--                }
++                if (compressed) {
++                    // Reserve the rendered window at natural width. Both hidden ends
++                    // share the remaining scrollbar track, even after a thumb jump.
++                    trackWidth = maxWidth;
++                    scale = (maxWidth - windowWidth) / (totalWidth - windowWidth);
++                    if (target == null)
++                        start /= scale;
++                    start = Math.max(0, Math.min(totalWidth - windowWidth, start));
+                 }
 -                viewFrom = findPosition(structure, left);
 -                viewTo = findPosition(structure, right);
-+                    start = Math.max(0, Math.min(totalWidth - windowWidth, start));
-+                }
-+                viewFrom = drawn ? drawn.from : findPosition(structure, start / totalWidth);
-+                viewTo = drawn ? drawn.to : findPosition(structure, (start + windowWidth) / totalWidth);
-+                if (scale < 1) {
-+                    // Keep the native thumb's track fixed as glyph widths vary.
-+                    // Align the last window to the right so its tail stays visible.
-+                    wrappers.push(BlockWrapper.create({tagName: "div", attributes: {
-+                        class: "cm-wideLine",
-+                        style: `width: ${maxWidth}px; justify-content: ${viewTo == line.to ? "end" : "start"}`
-+                    }}).range(line.from, line.to));
-+                }
++                viewFrom = findPosition(structure, start / totalWidth);
++                viewTo = findPosition(structure, (start + windowWidth) / totalWidth);
              }
              if (viewFrom > line.from)
 -                addGap(line.from, viewFrom, line, structure);
 +                addGap(line.from, viewFrom, line, structure, scale);
++            let beforeTail = gaps.length;
              if (viewTo < line.to)
 -                addGap(viewTo, line.to, line, structure);
 +                addGap(viewTo, line.to, line, structure, scale);
++            if (trackWidth) {
++                // If the remaining tail was too short for a gap, it is already
++                // part of the last window and must align to the end of the track.
++                wrappers.push(BlockWrapper.create({tagName: "div", attributes: {
++                    class: "cm-wideLine",
++                    style: `width: ${trackWidth}px; justify-content: ${gaps.length == beforeTail ? "end" : "start"}`
++                }}).range(line.from, line.to));
++            }
          };
          for (let line of this.viewportLines) {
              if (Array.isArray(line.type))
-@@ -6575,7 +6587,20 @@
+@@ -6575,8 +6625,46 @@
              else
                  checkLine(line);
          }
 +        this.horizontalWrappers = BlockWrapper.set(wrappers);
          return gaps;
-+    }
-+    drawnHorizontalWindow(line, view, minLength) {
+     }
++    canKeepHorizontalGaps(line, gaps, view, target, maxDrawn, trackWidth) {
++        let selection = this.state.selection.main, drawn = line.length;
++        for (let gap of gaps) {
++            if (gap.from < selection.from && selection.from < gap.to || gap.from < selection.to && selection.to < gap.to)
++                return false;
++            drawn -= gap.to - gap.from;
++        }
++        // Bound the rendered text when a paste or repeated typing grows a visible fragment.
++        if (drawn > maxDrawn)
++            return false;
++        // Transactions have no fresh DOM measurements. The next measure checks
++        // that scrolling, resizing or an explicit reveal still fits this layout.
++        if (!view)
++            return true;
 +        let {left, right} = this.pixelViewport, origin = view.contentDOM.getBoundingClientRect().left;
++        let atEnd = right >= trackWidth - 1;
++        let domRange = view.contentDOM.ownerDocument.createRange();
 +        for (let range of view.visibleRanges) {
 +            let from = Math.max(range.from, line.from), to = Math.min(range.to, line.to);
-+            if (to - from < minLength)
++            if (from >= to || target != null && (target < from || target > to) ||
++                left <= 0 && from != line.from || atEnd && to != line.to)
 +                continue;
-+            if ((from == line.from || view.docView.coordsAt(from, 1)?.right <= origin + left) &&
-+                (to == line.to || view.docView.coordsAt(to, -1)?.left >= origin + right))
-+                return {from, to};
++            // Logical endpoints need not be the visual edges of bidirectional text.
++            let start = view.docView.domAtPos(from, 1), end = view.docView.domAtPos(to, -1);
++            domRange.setStart(start.node, start.offset);
++            domRange.setEnd(end.node, end.offset);
++            let rect = domRange.getBoundingClientRect();
++            // The last few characters can be drawn but clipped by a start-aligned
++            // wrapper. At the end of the track its right edge must actually be visible.
++            if (atEnd && (rect.right < origin + left || rect.right > origin + right + 1))
++                continue;
++            if ((from == line.from || rect.left <= origin + left) &&
++                (to == line.to || rect.right >= origin + right))
++                return true;
 +        }
-+        return null;
-     }
++        return false;
++    }
      gapSize(line, from, to, structure) {
          let fraction = findFraction(structure, to) - findFraction(structure, from);
-@@ -6844,6 +6869,11 @@
-     ".cm-line": {
+         if (this.heightOracle.lineWrapping) {
+@@ -6845,6 +6933,11 @@
          display: "block",
          padding: "0 2px 0 6px"
-+    },
+     },
 +    ".cm-wideLine": {
 +        display: "grid",
 +        gridTemplateColumns: "max-content",
 +        overflow: "clip"
-     },
++    },
      ".cm-layer": {
          userSelect: "none", // #1708
+         position: "absolute",

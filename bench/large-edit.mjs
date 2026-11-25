@@ -82,31 +82,62 @@ async function verifyScrollToEnd(page, editor) {
   await page.mouse.move(right - 1, y, { steps: 4 });
   await page.mouse.up();
   assert.ok(fraction > 0.45 && fraction < 0.55, 'thumb should stay under the pointer halfway across');
+  await waitForVisibleTail(page);
+}
+
+async function waitForVisibleTail(page) {
   await page.waitForFunction(async () => {
     const { EditorView } = await import('/vendor/codemirror.js');
     const view = EditorView.findFromDOM(document.querySelector('.large-input-editor .cm-content'));
     const tail = view.coordsForChar(view.state.doc.length - 1);
     const bounds = view.scrollDOM.getBoundingClientRect();
-    return tail && tail.left >= bounds.left - 1 && tail.right <= bounds.right + 1 &&
+    return view.scrollDOM.scrollLeft >= view.scrollDOM.scrollWidth - view.scrollDOM.clientWidth - 1 &&
+      tail && tail.left >= bounds.left - 1 && tail.right <= bounds.right + 1 &&
       tail.top >= bounds.top - 1 && tail.bottom <= bounds.bottom + 1;
   }, undefined, { timeout: 5000 });
 }
 
 async function verifyMiddleEdit(page, editor, sourceLength) {
-  const scroller = page.locator('.large-input-editor .cm-scroller');
-  await scroller.evaluate((element) => {
-    element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2;
-    return new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  const view = await editor.evaluateHandle(async (element) => {
+    const { EditorView } = await import('/vendor/codemirror.js');
+    return EditorView.findFromDOM(element);
   });
-  const scrollerBounds = await scroller.boundingBox();
-  const line = await editor.locator('.cm-line').first().boundingBox();
-  await page.mouse.click(scrollerBounds.x + scrollerBounds.width / 2, line.y + line.height / 2);
-  const marker = 'LARGE_EDIT_MIDDLE_MARKER';
-  await page.keyboard.insertText(marker);
-  await selectAndCopy(page, editor);
-  const offset = await page.evaluate(async (marker) => (await navigator.clipboard.readText()).indexOf(marker), marker);
-  assert.ok(offset > sourceLength * 0.1 && offset < sourceLength * 0.9, 'edit in the interior of the single line');
+  const scrollTo = (fraction, extra = 0) => view.evaluate((view, { fraction, extra }) => {
+    const scroller = view.scrollDOM;
+    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) * fraction + extra;
+    return new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  }, { fraction, extra });
+
+  const point = await view.evaluate((view) => {
+    const bounds = view.scrollDOM.getBoundingClientRect();
+    const line = view.contentDOM.querySelector('.cm-line').getBoundingClientRect();
+    return { x: Math.round(bounds.left + view.scrollDOM.clientWidth / 2), y: Math.round(line.top + line.height / 2) };
+  });
+  const readCaret = () => view.evaluate(async (view, { x, y }) => {
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    const caret = document.caretRangeFromPoint(x, y);
+    return { underPointer: view.posAtDOM(caret.startContainer, caret.startOffset), selected: view.state.selection.main.head };
+  }, point);
+
+  // Scroll within the drawn text first, then jump far enough to leave the
+  // previous caret behind. Both clicks must keep the chosen glyph in place.
+  await scrollTo(0.5);
+  for (const [fraction, extra] of [[0.5, 2000], [0.75, 0]]) {
+    await scrollTo(fraction, extra);
+    const { underPointer: offset } = await readCaret();
+    assert.ok(offset > sourceLength * 0.1 && offset < sourceLength * 0.9, 'click in the interior of the single line');
+    await page.mouse.click(point.x, point.y);
+    assert.deepEqual(await readCaret(), { underPointer: offset, selected: offset }, 'clicked character stays under the pointer');
+
+    await page.keyboard.insertText('!');
+    const edit = await view.evaluate((view, offset) => ({
+      text: view.state.sliceDoc(offset, offset + 1), head: view.state.selection.main.head,
+    }), offset);
+    assert.deepEqual(edit, { text: '!', head: offset + 1 }, 'first keystroke edits at the clicked offset');
+  }
   await page.keyboard.press('ControlOrMeta+Z');
+  await page.keyboard.press('ControlOrMeta+Z');
+  await view.dispose();
 }
 
 export async function measureLargeEdits(browser, base, path) {
@@ -185,6 +216,19 @@ export async function measureLargeEdits(browser, base, path) {
         await page.locator('#btn-copy').click();
         await page.waitForFunction(() => document.querySelector('#status').textContent === 'statusCopied');
         await checkClipboard(page, expected);
+      }
+      if (tool === 'formatter' && !path) {
+        // A hidden span between two RTL runs must stay on the LTR scrollbar track.
+        const rtl = JSON.stringify('يأتي الجمعة في '.repeat(65536));
+        await picker.setInputFiles({ name: 'rtl.json', mimeType: file.mimeType, buffer: Buffer.from(rtl) });
+        await page.waitForFunction(() => document.querySelector('.cm-content').textContent.includes('الجمعة'));
+        await verifyMiddleEdit(page, editor, rtl.length);
+
+        // Replacing a hidden suffix must resize the track and expose the new tail.
+        await editor.press('Shift+End');
+        await page.keyboard.insertText('"');
+        await page.locator('.cm-scroller').evaluate((scroller) => { scroller.scrollLeft = scroller.scrollWidth; });
+        await waitForVisibleTail(page);
       }
       rows.push({ scenario: 'edit-' + tool, file: name, bytes: buffer.length, chars: source.length, importToEditorMs, keyMs, renderedChars });
       await page.close();
