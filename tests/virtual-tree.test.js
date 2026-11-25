@@ -45,6 +45,34 @@ test('level expansion and manual overrides preserve DFS rows and closing bracket
   assert.equal(model.reveal('/first/missing'), -1);
 });
 
+test('container reveal opens collapsed targets and locates sibling, trailing and filtered anchors', () => {
+  const data = {
+    empty: {},
+    settings: { theme: 'dark' },
+    wide: { a: 1, b: 2, c: 3, d: 4 },
+    nestedTail: { branch: { leaf: 9 } },
+  };
+  const model = createTreeModel({ data, expandLevel: 1 });
+  assert.equal(model.rowAt(model.reveal('/empty', { open: true })).path, '/empty');
+  assert.equal(model.rowAt(model.reveal('/settings', { open: true })).path, '/settings/theme');
+  assert.equal(model.rowAt(model.reveal('/wide', { open: true, before: '/wide/c' })).path, '/wide/c');
+  assert.equal(model.rowAt(model.reveal('/wide', { open: true })).path, '/wide/d');
+  model.reveal('/nestedTail/branch/leaf');
+  assert.equal(model.rowAt(model.reveal('/nestedTail', { open: true })).path, '/nestedTail/branch/leaf');
+
+  const filtered = createTreeModel({
+    data,
+    onlyRequired: true,
+    requiredChildren: createChildPathIndex(['/settings', '/wide/a', '/wide/d']),
+    forceExpand: new Set(['', '/settings', '/wide']),
+  });
+  assert.equal(filtered.rowAt(filtered.reveal('/settings', { open: true })).path, '/settings');
+  assert.equal(filtered.rowAt(filtered.reveal('/wide', { open: true, before: '/wide/b' })).path, '/wide/d');
+  assert.equal(filtered.rowAt(filtered.reveal('/wide', { open: true, before: '/wide/c' })).path, '/wide/d');
+  filtered.update({ requiredChildren: createChildPathIndex(['/wide/a']) });
+  assert.equal(filtered.rowAt(filtered.reveal('/wide', { open: true, before: '/wide/c' })).path, '/wide/a');
+});
+
 test('required paths retain object ordering and support escaped, empty and prototype-like keys', () => {
   const data = JSON.parse('{"last":0,"9":9,"2":2,"a/b":{"~1":1,"":2},"__proto__":3}');
   const paths = ['/a~1b/~01', '/a~1b/', '/__proto__', '/9'];

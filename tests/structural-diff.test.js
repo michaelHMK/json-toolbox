@@ -300,3 +300,62 @@ test('multi-wildcard ignore patterns stay linear on deep JSON without backtracki
   assert.equal(result.diffs[0].leftPath, '/a'.repeat(depth) + '/keep');
   assert.ok(elapsed < 1500, `deep multi-wildcard diff took ${elapsed.toFixed(0)} ms`);
 });
+
+test('single-sided diffs record opposite-side parent containers and insertion anchors', () => {
+  const objResult = diffData(
+    { leadGone: 1, keep1: 1, midGone1: 1, midGone2: 2, 'a/b': { ignored: 1 }, tailGone: 1 },
+    { leadAdd: 0, keep1: 1, midAdd: 2, 'a/b': { ignored: 2 }, tailAdd: 3 },
+    { ignorePaths: ['["a/b"].**'] },
+  );
+  assert.deepEqual(
+    objResult.diffs.map(({ type, leftPath, rightPath, peerParent, peerBefore }) =>
+      [type, leftPath, rightPath, peerParent, peerBefore]),
+    [
+      ['removed', '/leadGone', null, '', '/keep1'],
+      ['removed', '/midGone1', null, '', '/a~1b'],
+      ['removed', '/midGone2', null, '', '/a~1b'],
+      ['removed', '/tailGone', null, '', null],
+      ['added', null, '/leadAdd', '', '/keep1'],
+      ['added', null, '/midAdd', '', '/a~1b'],
+      ['added', null, '/tailAdd', '', null],
+    ],
+  );
+
+  const arrResult = diffData({ a: [1, 2, 3], b: [1] }, { a: [1], b: [1, 2, 3] });
+  assert.deepEqual(
+    arrResult.diffs.map(({ type, leftPath, rightPath, peerParent, peerBefore }) =>
+      [type, leftPath, rightPath, peerParent, peerBefore]),
+    [
+      ['removed', '/a/1', null, '/a', null],
+      ['removed', '/a/2', null, '/a', null],
+      ['added', null, '/b/1', '/b', null],
+      ['added', null, '/b/2', '/b', null],
+    ],
+  );
+
+  const keyed = diffData(
+    [
+      { id: 1, settings: { theme: 'dark' } },
+      { id: 9, settings: {} },
+      { id: 2, settings: { theme: 'light', gone: true } },
+    ],
+    [
+      { id: 8, settings: {} },
+      { id: 2, settings: { theme: 'light' } },
+      { id: 1, settings: { theme: 'dark', notifications: false } },
+      { id: 10, settings: {} },
+    ],
+    { keyField: 'id' },
+  );
+  assert.deepEqual(
+    keyed.diffs.map(({ type, leftPath, rightPath, peerParent, peerBefore }) =>
+      [type, leftPath, rightPath, peerParent, peerBefore]),
+    [
+      ['added', null, '/2/settings/notifications', '/0/settings', null],
+      ['removed', '/1', null, '', '/1'],
+      ['removed', '/2/settings/gone', null, '/1/settings', null],
+      ['added', null, '/0', '', '/2'],
+      ['added', null, '/3', '', null],
+    ],
+  );
+});

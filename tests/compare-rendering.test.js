@@ -339,3 +339,79 @@ test('ignore-paths input preserves commas inside quoted keys and forwards subtre
   assert.equal(page.state.result.diffs[0].leftPath, '/a,b/keep');
   page.doClear();
 });
+
+test('navigating to added and removed diffs reveals and scrolls the opposite pane to the matching location', async () => {
+  const page = loadCompare();
+  const leftRecords = Array.from({ length: 120 }, (_, id) => ({
+    id,
+    tags: [id === 10 ? 'performances' : 'performance'],
+    profile: { city: 'SH', settings: { theme: 'dark', ...(id === 80 ? { legacy: true } : {}) } },
+  }));
+  const rightRecords = Array.from({ length: 120 }, (_, id) => ({
+    id,
+    tags: ['performance'],
+    profile: { city: 'SH', settings: { theme: 'dark', ...(id === 100 ? { notifications: false } : {}) } },
+  }));
+  setInputs(page, JSON.stringify({ records: leftRecords }), JSON.stringify({ records: rightRecords }));
+  await page.doCompare();
+  assert.equal(page.state.result.total, 3);
+
+  // Diff 0: changed in record 10.
+  assert.equal(page.get('tree-left').querySelector('.entry.current').dataset.path, '/records/10/tags/0');
+  assert.equal(page.get('tree-right').querySelector('.entry.current').dataset.path, '/records/10/tags/0');
+  const firstLeftScroll = page.get('tree-left').scrollTop;
+
+  // Diff 1: removed in record 80 -> right side scrolls to record 80's profile.settings without marking .current.
+  await page.goToDiff(1);
+  assert.equal(page.get('tree-left').querySelector('.entry.current').dataset.path, '/records/80/profile/settings/legacy');
+  assert.equal(page.get('tree-right').querySelector('.entry.current'), null);
+  assert.ok(visiblePaths(page, 'right').includes('/records/80/profile/settings/theme'));
+  assert.ok(page.get('tree-right').scrollTop > firstLeftScroll);
+
+  // Diff 2: added in record 100 -> left side expands and scrolls to record 100's profile.settings.
+  await page.goToDiff(2);
+  assert.equal(page.get('tree-right').querySelector('.entry.current').dataset.path, '/records/100/profile/settings/notifications');
+  assert.equal(page.get('tree-left').querySelector('.entry.current'), null);
+  assert.ok(visiblePaths(page, 'left').includes('/records/100/profile/settings'));
+  assert.ok(visiblePaths(page, 'left').includes('/records/100/profile/settings/theme'));
+  assert.ok(Math.abs(page.get('tree-left').scrollTop - page.get('tree-right').scrollTop) <= 48);
+
+  // Manually collapsing the paired container and navigating back re-opens it on both sides.
+  await page.treeViews.left.setOpen('/records/100/profile/settings', false, { notify: true });
+  await settle();
+  assert.ok(!visiblePaths(page, 'left').includes('/records/100/profile/settings/theme'));
+  await page.goToDiff(0);
+  await page.goToDiff(2);
+  assert.ok(visiblePaths(page, 'left').includes('/records/100/profile/settings/theme'));
+  assert.ok(visiblePaths(page, 'right').includes('/records/100/profile/settings/notifications'));
+
+  // only-diff keeps the opposite parent container visible and navigable without leaking unchanged siblings.
+  page.get('only-diff').checked = true;
+  await page.get('only-diff').events.change();
+  await page.goToDiff(2);
+  assert.equal(page.get('tree-right').querySelector('.entry.current').dataset.path, '/records/100/profile/settings/notifications');
+  assert.ok(visiblePaths(page, 'left').includes('/records/100/profile/settings'));
+  assert.ok(!visiblePaths(page, 'left').includes('/records/100/profile/settings/theme'));
+  page.doClear();
+});
+
+test('navigating to a single-sided diff inside a reordered keyed record scrolls to the paired record', async () => {
+  const page = loadCompare();
+  page.get('array-mode').value = 'key';
+  page.get('key-field').value = 'id';
+  const left = Array.from({ length: 80 }, (_, id) => ({
+    id,
+    settings: { theme: 'dark' },
+  }));
+  const right = left.toReversed().map((item) => item.id === 5
+    ? { id: 5, settings: { theme: 'dark', notifications: false } }
+    : item);
+  setInputs(page, JSON.stringify(left), JSON.stringify(right));
+  await page.doCompare();
+  assert.equal(page.get('tree-right').querySelector('.entry.current').dataset.path, '/74/settings/notifications');
+  assert.equal(page.get('tree-left').querySelector('.entry.current'), null);
+  assert.ok(visiblePaths(page, 'left').includes('/5/settings'));
+  assert.ok(visiblePaths(page, 'left').includes('/5/settings/theme'));
+  assert.ok(page.get('tree-right').scrollTop > page.get('tree-left').scrollTop + 500);
+  page.doClear();
+});

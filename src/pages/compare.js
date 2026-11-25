@@ -305,7 +305,15 @@ function navigateToDiff(i) {
   const pending = {};
   for (const side of ['left', 'right']) {
     const path = side === 'left' ? diff.leftPath : diff.rightPath;
-    if (path !== null && treeViews[side]) pending[side] = treeViews[side].reveal(path);
+    if (treeViews[side]) {
+      if (path !== null) pending[side] = treeViews[side].reveal(path);
+      else if (diff.peerParent != null) {
+        pending[side] = treeViews[side].reveal(diff.peerParent, {
+          open: true,
+          before: diff.peerBefore ?? null,
+        });
+      }
+    }
     treeViews[side]?.setCurrent(path);
   }
   suspendScrollSync(Promise.allSettled(Object.values(pending)));
