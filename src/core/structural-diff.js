@@ -342,26 +342,39 @@ export function diffData(left, right, options) {
     }
   }
 
-  function record(type, leftSegs, rightSegs, lv, rv) {
+  function record(type, leftSegs, rightSegs, lv, rv, peerParentSegs = null) {
     stats[type]++;
     if (diffs.length < MAX_DIFFS) {
       const leftPath = leftSegs ? toPath(leftSegs) : null;
       const rightPath = rightSegs ? toPath(rightSegs) : null;
-      if (includePreviews) {
-        diffs.push({
-          type,
-          leftPath,
-          rightPath,
-          display: displayPath(rightSegs || leftSegs),
-          leftPreview: previewValue(lv, leftPath, leftNumberLiterals),
-          rightPreview: previewValue(rv, rightPath, rightNumberLiterals),
-        });
-      } else {
-        diffs.push({ type, leftPath, rightPath });
-      }
-    } else {
-      truncated = true;
+      const peer = peerParentSegs !== null
+        ? { peerParent: toPath(peerParentSegs), peerBefore: null }
+        : null;
+      const entry = includePreviews ? {
+        type,
+        leftPath,
+        rightPath,
+        ...(peer || {}),
+        display: displayPath(rightSegs || leftSegs),
+        leftPreview: previewValue(lv, leftPath, leftNumberLiterals),
+        rightPreview: previewValue(rv, rightPath, rightNumberLiterals),
+      } : {
+        type,
+        leftPath,
+        rightPath,
+        ...(peer || {}),
+      };
+      diffs.push(entry);
+      return entry;
     }
+    truncated = true;
+    return null;
+  }
+
+  function fillPeerBefore(pending, key) {
+    const before = appendJsonPath(pending[0].peerParent, key);
+    for (let i = 0; i < pending.length; i++) pending[i].peerBefore = before;
+    pending.length = 0;
   }
 
   // A primary key must be present, scalar, typed and unique on each side.
@@ -422,6 +435,7 @@ export function diffData(left, right, options) {
         left: null, right: null, leftNumbers: null, rightNumbers: null,
         leftIgnore: null, rightIgnore: null,
         type: 0, index: 0, length: 0, keys: null, rightByKey: null, leftKeys: null, matched: null,
+        pendingRemoved: null,
       };
       frames[depth] = frame;
     }
@@ -442,7 +456,7 @@ export function diffData(left, right, options) {
         frame.type = 3;
         frame.leftKeys = leftByKey.keys();
         frame.rightByKey = rightByKey;
-        frame.matched = new Uint8Array(rv.length);
+        frame.matched = new Uint32Array(rv.length);
       } else {
         frame.type = 2;
         frame.length = Math.min(lv.length, rv.length);
@@ -463,6 +477,7 @@ export function diffData(left, right, options) {
         const key = frame.keys[frame.index++];
         const nextLeftIgnore = ignoreMatcher ? ignoreMatcher.step(frame.leftIgnore, key) : null;
         if (Object.prototype.hasOwnProperty.call(rv, key)) {
+          if (frame.pendingRemoved?.length) fillPeerBefore(frame.pendingRemoved, key);
           const nextRightIgnore = ignoreMatcher
             ? (frame.leftIgnore === frame.rightIgnore ? nextLeftIgnore : ignoreMatcher.step(frame.rightIgnore, key))
             : null;
@@ -474,18 +489,24 @@ export function diffData(left, right, options) {
         } else {
           if (nextLeftIgnore && ignoreMatcher.isIgnored(nextLeftIgnore)) continue;
           leftSegs.push(key);
-          record('removed', leftSegs, null, lv[key]);
+          const diff = record('removed', leftSegs, null, lv[key], undefined, rightSegs);
+          if (diff) (frame.pendingRemoved || (frame.pendingRemoved = [])).push(diff);
           leftSegs.pop();
         }
         continue;
       }
+      let pendingAdded = null;
       for (const key in rv) {
-        if (Object.hasOwn(rv, key) && !Object.hasOwn(lv, key)) {
+        if (!Object.hasOwn(rv, key)) continue;
+        if (!Object.hasOwn(lv, key)) {
           const nextRightIgnore = ignoreMatcher ? ignoreMatcher.step(frame.rightIgnore, key) : null;
           if (nextRightIgnore && ignoreMatcher.isIgnored(nextRightIgnore)) continue;
           rightSegs.push(key);
-          record('added', null, rightSegs, undefined, rv[key]);
+          const diff = record('added', null, rightSegs, undefined, rv[key], leftSegs);
+          if (diff) (pendingAdded || (pendingAdded = [])).push(diff);
           rightSegs.pop();
+        } else if (pendingAdded?.length) {
+          fillPeerBefore(pendingAdded, key);
         }
       }
     } else if (frame.type === 2) {
@@ -507,14 +528,14 @@ export function diffData(left, right, options) {
         const nextLeftIgnore = ignoreMatcher ? ignoreMatcher.step(frame.leftIgnore, i) : null;
         if (nextLeftIgnore && ignoreMatcher.isIgnored(nextLeftIgnore)) continue;
         leftSegs.push(i);
-        record('removed', leftSegs, null, lv[i]);
+        record('removed', leftSegs, null, lv[i], undefined, rightSegs);
         leftSegs.pop();
       }
       for (let i = frame.length; i < rv.length; i++) {
         const nextRightIgnore = ignoreMatcher ? ignoreMatcher.step(frame.rightIgnore, i) : null;
         if (nextRightIgnore && ignoreMatcher.isIgnored(nextRightIgnore)) continue;
         rightSegs.push(i);
-        record('added', null, rightSegs, undefined, rv[i]);
+        record('added', null, rightSegs, undefined, rv[i], leftSegs);
         rightSegs.pop();
       }
     } else {
@@ -525,8 +546,9 @@ export function diffData(left, right, options) {
         leftSegs.push(leftKey);
         const nextLeftIgnore = ignoreMatcher ? ignoreMatcher.step(frame.leftIgnore, leftKey) : null;
         if (j !== undefined && !frame.matched[j]) {
-          frame.matched[j] = 1;
+          frame.matched[j] = i + 1;
           const rightKey = String(j);
+          if (frame.pendingRemoved?.length) fillPeerBefore(frame.pendingRemoved, rightKey);
           rightSegs.push(rightKey);
           if (i !== j) {
             if (mappingCount < MAX_PAIRS) {
@@ -543,22 +565,28 @@ export function diffData(left, right, options) {
         } else {
           recordUnpaired(frame, 'left', i, leftSegs);
           if (!nextLeftIgnore || !ignoreMatcher.isIgnored(nextLeftIgnore)) {
-            record('removed', leftSegs, null, lv[i]);
+            const diff = record('removed', leftSegs, null, lv[i], undefined, rightSegs);
+            if (diff) (frame.pendingRemoved || (frame.pendingRemoved = [])).push(diff);
           }
           leftSegs.pop();
         }
         continue;
       }
+      let pendingAdded = null;
       for (let j = 0; j < rv.length; j++) {
-        if (!frame.matched[j]) {
+        const matched = frame.matched[j];
+        if (!matched) {
           const rightKey = String(j);
           rightSegs.push(rightKey);
           recordUnpaired(frame, 'right', j, rightSegs);
           const nextRightIgnore = ignoreMatcher ? ignoreMatcher.step(frame.rightIgnore, rightKey) : null;
           if (!nextRightIgnore || !ignoreMatcher.isIgnored(nextRightIgnore)) {
-            record('added', null, rightSegs, undefined, rv[j]);
+            const diff = record('added', null, rightSegs, undefined, rv[j], leftSegs);
+            if (diff) (pendingAdded || (pendingAdded = [])).push(diff);
           }
           rightSegs.pop();
+        } else if (pendingAdded?.length) {
+          fillPeerBefore(pendingAdded, String(matched - 1));
         }
       }
     }
@@ -572,6 +600,7 @@ export function diffData(left, right, options) {
     frame.matched = null;
     frame.removedRanges = null;
     frame.addedRanges = null;
+    frame.pendingRemoved = null;
     leftSegs.pop();
     rightSegs.pop();
     depth--;

@@ -236,14 +236,7 @@ export function createTreeModel(initial = {}) {
     };
   }
 
-  function indexOf(path) {
-    if (path === '') return rowCount ? 0 : -1;
-    const opened = containers.get(path);
-    if (opened) return opened.entry.row;
-    const slash = path.lastIndexOf('/');
-    const parent = containers.get(path.slice(0, slash));
-    if (!parent) return -1;
-    const key = decodeKey(path.slice(slash + 1));
+  function childPosition(parent, key) {
     let position;
     if (parent.keys) {
       if (parent.keys.length > 64) {
@@ -260,7 +253,18 @@ export function createTreeModel(initial = {}) {
     } else {
       position = Number(key);
     }
-    if (!Number.isInteger(position) || position < 0 || (!parent.keys && String(position) !== key)) return -1;
+    return Number.isInteger(position) && position >= 0 && (parent.keys || String(position) === key) ? position : -1;
+  }
+
+  function indexOf(path) {
+    if (path === '') return rowCount ? 0 : -1;
+    const opened = containers.get(path);
+    if (opened) return opened.entry.row;
+    const slash = path.lastIndexOf('/');
+    const parent = containers.get(path.slice(0, slash));
+    if (!parent) return -1;
+    let position = childPosition(parent, decodeKey(path.slice(slash + 1)));
+    if (position < 0) return -1;
     if (parent.indices) {
       let lo = 0;
       let hi = parent.indices.length;
@@ -354,21 +358,53 @@ export function createTreeModel(initial = {}) {
     }
     replaceSegments(segment.index, 1, replacement);
   }
-  function reveal(path) {
-    const existing = indexOf(path);
-    if (existing >= 0) return existing;
-    let value = options.data;
-    let parentPath = '';
-    const ancestors = [];
-    const keys = path === '' ? [] : path.slice(1).split('/').map(decodeKey);
-    for (const key of keys) {
-      if (!isContainer(value) || !Object.hasOwn(value, key)) return -1;
-      ancestors.push(parentPath);
-      value = value[key];
-      parentPath = appendJsonPath(parentPath, key);
+  function reveal(path, { open = false, before = null } = {}) {
+    let index = indexOf(path);
+    if (index < 0) {
+      let value = options.data;
+      let parentPath = '';
+      const ancestors = [];
+      const keys = path === '' ? [] : path.slice(1).split('/').map(decodeKey);
+      for (const key of keys) {
+        if (!isContainer(value) || !Object.hasOwn(value, key)) return -1;
+        ancestors.push(parentPath);
+        value = value[key];
+        parentPath = appendJsonPath(parentPath, key);
+      }
+      for (const ancestor of ancestors) if (!containers.has(ancestor)) setOpen(ancestor, true);
+      index = indexOf(path);
+      if (index < 0) return -1;
     }
-    for (const ancestor of ancestors) if (!containers.has(ancestor)) setOpen(ancestor, true);
-    return indexOf(path);
+    if (!open) return index;
+    if (!containers.has(path)) setOpen(path, true);
+    const record = containers.get(path);
+    if (!record || !record.length) return index;
+    if (before !== null) {
+      const target = indexOf(before);
+      if (target >= 0) return target;
+      if (record.indices && before.startsWith(path + '/') && before.indexOf('/', path.length + 1) === -1) {
+        const rawPosition = childPosition(record, decodeKey(before.slice(path.length + 1)));
+        if (rawPosition >= 0) {
+          let lo = 0;
+          let hi = record.indices.length;
+          while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (record.indices[mid] < rawPosition) lo = mid + 1;
+            else hi = mid;
+          }
+          if (lo < record.indices.length) {
+            const siblingRow = indexOf(appendJsonPath(path, keyAt(record, lo)));
+            if (siblingRow >= 0) return siblingRow;
+          }
+        }
+      }
+    }
+    for (let i = record.close.index - 1; i > record.entry.index; i--) {
+      const segment = segments[i];
+      if (segment.kind === 'range') return segment.row + segment.count - 1;
+      if (segment.kind === 'entry') return segment.row;
+    }
+    return index;
   }
 
   build();

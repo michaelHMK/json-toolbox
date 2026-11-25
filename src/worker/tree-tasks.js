@@ -18,9 +18,20 @@ export function createTreeTasks() {
       const options = { ...request.options, data: document.data };
       if (snapshot.diffs) {
         const pathKey = side === 'left' ? 'leftPath' : 'rightPath';
-        const paths = snapshot.diffs.map((diff) => diff[pathKey]).filter((path) => path !== null);
+        const paths = [];
+        const forceExpand = new Set();
+        for (const diff of snapshot.diffs) {
+          const path = diff[pathKey];
+          if (path !== null) {
+            paths.push(path);
+          } else if (diff.peerParent != null) {
+            paths.push(diff.peerParent);
+            forceExpand.add(diff.peerParent);
+          }
+        }
         options.requiredChildren = createChildPathIndex(paths);
-        options.forceExpand = new Set(options.requiredChildren.keys());
+        for (const path of options.requiredChildren.keys()) forceExpand.add(path);
+        options.forceExpand = forceExpand;
       }
       model = createTreeModel(options);
       models.set(side, model);
@@ -32,8 +43,8 @@ export function createTreeTasks() {
     let revealIndex;
     if (request.operation === 'setOpen') model.setOpen(request.path, request.open);
     if (request.operation === 'reveal') {
-      revealIndex = model.reveal(request.path);
-      if (revealIndex >= 0) activePath = request.path;
+      revealIndex = model.reveal(request.path, request.open ? { open: true, before: request.before ?? null } : undefined);
+      if (revealIndex >= 0) activePath = model.rowAt(revealIndex).path;
     }
     if (request.operation === 'move') {
       let index = Math.floor(request.index);

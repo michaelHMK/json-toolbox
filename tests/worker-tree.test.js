@@ -65,6 +65,36 @@ test('Worker comparison owns both trees and rejects stale snapshots after cleari
   assert.equal(request('left').code, 'SNAPSHOT_UNAVAILABLE');
 });
 
+test('Worker comparison trees keep opposite parent containers navigable for single-sided diffs', () => {
+  const handle = createTaskHandler();
+  const diff = handle({
+    action: 'diff',
+    text: '{"profile":{"city":"SH","settings":{"theme":"dark"}}}',
+    text2: '{"profile":{"city":"SH","settings":{"theme":"dark","notifications":false}}}',
+    retainSnapshot: true,
+  });
+  const request = (side, payload) => handle({
+    action: 'tree', kind: 'comparison', side, snapshotId: diff.result.snapshotId, ...payload,
+  }).result;
+  const full = request('left', { operation: 'update', options: { onlyRequired: false } });
+  assert.deepEqual(
+    full.rows.filter((row) => row.kind === 'entry').map((row) => row.path),
+    ['', '/profile', '/profile/city', '/profile/settings', '/profile/settings/theme'],
+  );
+  const revealed = request('left', { operation: 'reveal', path: '/profile/settings', open: true, before: null });
+  assert.equal(revealed.activePath, '/profile/settings/theme');
+  assert.equal(revealed.activeIndex, revealed.revealIndex);
+
+  const filtered = request('left', { operation: 'update', options: { onlyRequired: true } });
+  assert.deepEqual(
+    filtered.rows.filter((row) => row.kind === 'entry').map((row) => row.path),
+    ['', '/profile', '/profile/settings'],
+  );
+  const filteredReveal = request('left', { operation: 'reveal', path: '/profile/settings', open: true, before: null });
+  assert.equal(filteredReveal.activePath, '/profile/settings');
+  assert.equal(filteredReveal.activeIndex, filteredReveal.revealIndex);
+});
+
 test('a truncated root array still pairs the root and recorded moves', () => {
   const handle = createTaskHandler();
   const rows = Array.from({ length: 100001 }, (_, id) => ({ id }));

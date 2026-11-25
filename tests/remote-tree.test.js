@@ -565,3 +565,26 @@ test('ArrowRight stays on a filtered container with no visible children, while A
   assert.equal(await press(container, 'ArrowDown'), '/next');
   tree.destroy();
 }));
+
+test('container reveal remembers the opened container across Worker replacement', () => withDom(async () => {
+  const worker = session(JSON.stringify({ profile: { settings: { theme: 'dark' } } }));
+  const container = new Element();
+  const tree = createVirtualTree(container, { request: worker.request });
+  await tree.ready;
+  assert.equal(await tree.reveal('/profile/settings', { open: true }), true);
+  assert.equal(activeEntry(container).dataset.path, '/profile/settings/theme');
+  const rowsBeforeReset = tree.rowCount;
+  worker.reset();
+  await tree.setOpen('/profile/settings', false);
+  const restored = worker.requests.filter((request) => request.options).at(-1);
+  assert.equal(restored.options.expanded.has('/profile'), true);
+  assert.equal(restored.options.collapsed.has('/profile/settings'), true);
+  await tree.reveal('/profile/settings', { open: true });
+  assert.equal(tree.rowCount, rowsBeforeReset);
+  worker.reset();
+  tree.refresh();
+  await settle();
+  await tree.reveal('/profile/settings', { open: true });
+  assert.equal(worker.requests.filter((request) => request.options).at(-1).options.expanded.has('/profile/settings'), true);
+  tree.destroy();
+}));

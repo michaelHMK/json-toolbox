@@ -200,12 +200,16 @@ function createWindowedModel(request) {
       pendingOpen.set(path, open);
       return run('setOpen', { path, open, count: WINDOW_ROWS }, true);
     },
-    reveal(path) {
-      return run('reveal', { path, count: WINDOW_ROWS }, true)
+    reveal(path, { open = false, before = null } = {}) {
+      const payload = open
+        ? { path, open: true, before, count: WINDOW_ROWS }
+        : { path, count: WINDOW_ROWS };
+      return run('reveal', payload, true)
         .then((result) => {
           if (result === false) return false;
           const index = result.revealIndex ?? -1;
           if (index >= 0) {
+            if (open) rememberOpen(path, true);
             let ancestor = path;
             while (ancestor !== '') {
               ancestor = ancestor.slice(0, ancestor.lastIndexOf('/'));
@@ -584,10 +588,10 @@ export function createVirtualTree(container, { request, ...initial } = {}) {
     return apply(value);
   }
 
-  function reveal(path) {
-    return navigateResult(model.reveal(path), (index) => {
+  function reveal(path, revealOptions) {
+    return navigateResult(model.reveal(path, revealOptions), (index) => {
       structureVersion++;
-      return showPath(path, index);
+      return showPath(model.active.path ?? path, index);
     });
   }
 
