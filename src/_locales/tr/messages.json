@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "JSON Karşılaştır"
   },
+  "sidebarCollapse": {
+    "message": "Kenar çubuğunu daralt"
+  },
+  "sidebarExpand": {
+    "message": "Kenar çubuğunu genişlet"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Kenar çubuğunu daralt (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Kenar çubuğunu genişlet (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Tüm veriler cihazınızda kalır"
   },

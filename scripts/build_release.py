@@ -22,7 +22,7 @@ RUNTIME_FILES = (
     'styles/pages/formatter.css', 'styles/pages/compare.css',
     'formatter.html', 'compare.html', 'minify.html', 'escape.html', 'unescape.html',
     'pages/formatter.js', 'pages/compare.js', 'pages/transform.js',
-    'shared/page.js', 'shared/navigation.js', 'shared/i18n.js', 'shared/theme.js',
+    'shared/page.js', 'shared/navigation.js', 'shared/i18n.js', 'shared/theme.js', 'shared/sidebar.js',
     'shared/worker-client.js', 'shared/worker-protocol.js', 'shared/feedback.js',
     'shared/session-guard.js', 'shared/document-session.js', 'shared/comparison-session.js',
     'shared/file-import.js', 'shared/text-input.js',
@@ -122,9 +122,12 @@ def check_html_security(name, source):
     if re.search(r'\bon[a-z]+\s*=', source, flags=re.IGNORECASE):
         raise ValueError(f'{name} 禁止包含内联事件属性')
     theme_pos = source.find('<script src="shared/theme.js"></script>')
+    sidebar_pos = source.find('<script src="shared/sidebar.js"></script>')
     css_pos = source.find('<link rel="stylesheet" href="styles/app.css">')
     if theme_pos < 0 or css_pos < 0 or theme_pos > css_pos:
         raise ValueError(f'{name} 必须在 styles/app.css 之前同步加载 shared/theme.js')
+    if sidebar_pos < 0 or sidebar_pos > css_pos:
+        raise ValueError(f'{name} 必须在 styles/app.css 之前同步加载 shared/sidebar.js')
 
 
 def release_file(name):

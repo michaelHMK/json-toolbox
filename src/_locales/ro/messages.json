@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "Comparare JSON"
   },
+  "sidebarCollapse": {
+    "message": "Restrânge bara laterală"
+  },
+  "sidebarExpand": {
+    "message": "Extinde bara laterală"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Restrânge bara laterală (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Extinde bara laterală (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Datele rămân pe dispozitivul tău"
   },

@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "JSON 比對"
   },
+  "sidebarCollapse": {
+    "message": "收合側邊欄"
+  },
+  "sidebarExpand": {
+    "message": "展開側邊欄"
+  },
+  "sidebarCollapseTitle": {
+    "message": "收合側邊欄（Cmd/Ctrl + B）"
+  },
+  "sidebarExpandTitle": {
+    "message": "展開側邊欄（Cmd/Ctrl + B）"
+  },
   "localOnly": {
     "message": "所有資料僅在本機處理"
   },

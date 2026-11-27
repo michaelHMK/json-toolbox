@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "Bandingkan JSON"
   },
+  "sidebarCollapse": {
+    "message": "Ciutkan bilah sisi"
+  },
+  "sidebarExpand": {
+    "message": "Perluas bilah sisi"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Ciutkan bilah sisi (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Perluas bilah sisi (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Semua data tetap di perangkat Anda"
   },

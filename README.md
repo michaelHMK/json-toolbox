@@ -22,7 +22,7 @@ See [Performance Checks](#performance-checks) below for verification commands an
 - **No uploads or tracking**: the extension makes no network requests, loads no remote code, and includes no telemetry, ads, or tracking SDKs.
 - **No extra extension permissions**: no website access or storage permissions, and no reading of website content, browsing history, cookies, or account information. See [`src/manifest.json`](src/manifest.json).
 - **No saved input history**: inputs and results are processed only in the memory of the tool page and its local Worker. The extension does not write them to browser storage, files, or cloud services; it writes to the system clipboard only when you copy.
-- **Local theme preference**: only your theme choice is saved in `localStorage` on your device. This does not save input content or require additional extension permissions.
+- **Local interface preferences**: only your theme choice and sidebar state are saved in `localStorage` on your device. This does not save input content or require additional extension permissions.
 
 See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [publicly hosted version](https://github.com/michaelHMK/json-toolbox/blob/main/PRIVACY.md) for the store listing.
 
@@ -37,7 +37,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 
 Formatter, Minifier, Escape, Unescape, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation. Compare runs once both inputs are present. You can edit or copy the entire input, including large files and pasted text, and jump to a syntax error when the browser provides its position.
 
-Use the sidebar to switch between tools. The interface includes 20 locale catalogs in `src/_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`) and Latin American Spanish (`es_419`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), Arabic (`ar`), Indonesian (`id`), Vietnamese (`vi`), Italian (`it`), Romanian (`ro`), Turkish (`tr`), and Polish (`pl`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
+Use the sidebar to switch between tools; on desktop it can also collapse into a compact icon rail to free up workspace width, and its state is remembered locally. The interface includes 20 locale catalogs in `src/_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`) and Latin American Spanish (`es_419`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), Arabic (`ar`), Indonesian (`id`), Vietnamese (`vi`), Italian (`it`), Romanian (`ro`), Turkish (`tr`), and Polish (`pl`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
 Choose **Normal**, **Eye comfort**, or **Dark** under **Appearance** in the sidebar. The default is Normal. Your choice is remembered locally across tool pages and after reopening the extension.
 
@@ -48,7 +48,7 @@ Choose **Normal**, **Eye comfort**, or **Dark** under **Appearance** in the side
 3. Click **Load unpacked** and select the extracted folder containing `manifest.json`. If you cloned the repository, select its `src/` folder.
 4. Click the extension icon in the toolbar to open JSON Toolbox.
 
-Keyboard shortcut: most pages support **Cmd/Ctrl + Enter** to run the current operation.
+Keyboard shortcut: most pages support **Cmd/Ctrl + Enter** to run the current operation, and **Cmd/Ctrl + B** toggles the sidebar on desktop.
 
 Use **Tab** to enter a JSON tree. **Up/Down** move between visible nodes, **Right/Left** expand or collapse a branch and move to its child or parent, and **Home/End** move to the first or last visible node. **Enter/Space** toggle a branch. **Tab** leaves the tree.
 

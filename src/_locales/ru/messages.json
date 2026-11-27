@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "Сравнение JSON"
   },
+  "sidebarCollapse": {
+    "message": "Свернуть боковую панель"
+  },
+  "sidebarExpand": {
+    "message": "Развернуть боковую панель"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Свернуть боковую панель (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Развернуть боковую панель (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Все данные остаются на вашем устройстве"
   },

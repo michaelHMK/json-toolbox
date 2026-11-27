@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "Comparar JSON"
   },
+  "sidebarCollapse": {
+    "message": "Recolher barra lateral"
+  },
+  "sidebarExpand": {
+    "message": "Expandir barra lateral"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Recolher barra lateral (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Expandir barra lateral (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Todos os dados ficam no seu dispositivo"
   },

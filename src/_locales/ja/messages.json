@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "JSON 比較"
   },
+  "sidebarCollapse": {
+    "message": "サイドバーを折りたたむ"
+  },
+  "sidebarExpand": {
+    "message": "サイドバーを展開"
+  },
+  "sidebarCollapseTitle": {
+    "message": "サイドバーを折りたたむ（Cmd/Ctrl + B）"
+  },
+  "sidebarExpandTitle": {
+    "message": "サイドバーを展開（Cmd/Ctrl + B）"
+  },
   "localOnly": {
     "message": "すべてのデータはデバイス内に保持されます"
   },
