@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "Comparaison JSON"
   },
+  "sidebarCollapse": {
+    "message": "Réduire la barre latérale"
+  },
+  "sidebarExpand": {
+    "message": "Développer la barre latérale"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Réduire la barre latérale (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Développer la barre latérale (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Toutes les données restent sur votre appareil"
   },

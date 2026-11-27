@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "So sánh JSON"
   },
+  "sidebarCollapse": {
+    "message": "Thu gọn thanh bên"
+  },
+  "sidebarExpand": {
+    "message": "Mở rộng thanh bên"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Thu gọn thanh bên (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Mở rộng thanh bên (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Mọi dữ liệu đều ở trên thiết bị của bạn"
   },

@@ -117,6 +117,7 @@ function createThemePreview(id) {
 export function renderNavigation() {
   const currentPage = document.body.dataset.page;
   const theme = document.documentElement.dataset.theme || 'normal';
+  const collapsed = document.documentElement.dataset.sidebar === 'collapsed';
   const currentTheme = themeOptions.find((option) => option.id === theme) || themeOptions[0];
 
   const brand = el('a', { class: 'brand', href: 'formatter.html' },
@@ -124,7 +125,28 @@ export function renderNavigation() {
     el('span', { class: 'brand-name', 'data-i18n': 'appName' }, 'JSON Toolbox'),
   );
 
+  const toggle = el('button', {
+    id: 'sidebar-toggle',
+    class: 'sidebar-toggle',
+    type: 'button',
+    'aria-controls': 'sidebar',
+    'aria-expanded': String(!collapsed),
+    'data-i18n-title': collapsed ? 'sidebarExpandTitle' : 'sidebarCollapseTitle',
+    title: collapsed ? 'Expand sidebar (Cmd/Ctrl + B)' : 'Collapse sidebar (Cmd/Ctrl + B)',
+  },
+    svgIcon('sidebar-toggle-icon', [
+      ['rect', { x: '3', y: '4', width: '18', height: '16', rx: '2' }],
+      ['path', { d: 'M9 4v16' }],
+      ['path', { class: 'sidebar-toggle-chevron', d: 'M16 9.5 13.5 12 16 14.5' }],
+    ]),
+    el('span', {
+      class: 'sidebar-toggle-label',
+      'data-i18n': collapsed ? 'sidebarExpand' : 'sidebarCollapse',
+    }, collapsed ? 'Expand sidebar' : 'Collapse sidebar'),
+  );
+
   const heading = el('div', { class: 'nav-heading', 'data-i18n': 'navTools' }, 'TOOLS');
+  const sectionBar = el('div', { class: 'sidebar-section-bar' }, heading, toggle);
 
   const nav = el('nav', { class: 'main-nav', 'aria-label': 'JSON' },
     ...navItems.map((item) => {
@@ -135,7 +157,7 @@ export function renderNavigation() {
         'aria-current': active ? 'page' : null,
       },
         svgIcon('nav-icon', item.shapes),
-        el('span', { 'data-i18n': item.label }, item.fallback),
+        el('span', { class: 'nav-label', 'data-i18n': item.label }, item.fallback),
       );
     }),
   );
@@ -148,11 +170,11 @@ export function renderNavigation() {
     'aria-expanded': 'false',
     'aria-controls': 'theme-switch',
   },
-    svgIcon('nav-icon', [
-      ['path', { d: 'M4 7h10M18 7h2M4 17h3M11 17h9' }],
-      ['circle', { cx: '16', cy: '7', r: '2' }],
-      ['circle', { cx: '9', cy: '17', r: '2' }],
-    ]),
+    ...themeOptions.map((option) => {
+      const icon = svgIcon('nav-icon theme-trigger-icon', option.shapes);
+      icon.dataset.themeIcon = option.id;
+      return icon;
+    }),
     el('span', { class: 'theme-trigger-copy' },
       el('span', { class: 'theme-trigger-title', 'data-i18n': 'themeLabel' }, 'Appearance'),
       el('span', { id: 'theme-current', 'data-i18n': currentTheme.label }, currentTheme.fallback),
@@ -190,11 +212,11 @@ export function renderNavigation() {
 
   const bottom = el('div', { class: 'sidebar-bottom' },
     el('div', { class: 'theme-picker' }, themeTrigger, themeSwitch),
-    el('div', { class: 'sidebar-footer' },
+    el('div', { class: 'sidebar-footer', tabindex: '0' },
       el('span', { class: 'local-dot', 'aria-hidden': 'true' }),
-      el('span', { 'data-i18n': 'localOnly' }, 'All data stays on your device'),
+      el('span', { class: 'sidebar-footer-label', 'data-i18n': 'localOnly' }, 'All data stays on your device'),
     ),
   );
 
-  document.getElementById('sidebar').replaceChildren(brand, heading, nav, bottom);
+  document.getElementById('sidebar').replaceChildren(brand, sectionBar, nav, bottom);
 }

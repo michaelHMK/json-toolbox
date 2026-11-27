@@ -38,7 +38,7 @@ JSON 工具箱是一个以性能和隐私为核心的 JSON 工具箱。点击扩
 
 外观：
 - 在侧边栏查看缩略预览，选择正常、护眼或暗色模式；默认为正常模式
-- 主题选择仅保存在本地，切换工具页或重新打开后恢复，不保存输入和结果
+- 主题选择与侧边栏折叠状态仅保存在本地，切换工具页或重新打开后恢复，不保存输入和结果
 
 隐私：所有处理在浏览器本地完成，不收集或上传数据，不发起网络请求，不加载远程代码，无广告或追踪。不保存输入历史。执行复制时，扩展会将选中的文本、输入内容或处理结果写入系统剪贴板。粘贴时只处理你粘贴的文本。
 
@@ -80,7 +80,7 @@ Compare page:
 
 Appearance:
 - Choose Normal, Eye comfort or Dark from the sidebar, with thumbnail previews; Normal is the default
-- Only the theme choice is saved locally and restored across tools and after reopening; input and results are not saved
+- Only the theme choice and sidebar state are saved locally and restored across tools and after reopening; input and results are not saved
 
 Privacy: all processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. When you copy, the extension writes the selected text, input or result to the system clipboard. When you paste, it processes only the text you provide.
 
@@ -104,7 +104,7 @@ The editor for large inputs and the large result views render text as you scroll
 | 网站、支持链接 | 可选；仅填写已经公开可访问、由你维护的项目或支持页面。 |
 | 分发 | 当前版本无付费功能。选择需要覆盖的地区；公开可见性用于正式上架。 |
 
-这些隐私填法对应当前版本的实际行为：仅在本地保存主题偏好，不保存输入或结果，也不上传或云同步该偏好。后续改变数据处理方式时需重新核对。[官方隐私表单说明](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy)。
+这些隐私填法对应当前版本的实际行为：仅在本地保存界面偏好（主题与侧边栏折叠状态），不保存输入或结果，也不上传或云同步该偏好。后续改变数据处理方式时需重新核对。[官方隐私表单说明](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy)。
 
 ## 图片材料
 
@@ -188,4 +188,4 @@ No account, credentials or network connection are needed.
 4. On any of the five tool pages, use Import file or drop one UTF-8 `.json` file of up to 50 MiB into an input pane. Processing starts automatically after import. On Compare, fill both inputs to start the comparison. A large file opens directly in the editor. Type at the start or end, then select all and copy to check the edited input. You can also paste or drop a large block of text into the input pane.
 5. Open JSON Compare and click Sample, then Compare. Inspect the structural differences and switch to the text comparison view. Array key matching and ignored paths are optional controls.
 6. Open Appearance in the sidebar. Check the three thumbnail previews, select Eye comfort or Dark, then switch tools or reopen the page to confirm the selection is remembered. Normal is the default before a selection is saved. Press Escape or click outside to close the picker.
-7. All operations run locally. Only the theme preference is saved locally; input and results are not saved. No host permissions, remote code, analytics or user-data uploads are used.
+7. All operations run locally. Only the theme preference and sidebar state are saved locally; input and results are not saved. No host permissions, remote code, analytics or user-data uploads are used.

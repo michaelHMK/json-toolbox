@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "JSON vergleichen"
   },
+  "sidebarCollapse": {
+    "message": "Seitenleiste einklappen"
+  },
+  "sidebarExpand": {
+    "message": "Seitenleiste ausklappen"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Seitenleiste einklappen (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Seitenleiste ausklappen (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Alle Daten bleiben auf Ihrem Gerät"
   },

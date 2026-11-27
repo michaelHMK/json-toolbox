@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "Porównanie JSON"
   },
+  "sidebarCollapse": {
+    "message": "Zwiń pasek boczny"
+  },
+  "sidebarExpand": {
+    "message": "Rozwiń pasek boczny"
+  },
+  "sidebarCollapseTitle": {
+    "message": "Zwiń pasek boczny (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "Rozwiń pasek boczny (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "Dane zostają na urządzeniu"
   },

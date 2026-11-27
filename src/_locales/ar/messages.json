@@ -44,6 +44,18 @@
   "navCompare": {
     "message": "مقارنة JSON"
   },
+  "sidebarCollapse": {
+    "message": "طي الشريط الجانبي"
+  },
+  "sidebarExpand": {
+    "message": "توسيع الشريط الجانبي"
+  },
+  "sidebarCollapseTitle": {
+    "message": "طي الشريط الجانبي (Cmd/Ctrl + B)"
+  },
+  "sidebarExpandTitle": {
+    "message": "توسيع الشريط الجانبي (Cmd/Ctrl + B)"
+  },
   "localOnly": {
     "message": "تبقى جميع البيانات على جهازك"
   },
