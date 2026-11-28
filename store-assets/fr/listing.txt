@@ -23,7 +23,7 @@ Formatage automatique de pages JSON et menu contextuel
 - L'interrupteur optionnel « Formater automatiquement les pages JSON » est désactivé par défaut ; il ne demande les permissions optionnelles qu'à l'activation, avec bascule Brut / Formaté, copie, ouverture dans l'outil et option text/plain.
 
 Importer des fichiers locaux
-- Dans les sept outils, importez un fichier UTF-8 jusqu'à 50 Mio par sélection ou glisser-déposer (.json, et .yaml/.yml pour YAML -> JSON).
+- Dans les sept outils, importez un fichier UTF-8 par sélection ou glisser-déposer (.json jusqu'à 50 Mio ; .yaml/.yml jusqu'à 10 Mio pour YAML -> JSON).
 - Les fichiers volumineux et longs textes s'ouvrent directement dans l'éditeur pour une édition et une copie complètes.
 
 Minifier, échapper et comparer du JSON

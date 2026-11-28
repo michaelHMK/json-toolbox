@@ -25,6 +25,7 @@ const utf8Decoder = new TextDecoder('utf-8');
 const state = {
   view: 'tree',
   rawText: '',
+  rawLineIndex: null,
   expanded: new Set(),
   collapsed: new Set(),
   expandLevel: 2,
@@ -40,6 +41,7 @@ let treeView = null;
 let displayedDocument = null;
 let treeDocument = null;
 let viewRequestVersion = 0;
+let initialized = false;
 
 const session = createDocumentSession({
   onReset: () => { viewRequestVersion++; },
@@ -136,7 +138,7 @@ function setView(view) {
   state.view = view;
   updateViewButtons();
   if (view === 'text') {
-    if (state.rawText) outputView.setText(state.rawText);
+    if (state.rawText) outputView.setText(state.rawText, state.rawLineIndex);
     else outputView.clear();
     return;
   }
@@ -232,6 +234,7 @@ async function loadDocument(text, port = null) {
   destroyTree();
   outputView.clear();
   state.rawText = text;
+  state.rawLineIndex = null;
   state.expanded.clear();
   state.collapsed.clear();
   state.expandLevel = text.length > LARGE_VIEW_THRESHOLD ? 1 : 2;
@@ -252,13 +255,17 @@ async function loadDocument(text, port = null) {
       return;
     }
     displayedDocument = response.document;
-    port?.postMessage({ type: 'READY' });
-  }, { strict: true });
+    state.rawLineIndex = response.result.lineIndex ?? null;
+  }, { strict: true, includeTextIndex: true });
 
   if (!res.ok || res.cancelled) return;
   const shown = await showTree(version);
-  if (!shown) return;
+  if (!shown) {
+    port?.postMessage({ type: 'PARSE_ERROR', error: 'Failed to display JSON tree' });
+    return;
+  }
   setStatus(t('statusViewerReady', [text.length.toLocaleString(), String(Date.now() - started)]));
+  port?.postMessage({ type: 'READY' });
 }
 
 $('view-tree').addEventListener('click', () => setView('tree'));
@@ -276,7 +283,7 @@ $('btn-open-toolbox').addEventListener('click', async () => {
     try {
       const response = await chrome.runtime.sendMessage({ type: 'OPEN_IN_FORMATTER', text: state.rawText });
       if (response && !response.ok && response.reason === 'tooLarge') {
-        showError(t('errSelectionTooLarge'));
+        showError(t('errTransferTooLarge'));
       }
     } catch {
       showError(t('errTaskFailed'));
@@ -303,13 +310,16 @@ if (typeof location !== 'undefined' && location.search) {
 }
 
 window.addEventListener('message', (event) => {
-  if (event.data?.type !== 'INIT') return;
+  if (window.parent !== window && event.source !== window.parent) return;
+  if (initialized || event.data?.type !== 'INIT') return;
   const port = event.ports?.[0] || null;
+  if (!port) return;
   if (!(event.data.buffer instanceof ArrayBuffer)) {
-    port?.postMessage({ type: 'PARSE_ERROR', error: 'Invalid buffer' });
+    port.postMessage({ type: 'PARSE_ERROR', error: 'Invalid buffer' });
     return;
   }
-  port?.postMessage({ type: 'ACK' });
+  initialized = true;
+  port.postMessage({ type: 'ACK' });
   if (event.data.url) setDisplayedUrl(event.data.url);
   const text = utf8Decoder.decode(event.data.buffer);
   void loadDocument(text, port);

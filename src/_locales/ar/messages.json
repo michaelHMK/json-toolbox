@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "يتجاوز المحتوى حد النقل البالغ 10 ميغابايت. انسخه والصقه يدويًا أو استورده كملف."
+  },
+  "errYamlInputTooLarge": {
+    "message": "يتجاوز إدخال YAML حد التحويل البالغ 10 MiB."
   }
 }

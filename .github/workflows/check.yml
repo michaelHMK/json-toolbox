@@ -36,5 +36,6 @@ jobs:
           npm ci --prefix "$RUNNER_TEMP/smoke" --ignore-scripts --no-audit --no-fund
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/smoke/node_modules/playwright-core/index.mjs"
           node bench/release-smoke.mjs dist/json-toolbox-*.zip
+          node bench/auto-format.mjs
           node bench/accessibility.mjs
           node bench/theme.mjs

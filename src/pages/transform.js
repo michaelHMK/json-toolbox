@@ -4,7 +4,8 @@ import { hasNonWhitespace } from '../core/text-lines.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createSessionGuard } from '../shared/session-guard.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
-import { createFileImport } from '../shared/file-import.js';
+import { YAML_MAX_INPUT_BYTES } from '../core/yaml-to-json.js';
+import { createFileImport, MAX_FILE_SIZE } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
@@ -47,6 +48,7 @@ const fileImport = createFileImport({
   fileNameEl: document.getElementById('file-name'),
   dropHint: document.getElementById('file-drop-hint'),
   extensions: isYamlInput ? ['.yaml', '.yml'] : ['.json'],
+  maxSize: isYamlInput ? YAML_MAX_INPUT_BYTES : MAX_FILE_SIZE,
   typeErrorKey: isYamlInput ? 'errFileTypeYaml' : 'errFileType',
   multipleErrorKey: isYamlInput ? 'errFileMultipleYaml' : 'errFileMultiple',
   onImport: ({ text }) => {
@@ -178,19 +180,34 @@ function fillSample() {
 }
 
 const TRANSFER_PREFIX = 'json-toolbox.transfer:';
+const TRANSFER_MAX_BYTES = 10 * 1024 * 1024;
+const transferEncoder = new TextEncoder();
 
 async function saveTransfer(text) {
   const token = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const key = TRANSFER_PREFIX + token;
+  const payload = { text };
+  const estimatedBytes = transferEncoder.encode(key + JSON.stringify(payload)).length;
+  if (estimatedBytes > TRANSFER_MAX_BYTES) {
+    return null;
+  }
   if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-    await chrome.storage.session.set({ [key]: { text } });
-    return token;
+    try {
+      await chrome.storage.session.set({ [key]: payload });
+      return token;
+    } catch {
+      return null;
+    }
   }
   if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem(key, JSON.stringify({ text }));
-    return token;
+    try {
+      sessionStorage.setItem(key, JSON.stringify(payload));
+      return token;
+    } catch {
+      return null;
+    }
   }
   return null;
 }
@@ -220,12 +237,12 @@ async function doSwapDirection() {
   const text = hasOutput ? outputText : textInput.getText();
   let target = swapHref;
   if (text) {
-    try {
-      const token = await saveTransfer(text);
-      if (token) target = `${swapHref}?transfer=${encodeURIComponent(token)}`;
-    } catch {
-      // Fall back to navigating without prefilling if session storage quota is exceeded.
+    const token = await saveTransfer(text);
+    if (!token) {
+      showError(t('errTransferTooLarge'));
+      return;
     }
+    target = `${swapHref}?transfer=${encodeURIComponent(token)}`;
   }
   if (typeof location !== 'undefined' && typeof location.assign === 'function') {
     location.assign(target);

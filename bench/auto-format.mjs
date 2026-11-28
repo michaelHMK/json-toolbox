@@ -110,7 +110,7 @@ try {
   await page.goto('https://api.example.com/coep.json');
   await page.waitForFunction(() => {
     const host = document.querySelector('#json-toolbox-viewer-host');
-    return host?.shadowRoot?.querySelector('button') !== null;
+    return host?.dataset?.fallback === 'true';
   });
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('pre')).display !== 'none'), true);
 
@@ -143,15 +143,23 @@ try {
   const largeMs = +(performance.now() - t0).toFixed(1);
   const largeEntries = await largeFrame.locator('#tree .entry').count();
   assert.ok(largeEntries > 0 && largeEntries <= 80, `Virtualized tree bounded (${largeEntries})`);
+  // Switching to Raw view on 50 MiB uses Worker-built lineIndex and avoids main-thread stalls.
+  await largeFrame.locator('#view-text').click();
+  await largeFrame.waitForFunction(() => !document.querySelector('#output-text').hidden);
   const longTasks = await largePage.evaluate(() => window.__longTasks);
   await largePage.close();
+
+  const maxLongTaskMs = longTasks.length ? +Math.max(...longTasks).toFixed(1) : 0;
+  const maxBudgetMs = Number(process.env.AUTO_FORMAT_MAX_LONG_TASK_MS || 1000);
+  assert.ok(maxLongTaskMs <= maxBudgetMs, `50 MiB auto-format long task ${maxLongTaskMs}ms exceeded budget ${maxBudgetMs}ms`);
 
   console.log(JSON.stringify({
     ok: true,
     large50MiBMs: largeMs,
     largeEntries,
     longTasksCount: longTasks.length,
-    maxLongTaskMs: longTasks.length ? +Math.max(...longTasks).toFixed(1) : 0,
+    maxLongTaskMs,
+    maxBudgetMs,
   }, null, 2));
 } finally {
   await context?.close();

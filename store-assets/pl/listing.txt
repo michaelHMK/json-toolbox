@@ -22,7 +22,7 @@ Automatyczne formatowanie stron JSON i menu kontekstowe
 - Opcjonalny przełącznik „Automatycznie formatuj strony JSON” na pasku bocznym jest domyślnie WYŁĄCZONY i prosi o opcjonalne uprawnienia dopiero po włączeniu (z widokiem Oryginał / Sformatowany, kopiowaniem, otwarciem w narzędziu i opcją text/plain).
 
 Import lokalnych plików, minifikacja i porównywanie JSON
-- We wszystkich siedmiu narzędziach importuj pliki UTF-8 do 50 MiB (.json oraz .yaml/.yml w YAML -> JSON).
+- We wszystkich siedmiu narzędziach importuj pliki UTF-8 (.json do 50 MiB; .yaml/.yml do 10 MiB w YAML -> JSON).
 - Minifikuj do jednej linii (także JSONC/JSON5), dodawaj/cofaj sekwencje ucieczki i porównuj strukturę według indeksu lub klucza id, ignorując wybrane ścieżki i przełączając na diff tekstowy.
 
 Wygląd i prywatność

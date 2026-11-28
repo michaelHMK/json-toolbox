@@ -22,7 +22,7 @@ Formattazione automatica delle pagine JSON e menu contestuale
 - L'interruttore opzionale «Formatta automaticamente le pagine JSON» nella barra laterale è disattivato per impostazione predefinita e richiede i permessi opzionali solo quando attivato, con vista Originale / Formattato, copia, apertura nello strumento e opzione text/plain.
 
 Importare file locali, minificare, escape e confrontare
-- In tutti e sette gli strumenti importa file UTF-8 fino a 50 MiB (.json e .yaml/.yml in YAML -> JSON).
+- In tutti e sette gli strumenti importa file UTF-8 (.json fino a 50 MiB; .yaml/.yml fino a 10 MiB in YAML -> JSON).
 - Minifica su una riga (anche JSONC/JSON5), applica o rimuovi escape delle stringhe e confronta strutture per indice o chiave (es. id) ignorando i percorsi scelti o in diff testuale.
 
 Aspetto e privacy

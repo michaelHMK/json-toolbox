@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskHandler } from '../src/worker/tasks.js';
+import { YAML_MAX_INPUT_BYTES } from '../src/core/yaml-to-json.js';
 import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
 import { loadPage } from './helpers/page-dom.js';
 
@@ -31,7 +32,7 @@ function setup(action, runTask) {
     },
     copyText: async (text) => { copied.push(text); return true; },
   });
-  return { ...page, copied, requests, importText: (text) => importOptions.onImport({ text }) };
+  return { ...page, copied, requests, getImportOptions: () => importOptions, importText: (text) => importOptions.onImport({ text }) };
 }
 
 for (const action of ['escape', 'unescape']) {
@@ -165,4 +166,25 @@ test('YAML transform pages forward indent, show multi-doc notice, and swap direc
   await flush();
   assert.equal(toYamlPage.getOutput(), '- a: 1\n- b: 2\n');
   assert.equal(sessionStorageData.size, 0);
+});
+
+test('YAML input enforces 10 MiB import cap and swap direction surfaces errTransferTooLarge without navigating', async () => {
+  const yamlInputPage = setup('fromYaml');
+  assert.equal(yamlInputPage.getImportOptions().maxSize, YAML_MAX_INPUT_BYTES);
+  const minifyPage = setup('minify');
+  assert.equal(minifyPage.getImportOptions().maxSize, 50 * 1024 * 1024);
+
+  const navigations = [];
+  const hugePage = loadPage('transform', {
+    bodyDataset: { action: 'toYaml', swapHref: 'json-from-yaml.html' },
+    expose: '{ textInput }',
+    runTask: async () => ({ ok: true, result: {} }),
+    onNavigate: (url) => navigations.push(url),
+  });
+  hugePage.textInput.setText('x'.repeat(10 * 1024 * 1024));
+  await hugePage.get('btn-swap-direction').click();
+  await flush();
+  assert.equal(navigations.length, 0);
+  assert.equal(hugePage.get('error').hidden, false);
+  assert.equal(hugePage.get('error').textContent, 'errTransferTooLarge');
 });

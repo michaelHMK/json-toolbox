@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "Conținutul depășește limita de transfer de 10 MB. Copiază-l și lipește-l sau importă un fișier."
+  },
+  "errYamlInputTooLarge": {
+    "message": "Intrarea YAML depășește limita de conversie de 10 MiB."
   }
 }

@@ -22,7 +22,7 @@ Web sayfası JSON otomatik biçimlendirme ve sağ tık menüsü
 - Kenar çubuğundaki isteğe bağlı "JSON sayfalarını otomatik biçimlendir" anahtarı varsayılan olarak KAPALI gelir; yalnızca açıldığında isteğe bağlı site izni ister ve Ham / Biçimlendirilmiş görünüm, kopyalama, araçta açma ve text/plain seçeneği sunar.
 
 Yerel dosya içe aktarma, küçültme ve karşılaştırma
-- Yedi aracın tümünde 50 MiB'a kadar UTF-8 dosyalarını (.json ve YAML -> JSON için .yaml/.yml) seçin veya sürükleyip bırakın.
+- Yedi aracın tümünde UTF-8 dosyalarını (.json için 50 MiB'a kadar; YAML -> JSON için .yaml/.yml 10 MiB'a kadar) seçin veya sürükleyip bırakın.
 - Tek satır küçültme (JSONC/JSON5 dahil), JSON dize kaçış ekleme/kaldırma ve yolları yoksayarak yapısal/metin karşılaştırma yapın.
 
 Görünüm ve gizlilik

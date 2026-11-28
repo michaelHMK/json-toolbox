@@ -6,12 +6,35 @@ import { Element } from './helpers/page-dom.js';
 
 const source = readFileSync(new URL('../src/content/detect.js', import.meta.url), 'utf8');
 
-function setupDetect({ contentType = 'application/json', bodyNodes = [], readyState = 'complete', onMessage } = {}) {
+function setupDetect({
+  contentType = 'application/json',
+  bodyNodes = [],
+  readyState = 'complete',
+  jsonParse,
+  timerQueue = null,
+} = {}) {
   const body = new Element('BODY');
   for (const node of bodyNodes) body.appendChild(node);
   const rootEl = new Element('HTML');
   rootEl.appendChild(body);
   const posted = [];
+  const shadowModes = [];
+  let messageListener = null;
+  const scheduled = [];
+  const nextSetTimeout = timerQueue
+    ? (fn, ms) => {
+        const entry = { fn, ms, cleared: false };
+        timerQueue.push(entry);
+        return entry;
+      }
+    : (fn, ms) => {
+        const id = setTimeout(fn, ms);
+        scheduled.push(id);
+        return id;
+      };
+  const nextClearTimeout = timerQueue
+    ? (entry) => { if (entry) entry.cleared = true; }
+    : clearTimeout;
   const doc = {
     contentType,
     readyState,
@@ -20,7 +43,8 @@ function setupDetect({ contentType = 'application/json', bodyNodes = [], readySt
     createElement: (tag) => {
       const el = new Element(tag);
       if (tag.toLowerCase() === 'div') {
-        el.attachShadow = () => {
+        el.attachShadow = (opts) => {
+          shadowModes.push(opts?.mode);
           const shadow = new Element('#shadow');
           el.shadowRoot = shadow;
           return shadow;
@@ -68,21 +92,33 @@ function setupDetect({ contentType = 'application/json', bodyNodes = [], readySt
     document: doc,
     location: { href: 'https://api.example.com/data.json' },
     TextEncoder,
+    URL,
+    JSON: { parse: jsonParse || JSON.parse },
     MessageChannel: FakeMessageChannel,
     chrome: {
       runtime: {
-        getURL: (p) => `chrome-extension://ext/${p}`,
-        onMessage: { addListener: onMessage || (() => {}) },
+        id: 'ext',
+        getURL: (p) => `chrome-extension://dynamic-guid/${p}`,
+        onMessage: { addListener: (fn) => { messageListener = fn; } },
+        sendMessage: () => {},
       },
       i18n: { getMessage: (k) => k },
     },
-    setTimeout,
-    clearTimeout,
+    setTimeout: nextSetTimeout,
+    clearTimeout: nextClearTimeout,
   });
   context.window = { top: null };
   context.window.top = context.window;
   vm.runInContext(source, context);
-  return { api: context.__jsonToolboxDetect, doc, rootEl, posted };
+  return {
+    api: context.__jsonToolboxDetect,
+    doc,
+    rootEl,
+    posted,
+    shadowModes,
+    triggerMessage: (msg, cb) => messageListener?.(msg, {}, cb || (() => {})),
+    cleanupTimers: () => scheduled.forEach((id) => clearTimeout(id)),
+  };
 }
 
 test('content type matching accepts JSON media types and gates text/plain', () => {
@@ -144,6 +180,7 @@ test('detectAndMount rejects invalid JSON, non-container text/plain, and leaves 
   const plainEnabled = setupDetect({ contentType: 'text/plain', bodyNodes: [plainObjPre] });
   const mounted = plainEnabled.api.detectAndMount({ allowPlainText: true });
   assert.equal(mounted.ok, true);
+  assert.deepEqual(plainEnabled.shadowModes, ['closed']);
   const host = plainEnabled.doc.getElementById('json-toolbox-viewer-host');
   assert.ok(host);
   const iframe = host.shadowRoot.children[0];
@@ -151,8 +188,55 @@ test('detectAndMount rejects invalid JSON, non-container text/plain, and leaves 
   // Simulate iframe load & cancel timers cleanly via PARSE_ERROR or READY.
   iframe.events.load();
   assert.equal(plainEnabled.posted.length, 1);
+  assert.equal(plainEnabled.posted[0].origin, 'chrome-extension://ext');
   assert.ok(plainEnabled.posted[0].msg.buffer instanceof ArrayBuffer);
   // Confirm cleanup removes host if viewer reports PARSE_ERROR.
   plainEnabled.posted[0].transfer[0].postMessage({ type: 'PARSE_ERROR' });
   assert.equal(plainEnabled.doc.getElementById('json-toolbox-viewer-host'), null);
+});
+
+test('handles on-demand large parse errors with toast, READY timeout recovery, and non-blocking COEP fallback', () => {
+  const largeBad = new Element('PRE');
+  largeBad.textContent = '{' + ' '.repeat(260 * 1024) + 'bad';
+  const onDemandTimers = [];
+  const onDemandPage = setupDetect({
+    contentType: 'application/json',
+    bodyNodes: [largeBad],
+    timerQueue: onDemandTimers,
+  });
+  // Production installs listener when __JSON_TOOLBOX_DETECT_TEST__ is false; exercise onDemand option directly here.
+  const firstMount = onDemandPage.api.detectAndMount({ allowPlainText: true, onDemand: true });
+  assert.equal(firstMount.ok, true);
+  const host = onDemandPage.doc.getElementById('json-toolbox-viewer-host');
+  const iframe = host.shadowRoot.children[0];
+  iframe.events.load();
+  onDemandPage.posted[0].transfer[0].postMessage({ type: 'PARSE_ERROR' });
+  assert.equal(onDemandPage.doc.getElementById('json-toolbox-viewer-host'), null);
+  const toastHost = onDemandPage.doc.getElementById('json-toolbox-toast-host');
+  assert.ok(toastHost);
+  assert.equal(toastHost.shadowRoot.children[0].textContent, 'errPageNotJson');
+
+  // Verify ACK starts a READY timer whose expiry tears down and enables COEP fallback without main-thread JSON.parse.
+  const largeValid = new Element('PRE');
+  largeValid.textContent = '{"ok":' + '1,'.repeat(140 * 1024) + '2}';
+  const timers = [];
+  const timeoutPage = setupDetect({
+    contentType: 'application/json',
+    bodyNodes: [largeValid],
+    timerQueue: timers,
+    jsonParse() {
+      throw new Error('JSON.parse must not run on main thread for >256 KiB fallback');
+    },
+  });
+  timeoutPage.api.detectAndMount({ allowPlainText: false });
+  const h2 = timeoutPage.doc.getElementById('json-toolbox-viewer-host');
+  h2.shadowRoot.children[0].events.load();
+  timeoutPage.posted[0].transfer[0].postMessage({ type: 'ACK' });
+  const readyTimer = timers.at(-1);
+  assert.equal(readyTimer.ms, 30000);
+  assert.equal(readyTimer.cleared, false);
+  readyTimer.fn();
+  const fallbackHost = timeoutPage.doc.getElementById('json-toolbox-viewer-host');
+  assert.ok(fallbackHost);
+  assert.equal(fallbackHost.dataset.fallback, 'true');
 });

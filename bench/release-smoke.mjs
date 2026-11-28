@@ -105,7 +105,7 @@ try {
   await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   errors.push(...await page.evaluate(() => window.__smokeWindowErrors));
   assert.deepEqual(errors, []);
-  console.log(`✓ ${basename(archive)}: background worker and five extension pages passed`);
+  console.log(`✓ ${basename(archive)}: background worker and seven extension pages passed`);
 } finally {
   await context?.close();
   await rm(temp, { recursive: true, force: true });

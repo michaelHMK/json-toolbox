@@ -22,7 +22,7 @@ Formatare automată pentru pagini JSON și meniu contextual
 - Comutatorul opțional „Formatează automat paginile JSON” din bara laterală este dezactivat implicit și cere acces opțional doar la activare, cu vizualizare Original / Formatat, copiere, deschidere în instrument și opțiune text/plain.
 
 Import fișiere locale, minificare, escape și comparare
-- În toate cele șapte instrumente importă fișiere UTF-8 de până la 50 MiB (.json și .yaml/.yml în YAML -> JSON).
+- În toate cele șapte instrumente importă fișiere UTF-8 (.json de până la 50 MiB; .yaml/.yml de până la 10 MiB în YAML -> JSON).
 - Minifică pe o singură linie (inclusiv JSONC/JSON5), adaugă/elimină secvențe escape și compară structuri după index sau câmp cheie (id) cu ignorarea căilor selectate și diff de text.
 
 Aspect și confidențialitate

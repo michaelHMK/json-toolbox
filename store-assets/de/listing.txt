@@ -23,7 +23,7 @@ Webseiten-JSON automatisch formatieren & Kontextmenü
 - Der optionale Seitenleisten-Schalter „JSON-Seiten automatisch formatieren“ ist standardmäßig AUS; nur beim Aktivieren werden optionale Host-Rechte angefordert (inkl. Roh/Formatiert-Umschalter, Kopie, In Werkzeug öffnen und optionalem text/plain-Modus).
 
 Lokale Dateien importieren
-- Auf allen sieben Werkzeugseiten können Sie per Auswahl oder Drag-and-Drop jeweils eine UTF-8-Datei bis 50 MiB importieren (.json bzw. .yaml/.yml bei YAML -> JSON).
+- Auf allen sieben Werkzeugseiten können Sie UTF-8-Dateien per Auswahl oder Drag-and-Drop importieren (.json bis 50 MiB; .yaml/.yml bei YAML -> JSON bis 10 MiB).
 - Große Dateien oder lange Texte öffnen sich direkt im Editor zur vollständigen Bearbeitung und Kopie.
 
 Minifizieren, maskieren & JSON vergleichen

@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "內容超出 10 MB 傳送上限，請改用複製貼上或匯入檔案。"
+  },
+  "errYamlInputTooLarge": {
+    "message": "YAML 輸入超出 10 MiB 轉換上限。"
   }
 }

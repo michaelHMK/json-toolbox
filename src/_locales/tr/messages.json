@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "İçerik 10 MB aktarım sınırını aşıyor. Kopyalayıp yapıştırın veya dosya içe aktarın."
+  },
+  "errYamlInputTooLarge": {
+    "message": "YAML girdisi 10 MiB dönüştürme sınırını aşıyor."
   }
 }

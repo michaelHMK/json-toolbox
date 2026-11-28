@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { emitYaml } from '../src/core/yaml-emit.js';
-import { yamlToJson } from '../src/core/yaml-to-json.js';
+import { yamlToJson, YAML_MAX_INPUT_BYTES } from '../src/core/yaml-to-json.js';
 import { parseJsonPreservingNumberLiterals } from '../src/core/json.js';
 import { parseAllDocuments } from '../src/vendor/yaml.js';
 
@@ -75,6 +75,11 @@ const TRICKY_STRINGS = [
   'line1\nline2\n\n',
   '  indented\nline2',
   '\n  indented\n',
+  ' \n',
+  '  \n',
+  ' \n ',
+  '\n ',
+  ' \n\n',
   '\n',
   'x'.repeat(1100),
 ];
@@ -153,6 +158,8 @@ test('yamlToJson rejects billion laughs, circular aliases, complex keys, non-fin
     ['.inf', 'x: 1\ny: .inf\n', 'YAML_NON_FINITE', 2, 4],
     ['-.Inf', 'y: -.Inf\n', 'YAML_NON_FINITE', 1, 4],
     ['.nan', 'y: .nan\n', 'YAML_NON_FINITE', 1, 4],
+    ['!!float ".inf"', 'y: !!float ".inf"\n', 'YAML_NON_FINITE', 1, 12],
+    ['!!float ".nan"', 'y: !!float ".nan"\n', 'YAML_NON_FINITE', 1, 12],
     ['!!binary', 'b: !!binary SGVsbG8=\n', 'YAML_UNSUPPORTED_TAG', 1, 13],
     ['!custom', 'c: !custom val\n', 'YAML_UNSUPPORTED_TAG', 1, 12],
     ['!!timestamp', 't: !!timestamp 2026-11-28\n', 'YAML_UNSUPPORTED_TAG', 1, 16],
@@ -169,6 +176,32 @@ test('yamlToJson rejects billion laughs, circular aliases, complex keys, non-fin
       },
     );
   }
+});
+
+test('yamlToJson normalizes overflowing numeric forms, explicit typed scalars and size limits', () => {
+  const hugeHex = '0x' + 'f'.repeat(80);
+  const hugeOct = '0o' + '7'.repeat(90);
+  const yaml = [
+    'dotTrail: 1.e400',
+    'dotLead: .5e400',
+    'zeroPad: 001e400',
+    'typedFloat: !!float "1e400"',
+    'typedInt: !!int "0x10"',
+    `hugeHex: ${hugeHex}`,
+    `hugeOct: ${hugeOct}`,
+  ].join('\n');
+  const out = yamlToJson(yaml, { indent: null }).text;
+  assert.equal(
+    out,
+    `{"dotTrail":1e400,"dotLead":0.5e400,"zeroPad":1e400,"typedFloat":1e400,"typedInt":16,"hugeHex":${BigInt(hugeHex)},"hugeOct":${BigInt(hugeOct)}}`,
+  );
+  assert.doesNotThrow(() => JSON.parse(out));
+
+  assert.equal(YAML_MAX_INPUT_BYTES, 10 * 1024 * 1024);
+  assert.throws(
+    () => yamlToJson('a: ' + 'x'.repeat(120), { maxInputBytes: 64 }),
+    (err) => err.code === 'YAML_INPUT_TOO_LARGE',
+  );
 });
 
 test('TASKS acceptance: ambiguous strings stay strings in yaml 1.2 and PyYAML 1.1', () => {

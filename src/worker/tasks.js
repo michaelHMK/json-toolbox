@@ -67,7 +67,7 @@ export function createTaskHandler() {
       return runFn(text, false);
     } catch (error) {
       if (strict || !(error instanceof SyntaxError)) throw error;
-      const converted = convertLenientJson(text);
+      const converted = convertLenientJson(text, { trackOffsets: false });
       return runFn(converted.text, true);
     }
   }
@@ -278,6 +278,9 @@ export function createTaskHandler() {
       // callback. Keep the index cloneable; no strings or functions per line.
       if (request.includeTextIndex) {
         if (result.text?.length > TEXT_INDEX_THRESHOLD) result.lineIndex ||= createTextLineIndex(result.text);
+        else if (request.action === 'parse' && request.text?.length > TEXT_INDEX_THRESHOLD) {
+          result.lineIndex ||= createTextLineIndex(request.text);
+        }
         if (result.aText?.length > TEXT_INDEX_THRESHOLD) result.aLineIndex ||= createTextLineIndex(result.aText);
         if (result.bText?.length > TEXT_INDEX_THRESHOLD) {
           result.bLineIndex ||= result.aText === result.bText ? result.aLineIndex : createTextLineIndex(result.bText);

@@ -22,7 +22,7 @@ Tự động định dạng trang JSON & menu chuột phải
 - Công tắc tùy chọn "Tự động định dạng trang JSON" trong thanh bên mặc định TẮT và chỉ xin quyền trang web khi bạn bật lên, hỗ trợ chuyển Gốc / Đã định dạng, Sao chép, Mở trong công cụ và tùy chọn text/plain.
 
 Nhập tệp cục bộ, rút gọn, escape & so sánh
-- Trên cả bảy trang công cụ, chọn hoặc kéo thả tệp UTF-8 tối đa 50 MiB (.json và .yaml/.yml ở YAML -> JSON).
+- Trên cả bảy trang công cụ, chọn hoặc kéo thả tệp UTF-8 (.json tối đa 50 MiB; .yaml/.yml tối đa 10 MiB ở YAML -> JSON).
 - Rút gọn một dòng (hỗ trợ JSONC/JSON5), thêm/bỏ escape chuỗi JSON và so sánh cấu trúc theo khóa (như id), bỏ qua đường dẫn hoặc so sánh văn bản từng dòng.
 
 Giao diện & Quyền riêng tư

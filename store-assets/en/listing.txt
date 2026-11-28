@@ -25,7 +25,7 @@ Webpage JSON, auto-format and right-click menu
 
 Import local files
 - Across all seven tool pages, choose a file or drag and drop into an input pane.
-- Import UTF-8 files up to 50 MiB at a time (.json across JSON/Compare tools; .yaml / .yml on YAML -> JSON). Processing starts automatically after import.
+- Import UTF-8 files one at a time (.json up to 50 MiB across JSON/Compare tools; .yaml / .yml up to 10 MiB on YAML -> JSON). Processing starts automatically after import.
 - Large files or pasted/dropped long text open directly in the editor where you can inspect, edit and copy the full content.
 
 Minify, escape and unescape

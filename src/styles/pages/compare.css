@@ -12,6 +12,7 @@
 .compare-result { flex: 1; }
 .compare-result-title { align-items: flex-start; }
 .compare-result-title .pane-label { min-height: 29px; }
+.compare-result-title .pane-actions { flex-wrap: wrap; }
 #struct-view { flex: 1; display: flex; min-height: 0; }
 [dir="rtl"] #struct-view { flex-direction: row-reverse; }
 .tree-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }

@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "Nội dung vượt quá giới hạn truyền 10 MB. Hãy sao chép và dán hoặc nhập tệp thay thế."
+  },
+  "errYamlInputTooLarge": {
+    "message": "Dữ liệu YAML vượt quá giới hạn chuyển đổi 10 MiB."
   }
 }

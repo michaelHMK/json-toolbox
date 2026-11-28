@@ -22,12 +22,12 @@ function matchesExtension(name, extensions) {
   return extensions.some((ext) => lower.endsWith(ext));
 }
 
-export async function readTextFile(file, { extensions = ['.json'], typeErrorKey = 'errFileType' } = {}) {
+export async function readTextFile(file, { extensions = ['.json'], maxSize = MAX_FILE_SIZE, typeErrorKey = 'errFileType' } = {}) {
   if (!file?.name || !matchesExtension(file.name, extensions)) {
     throw new FileImportError(typeErrorKey);
   }
-  if (file.size > MAX_FILE_SIZE) {
-    throw new FileImportError('errFileTooLarge', [formatFileSize(MAX_FILE_SIZE)]);
+  if (file.size > maxSize) {
+    throw new FileImportError('errFileTooLarge', [formatFileSize(maxSize)]);
   }
   if (file.size === 0) throw new FileImportError('errFileEmpty');
 
@@ -56,6 +56,7 @@ export function readJsonFile(file) {
 export function createFileImport({
   dropZone, fileInput, triggerEl, fileNameEl, dropHint,
   extensions = ['.json'],
+  maxSize = MAX_FILE_SIZE,
   typeErrorKey = 'errFileType',
   multipleErrorKey = 'errFileMultiple',
   onImport, onError,
@@ -101,7 +102,7 @@ export function createFileImport({
     setReading(true);
     let result;
     try {
-      result = await readTextFile(file, { extensions, typeErrorKey });
+      result = await readTextFile(file, { extensions, maxSize, typeErrorKey });
     } catch (error) {
       if (version === sequence) {
         reportError(error, file);

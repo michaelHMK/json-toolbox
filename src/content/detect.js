@@ -85,7 +85,7 @@
     host.style.top = '14px';
     host.style.right = '14px';
     host.style.zIndex = '2147483647';
-    const root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+    const root = host.attachShadow ? host.attachShadow({ mode: 'closed' }) : host;
     const box = document.createElement('div');
     box.setAttribute('role', 'status');
     box.style.cssText = 'font:13px/1.4 system-ui,-apple-system,sans-serif;background:#1e293b;color:#f8fafc;padding:9px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.22);';
@@ -99,8 +99,9 @@
     document.getElementById(HOST_ID)?.remove();
     const host = document.createElement('div');
     host.id = HOST_ID;
+    host.dataset.fallback = 'true';
     host.style.cssText = 'all:initial;position:fixed;top:0;left:0;right:0;z-index:2147483647;';
-    const root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+    const root = host.attachShadow ? host.attachShadow({ mode: 'closed' }) : host;
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 14px;background:#f8fafc;color:#1e293b;border-bottom:1px solid #cbd5e1;font:13px/1.4 system-ui,-apple-system,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.08);';
     const note = document.createElement('span');
@@ -113,7 +114,7 @@
     openBtn.addEventListener('click', () => {
       chrome.runtime.sendMessage({ type: 'OPEN_IN_FORMATTER', text: rawText }, (response) => {
         if (response && !response.ok && response.reason === 'tooLarge') {
-          showToast(i18n('errSelectionTooLarge', 'Selected text exceeds the 10 MB transfer limit. Copy and paste or import a file instead.'));
+          showToast(i18n('errTransferTooLarge', 'Content exceeds the 10 MB transfer limit. Copy and paste or import a file instead.'));
         }
       });
     });
@@ -147,16 +148,30 @@
 
   let mountState = 'idle'; // 'idle' | 'pending' | 'formatted'
 
-  function mountViewer(pre, rawText, mime) {
+  function mountViewer(pre, rawText, mime, { onDemand = false } = {}) {
     mountState = 'pending';
     document.getElementById(HOST_ID)?.remove();
 
     const host = document.createElement('div');
     host.id = HOST_ID;
     host.style.cssText = 'all:initial;position:fixed;inset:0;width:100vw;height:100vh;z-index:2147483647;visibility:hidden;pointer-events:none;';
-    const root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+    const root = host.attachShadow ? host.attachShadow({ mode: 'closed' }) : host;
     const iframe = document.createElement('iframe');
-    iframe.src = chrome.runtime.getURL(`viewer.html?url=${encodeURIComponent(location.href)}`);
+    const viewerUrl = chrome.runtime.getURL(`viewer.html?url=${encodeURIComponent(location.href)}`);
+    let viewerOrigin = '*';
+    if (chrome.runtime?.id) {
+      viewerOrigin = `chrome-extension://${chrome.runtime.id}`;
+    } else {
+      try {
+        const parsed = new URL(viewerUrl);
+        viewerOrigin = parsed.origin && parsed.origin !== 'null'
+          ? parsed.origin
+          : `${parsed.protocol}//${parsed.host}`;
+      } catch {
+        viewerOrigin = '*';
+      }
+    }
+    iframe.src = viewerUrl;
     iframe.style.cssText = 'width:100%;height:100%;border:0;display:block;';
     root.appendChild(iframe);
 
@@ -167,26 +182,24 @@
     let restoreNative = null;
 
     const loadTimeoutMs = rawText.length > SMALL_PARSE_LIMIT ? 15000 : 1500;
+    const readyTimeoutMs = rawText.length > SMALL_PARSE_LIMIT ? 30000 : 5000;
     let ackTimer = null;
+    let readyTimer = null;
 
     const cleanupFailure = (showFallback) => {
       if (settled) return;
       settled = true;
       clearTimeout(loadTimer);
       clearTimeout(ackTimer);
+      clearTimeout(readyTimer);
       restoreNative?.();
       host.remove();
       mountState = 'idle';
       if (showFallback) {
-        let validForFallback = rawText.length <= SMALL_PARSE_LIMIT;
-        if (!validForFallback && mime !== 'text/plain') {
-          try {
-            JSON.parse(rawText);
-            validForFallback = true;
-          } catch {
-            validForFallback = false;
-          }
-        }
+        // Avoid synchronous main-thread JSON.parse on > 256 KiB fallback payloads.
+        const validForFallback = rawText.length <= SMALL_PARSE_LIMIT
+          || mime !== 'text/plain'
+          || looksLikeJsonContainer(rawText);
         if (validForFallback) showFallbackBanner(rawText);
       }
     };
@@ -196,8 +209,12 @@
     channel.port1.onmessage = (event) => {
       const type = event.data?.type;
       if (type === 'ACK') {
+        if (settled) return;
         acked = true;
         clearTimeout(ackTimer);
+        if (readyTimer === null) {
+          readyTimer = setTimeout(() => cleanupFailure(true), readyTimeoutMs);
+        }
         return;
       }
       if (type === 'READY') {
@@ -205,6 +222,7 @@
         settled = true;
         clearTimeout(loadTimer);
         clearTimeout(ackTimer);
+        clearTimeout(readyTimer);
         restoreNative = hideNativeJsonElements(pre);
         host.style.visibility = 'visible';
         host.style.pointerEvents = 'auto';
@@ -213,6 +231,9 @@
       }
       if (type === 'PARSE_ERROR') {
         cleanupFailure(false);
+        if (onDemand) {
+          showToast(i18n('errPageNotJson', 'This page is not valid JSON.'));
+        }
       }
     };
 
@@ -223,7 +244,7 @@
         const buffer = encoded.buffer;
         iframe.contentWindow.postMessage(
           { type: 'INIT', buffer, url: location.href },
-          '*',
+          viewerOrigin,
           [channel.port2, buffer],
         );
       } catch {
@@ -240,7 +261,7 @@
     return { ok: true };
   }
 
-  function detectAndMount({ allowPlainText = false } = {}) {
+  function detectAndMount({ allowPlainText = false, onDemand = false } = {}) {
     if (mountState === 'formatted') return { ok: true, alreadyFormatted: true };
     if (mountState === 'pending') return { ok: true, pending: true };
 
@@ -266,7 +287,7 @@
         return { ok: false, reason: 'not-json' };
       }
     }
-    return mountViewer(pre, rawText, mime);
+    return mountViewer(pre, rawText, mime, { onDemand });
   }
 
   async function runAutoDetect() {
@@ -313,7 +334,7 @@
   chrome.runtime?.onMessage?.addListener((message, _sender, sendResponse) => {
     if (message?.type !== 'FORMAT_PAGE_ON_DEMAND') return false;
     const runOnDemand = () => {
-      const result = detectAndMount({ allowPlainText: true });
+      const result = detectAndMount({ allowPlainText: true, onDemand: true });
       if (!result.ok) {
         showToast(i18n('errPageNotJson', 'This page is not valid JSON.'));
       }

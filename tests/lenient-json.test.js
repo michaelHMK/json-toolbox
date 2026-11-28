@@ -97,9 +97,13 @@ test('mapOffset maps converted JSON positions back to original offsets', () => {
   assert.equal(mapOffset(text.length), input.length);
 });
 
-test('handles deeply nested JSON5 iteratively without stack overflow', () => {
+test('handles deeply nested JSON5 iteratively without stack overflow and trackOffsets: false', () => {
   const depth = 20_000;
   const input = '['.repeat(depth) + '0x10,' + ']'.repeat(depth);
   const { text } = convertLenientJson(input);
   assert.equal(text, '['.repeat(depth) + '16' + ']'.repeat(depth));
+
+  const untracked = convertLenientJson('/*c*/ { a: 0xFF, b: [1, 2,], }', { trackOffsets: false });
+  assert.equal(untracked.text, '{"a":255,"b":[1,2]}');
+  assert.equal(untracked.mapOffset(4), 4);
 });

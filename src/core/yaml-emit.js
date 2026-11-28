@@ -1,6 +1,7 @@
 import { appendJsonPath } from './json-path.js';
 
 const MAX_OUTPUT_LENGTH = 0x1fffffe8;
+const CHUNK_FLUSH_SIZE = 65536;
 
 // YAML 1.1 (PyYAML) + YAML 1.2 reserved word scalars that must be quoted.
 const RESERVED_SCALAR_RE = /^(?:true|false|null|yes|no|on|off|y|n|~|=|<<)$/i;
@@ -106,11 +107,13 @@ function formatSingleLineString(str) {
 
 function canUseBlockScalar(str) {
   if (!str.includes('\n')) return false;
-  let hasNonNewline = false;
+  let hasVisible = false;
   for (let i = 0; i < str.length; i++) {
     const code = str.charCodeAt(i);
     if (code === 10) continue;
-    hasNonNewline = true;
+    // Block scalars chomp trailing whitespace-only lines cleanly only when visible content exists;
+    // strings composed purely of spaces and newlines (e.g. " \n", " \n ") fall back to double quotes.
+    if (code !== 32) hasVisible = true;
     if (code < 0x20 || code === 0x7f || (code >= 0x80 && code <= 0x9f)
       || code === 0x2028 || code === 0x2029 || code === 0xfeff) {
       return false;
@@ -124,7 +127,7 @@ function canUseBlockScalar(str) {
       return false;
     }
   }
-  return hasNonNewline;
+  return hasVisible;
 }
 
 function emitBlockScalar(str, contentIndentStr) {
@@ -176,14 +179,27 @@ export function emitYaml(data, { numberLiterals = null } = {}) {
   }
 
   const chunks = [];
+  let buf = '';
   let totalLength = 0;
   function pushChunk(text) {
     if (!text) return;
     if (totalLength + text.length > MAX_OUTPUT_LENGTH) {
       throw new RangeError('Formatted YAML exceeds the maximum string length');
     }
-    chunks.push(text);
     totalLength += text.length;
+    if (text.length >= CHUNK_FLUSH_SIZE) {
+      if (buf) {
+        chunks.push(buf);
+        buf = '';
+      }
+      chunks.push(text);
+      return;
+    }
+    buf += text;
+    if (buf.length >= CHUNK_FLUSH_SIZE) {
+      chunks.push(buf);
+      buf = '';
+    }
   }
 
   const pathSegments = [];
@@ -331,5 +347,6 @@ export function emitYaml(data, { numberLiterals = null } = {}) {
     }
   }
 
+  if (buf) chunks.push(buf);
   return chunks.length === 1 ? chunks[0] : chunks.join('');
 }

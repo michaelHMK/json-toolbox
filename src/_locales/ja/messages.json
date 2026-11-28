@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "内容が 10 MB の転送上限を超えています。コピー＆ペーストまたはファイル読み込みをご利用ください。"
+  },
+  "errYamlInputTooLarge": {
+    "message": "YAML 入力が 10 MiB の変換上限を超えています。"
   }
 }

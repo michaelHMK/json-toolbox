@@ -110,7 +110,7 @@ try {
       await reopened.close();
     }
   }
-  results.push('Five pages: normal default under a dark OS, three modes, reload/reopen persistence and CSS colors');
+  results.push('Seven pages: normal default under a dark OS, three modes, reload/reopen persistence and CSS colors');
 
   await page.goto(`${base}/formatter.html`);
   await select(page, 'comfort');

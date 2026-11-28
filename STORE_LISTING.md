@@ -30,7 +30,7 @@ JSON <-> YAML 双向转换：
 
 导入本地文件：
 - 七个工具页面均支持选择文件或拖放导入（JSON 与对比页支持 `.json`，YAML 转 JSON 支持 `.yaml` / `.yml`）
-- 每次导入一个 UTF-8 编码文件，最大 50 MiB，导入后自动开始处理；对比页面会在两侧均有内容时自动对比
+- 每次导入一个 UTF-8 编码文件（`.json` 最大 50 MiB；`YAML → JSON` 的 `.yaml` / `.yml` 最大 10 MiB），导入后自动开始处理；对比页面会在两侧均有内容时自动对比
 - 导入大文件、粘贴或拖放超长文本时直接在编辑器中打开，可编辑并复制全文
 
 压缩、转义与去转义：
@@ -79,7 +79,7 @@ Webpage JSON, auto-format and right-click menu:
 
 Import local files:
 - Across all seven tool pages, choose a file or drag and drop into an input pane
-- Import UTF-8 files up to 50 MiB at a time (`.json` across JSON/Compare tools; `.yaml` / `.yml` on YAML -> JSON). Processing starts automatically after import
+- Import UTF-8 files one at a time (`.json` up to 50 MiB across JSON/Compare tools; `.yaml` / `.yml` up to 10 MiB on YAML -> JSON). Processing starts automatically after import
 - Large files or pasted/dropped long text open directly in the editor where you can inspect, edit and copy the full content
 
 Minify, escape and unescape:
@@ -194,7 +194,7 @@ node scripts/store-assets/generate.mjs --promos-only
 
 `listing.txt` 是供上架时复制的独立文案，不会随图片生成自动翻译；修改功能或 `src/_locales/` 中的名称、简介后，应同步检查对应文案。
 
-每个导入文件的上限为 50 MiB。导入、粘贴或拖放后的输入超过 262,144 个 UTF-16 码元（`text.length > 256 * 1024`）时，会自动在大文本编辑器中打开，全文都可修改。
+每个 `.json` 导入文件的上限为 50 MiB（`YAML → JSON` 输入及 `.yaml`/`.yml` 文件上限为 10 MiB）。导入、粘贴或拖放后的输入超过 262,144 个 UTF-16 码元（`text.length > 256 * 1024`）时，会自动在大文本编辑器中打开，全文都可修改。
 
 ## 审核测试说明
 
@@ -203,7 +203,7 @@ No account, credentials or network connection are needed for local toolbox tools
 1. Install the extension, confirming there are zero install-time permission warnings, then click its toolbar icon to open the JSON Toolbox tab.
 2. On JSON Formatter, click Sample and then Format, or paste lenient JSONC/JSON5 (e.g. comments, trailing commas, unquoted keys, `0xFF`) to verify automatic lenient fallback with status notification. Switch to Tree to expand nodes and search keys or values.
 3. Open JSON Minify, JSON Escape, JSON Unescape, `JSON -> YAML` and `YAML -> JSON` from the sidebar. Each page has a Sample button, action button and copy control; test swapping direction between YAML pages.
-4. Across all seven tool pages, use Import file or drop a UTF-8 file up to 50 MiB (`.json`, or `.yaml` / `.yml` on `YAML -> JSON`). Processing starts automatically after import. Large files open directly in the editor.
+4. Across all seven tool pages, use Import file or drop a UTF-8 file (`.json` up to 50 MiB, or `.yaml` / `.yml` up to 10 MiB on `YAML -> JSON`). Processing starts automatically after import. Large files open directly in the editor.
 5. Open JSON Compare and click Sample, then Compare. Inspect structural diffs, optional array key matching (`id`), ignored paths, diffs-only filtering, and text comparison view.
 6. Right-click selected JSON text on any normal webpage -> choose "Open selection in JSON Toolbox" to inspect instant handoff via `chrome.storage.session` (cleared immediately after load).
 7. On an API/JSON webpage (or local test JSON page), right-click -> "Format JSON on this page" to verify on-demand rendering via `activeTab`, toggling Raw / Formatted and "Open in JSON Toolbox".

@@ -23,7 +23,7 @@ Páginas JSON automáticas e menu de contexto
 - A opção "Formatar páginas JSON automaticamente" na barra lateral está desativada por predefinição e só pede permissão opcional quando ativada, com alternância Original / Formatado, cópia, abrir na ferramenta e opção text/plain.
 
 Importar ficheiros locais
-- Em todas as sete ferramentas, escolha ou arraste um ficheiro UTF-8 até 50 MiB (.json ou .yaml/.yml em YAML -> JSON).
+- Em todas as sete ferramentas, escolha ou arraste um ficheiro UTF-8 (.json até 50 MiB; .yaml/.yml até 10 MiB em YAML -> JSON).
 - Ficheiros grandes ou textos longos abrem-se diretamente no editor para edição e cópia completa.
 
 Minificar, escapar e comparar JSON

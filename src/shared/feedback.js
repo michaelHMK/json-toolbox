@@ -9,6 +9,7 @@ const ERROR_KEYS = {
   YAML_UNSUPPORTED_TAG: 'errYamlUnsupportedTag',
   YAML_COMPLEX_KEY: 'errYamlComplexKey',
   YAML_NON_FINITE: 'errYamlNonFinite',
+  YAML_INPUT_TOO_LARGE: 'errYamlInputTooLarge',
   SEARCH_NOT_READY: 'errNothingToParse',
   SNAPSHOT_UNAVAILABLE: 'errSnapshotUnavailable',
   UNKNOWN_ACTION: 'errTaskFailed',
@@ -41,6 +42,7 @@ export function createFeedback({ statusEl, errorEl, selectInputPosition }) {
   function setStatus(text) {
     feedbackVersion++;
     statusEl.textContent = text;
+    statusEl.title = text;
   }
 
   function showError(text) {

@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "Content exceeds the 10 MB transfer limit. Copy and paste or import a file instead."
+  },
+  "errYamlInputTooLarge": {
+    "message": "YAML input exceeds the 10 MiB conversion limit."
   }
 }

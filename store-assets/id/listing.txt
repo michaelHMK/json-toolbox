@@ -22,7 +22,7 @@ Format otomatis halaman JSON & menu klik kanan
 - Tombol opsional "Format halaman JSON secara otomatis" di bilah samping nonaktif secara default dan hanya meminta izin host opsional saat diaktifkan, lengkap dengan sakelar Asli / Diformat, Salin, Buka di alat, dan opsi text/plain.
 
 Impor file lokal, minifikasi, escape & bandingkan
-- Di ketujuh alat, pilih atau seret file UTF-8 hingga 50 MiB (.json dan .yaml/.yml pada YAML -> JSON).
+- Di ketujuh alat, pilih atau seret file UTF-8 (.json hingga 50 MiB; .yaml/.yml hingga 10 MiB pada YAML -> JSON).
 - Minifikasi satu baris (termasuk JSONC/JSON5), escape/hapus escape string JSON, serta bandingkan struktur dan teks per baris dengan kunci pencocokan id dan jalur yang diabaikan.
 
 Tampilan & Privasi

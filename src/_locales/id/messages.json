@@ -681,5 +681,11 @@
         "content": "$2"
       }
     }
+  },
+  "errTransferTooLarge": {
+    "message": "Konten melebihi batas transfer 10 MB. Salin dan tempel atau impor sebagai file."
+  },
+  "errYamlInputTooLarge": {
+    "message": "Input YAML melebihi batas konversi 10 MiB."
   }
 }

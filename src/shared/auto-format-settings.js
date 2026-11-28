@@ -2,6 +2,31 @@ export const AUTO_FORMAT_ORIGINS = ['http://*/*', 'https://*/*', 'file:///*'];
 export const PLAIN_TEXT_STORAGE_KEY = 'formatPlainText';
 const AUTO_FORMAT_SCRIPT_ID = 'json-toolbox-auto-format';
 
+async function getGrantedOrigins() {
+  if (typeof chrome === 'undefined' || !chrome.permissions) return [];
+  if (typeof chrome.permissions.getAll === 'function') {
+    const all = await chrome.permissions.getAll();
+    const granted = new Set(all?.origins || []);
+    return AUTO_FORMAT_ORIGINS.filter((origin) => granted.has(origin));
+  }
+  if (typeof chrome.permissions.contains === 'function') {
+    const matched = [];
+    for (const origin of AUTO_FORMAT_ORIGINS) {
+      if (await chrome.permissions.contains({ origins: [origin] })) matched.push(origin);
+    }
+    return matched;
+  }
+  return [];
+}
+
+async function notifyBackgroundSync() {
+  try {
+    await chrome.runtime?.sendMessage?.({ type: 'SYNC_AUTO_FORMAT' });
+  } catch {
+    // Background worker listeners will reconcile on startup or permission events.
+  }
+}
+
 function checkFileSchemeAccess() {
   return new Promise((resolve) => {
     try {
@@ -34,17 +59,19 @@ export function initAutoFormatSettings() {
   }
 
   async function refresh() {
-    if (typeof chrome === 'undefined' || !chrome.permissions?.contains) {
+    let granted = [];
+    try {
+      granted = await getGrantedOrigins();
+      enabled = granted.length > 0;
+    } catch {
+      enabled = false;
+    }
+    if (typeof chrome === 'undefined' || !chrome.permissions) {
       enabled = false;
       plainText = false;
       if (fileHintEl) fileHintEl.hidden = true;
       render();
       return;
-    }
-    try {
-      enabled = await chrome.permissions.contains({ origins: AUTO_FORMAT_ORIGINS });
-    } catch {
-      enabled = false;
     }
     try {
       const stored = await chrome.storage?.local?.get?.(PLAIN_TEXT_STORAGE_KEY);
@@ -53,7 +80,7 @@ export function initAutoFormatSettings() {
       plainText = false;
     }
     if (fileHintEl) {
-      if (enabled) {
+      if (enabled && granted.includes('file:///*')) {
         const fileAllowed = await checkFileSchemeAccess();
         fileHintEl.hidden = fileAllowed;
       } else {
@@ -67,20 +94,15 @@ export function initAutoFormatSettings() {
     if (busy || typeof chrome === 'undefined' || !chrome.permissions) return;
     busy = true;
     const turningOn = !enabled;
-    let pending;
-    try {
-      pending = turningOn
-        ? chrome.permissions.request({ origins: AUTO_FORMAT_ORIGINS })
-        : chrome.permissions.remove({ origins: AUTO_FORMAT_ORIGINS });
-    } catch {
-      busy = false;
-      render();
-      return;
-    }
-    Promise.resolve(pending).then(async (result) => {
+    Promise.resolve((async () => {
       if (turningOn) {
+        const result = await chrome.permissions.request({ origins: AUTO_FORMAT_ORIGINS });
         enabled = Boolean(result);
+        if (enabled) await notifyBackgroundSync();
       } else {
+        const granted = await getGrantedOrigins();
+        const origins = granted.length ? granted : AUTO_FORMAT_ORIGINS;
+        const result = await chrome.permissions.remove({ origins });
         if (result && chrome.scripting?.unregisterContentScripts) {
           try {
             await chrome.scripting.unregisterContentScripts({ ids: [AUTO_FORMAT_SCRIPT_ID] });
@@ -88,8 +110,9 @@ export function initAutoFormatSettings() {
             // Ignore when script was not registered.
           }
         }
-        enabled = !(result !== false);
+        if (result !== false) await notifyBackgroundSync();
       }
+    })()).then(async () => {
       await refresh();
     }, () => {
       render();

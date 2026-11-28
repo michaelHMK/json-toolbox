@@ -37,7 +37,7 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 | **YAML → JSON** | Convert YAML 1.2 (including multi-document YAML streams into JSON arrays) back to formatted JSON while preserving number precision and protecting against circular or oversized aliases |
 | **JSON Compare** | Compare JSON structures (or JSONC/JSON5 inputs) for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
 
-Formatter, Minifier, Escape, Unescape, `JSON → YAML`, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file), while `YAML → JSON` accepts `.yaml` and `.yml` files (up to 50 MiB) through file pickers or drag-and-drop. Importing preserves original text and runs automatically. You can also right-click selected text on any page and choose **Open selection in JSON Toolbox** to format it immediately.
+Formatter, Minifier, Escape, Unescape, `JSON → YAML`, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file), while `YAML → JSON` accepts `.yaml` and `.yml` files (up to 10 MiB) through file pickers or drag-and-drop. Importing preserves original text and runs automatically. You can also right-click selected text on any page and choose **Open selection in JSON Toolbox** to format it immediately.
 
 ## Auto-Format JSON Pages
 

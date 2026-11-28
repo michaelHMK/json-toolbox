@@ -1,8 +1,11 @@
 import { LineCounter, isAlias, isMap, isPair, isScalar, isSeq, parseAllDocuments } from '../vendor/yaml.js';
-import { formatJson } from './json.js';
 import { errorLocationAtPosition } from './parse-error.js';
 
+export const YAML_MAX_INPUT_BYTES = 10 * 1024 * 1024;
+const MAX_OUTPUT_LENGTH = 0x1fffffe8;
+const CHUNK_FLUSH_SIZE = 65536;
 const MAX_ALIAS_EXPANSIONS = 100;
+const JSON_NUMBER_RE = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/;
 const ALLOWED_TAGS = new Set([
   'tag:yaml.org,2002:str',
   'tag:yaml.org,2002:int',
@@ -12,6 +15,35 @@ const ALLOWED_TAGS = new Set([
   'tag:yaml.org,2002:map',
   'tag:yaml.org,2002:seq',
 ]);
+
+function utf8ByteLength(str) {
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code < 0x80) bytes += 1;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff && i + 1 < str.length) {
+      const next = str.charCodeAt(i + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        bytes += 4;
+        i++;
+      } else {
+        bytes += 3;
+      }
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+}
+
+function normalizeJsonIndent(indent) {
+  if (indent === 'tab') return '\t';
+  if (indent === null || indent === undefined || indent === false || indent === '') return null;
+  const value = Number(indent);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return ' '.repeat(Math.min(10, Math.floor(value)));
+}
 
 function yamlError(text, lineCounter, position, code, message) {
   const safePos = typeof position === 'number'
@@ -49,59 +81,90 @@ function nodePosition(node) {
   return 0;
 }
 
-function normalizeJsonNumberLiteral(raw, value, text, lineCounter, node) {
-  const token = raw.trim();
-  if (!Number.isFinite(value) || Number.isNaN(value)) {
-    if (!token || /^[+-]?\.(?:inf|infinity|nan)$/i.test(token)) {
-      throw yamlError(
-        text,
-        lineCounter,
-        nodePosition(node),
-        'YAML_NON_FINITE',
-        'Non-finite number (Infinity/NaN) is not valid in JSON',
-      );
+function unwrapScalarToken(raw, type) {
+  const s = raw.trim();
+  if (!s) return '';
+  if (type === 'PLAIN') return s;
+  if (type === 'QUOTE_DOUBLE') {
+    try {
+      const parsed = JSON.parse(s);
+      return typeof parsed === 'string' ? parsed.trim() : '';
+    } catch {
+      return s.startsWith('"') && s.endsWith('"') ? s.slice(1, -1).trim() : '';
     }
-    return token.charCodeAt(0) === 43 ? token.slice(1) : token;
+  }
+  if (type === 'QUOTE_SINGLE') {
+    return s.startsWith("'") && s.endsWith("'")
+      ? s.slice(1, -1).replace(/''/g, "'").trim()
+      : '';
+  }
+  return '';
+}
+
+function normalizeJsonNumberLiteral(raw, value, text, lineCounter, node) {
+  if (Number.isNaN(value)) {
+    throw yamlError(
+      text,
+      lineCounter,
+      nodePosition(node),
+      'YAML_NON_FINITE',
+      'Non-finite number (Infinity/NaN) is not valid in JSON',
+    );
   }
 
-  if (node.type !== 'PLAIN' || !token) {
-    return Object.is(value, -0) ? '-0' : String(value);
+  const token = unwrapScalarToken(raw, node?.type);
+  if (/^[+-]?\.(?:inf|infinity|nan)$/i.test(token)) {
+    throw yamlError(
+      text,
+      lineCounter,
+      nodePosition(node),
+      'YAML_NON_FINITE',
+      'Non-finite number (Infinity/NaN) is not valid in JSON',
+    );
   }
 
-  // Strip YAML underscores in numeric literals if any, and leading '+'.
-  let s = token.charCodeAt(0) === 43 ? token.slice(1) : token;
-  const neg = s.charCodeAt(0) === 45;
-  const unsigned = neg ? s.slice(1) : s;
+  let candidate = '';
+  if (token) {
+    const s = token.charCodeAt(0) === 43 ? token.slice(1) : token;
+    const neg = s.charCodeAt(0) === 45;
+    const unsigned = neg ? s.slice(1) : s;
 
-  if (/^0[xX][0-9a-fA-F]+$/.test(unsigned)) {
-    const mag = BigInt(unsigned);
-    if (mag === 0n) return neg ? '-0' : '0';
-    return (neg ? '-' : '') + mag.toString(10);
-  }
-  if (/^0[oO][0-7]+$/.test(unsigned)) {
-    const mag = BigInt(unsigned);
-    if (mag === 0n) return neg ? '-0' : '0';
-    return (neg ? '-' : '') + mag.toString(10);
+    if (/^0[xX][0-9a-fA-F]+$/.test(unsigned) || /^0[oO][0-7]+$/.test(unsigned)) {
+      const mag = BigInt(unsigned);
+      candidate = mag === 0n ? (neg ? '-0' : '0') : ((neg ? '-' : '') + mag.toString(10));
+    } else if (/^\.[0-9]+(?:[eE][+-]?[0-9]+)?$/.test(unsigned)) {
+      candidate = (neg ? '-' : '') + '0' + unsigned;
+    } else {
+      const match = /^([0-9]+)(?:\.([0-9]*))?([eE][+-]?[0-9]+)?$/.exec(unsigned);
+      if (match) {
+        let [, intPart, fracPart, expPart = ''] = match;
+        if (intPart.length > 1 && intPart.charCodeAt(0) === 48) {
+          intPart = intPart.replace(/^0+/, '') || '0';
+        }
+        candidate = fracPart !== undefined && fracPart.length > 0
+          ? (neg ? '-' : '') + intPart + '.' + fracPart + expPart
+          : (neg ? '-' : '') + intPart + expPart;
+      }
+    }
   }
 
-  // Handle leading dot (.5) or trailing dot (5.) or leading zeros (0123).
-  if (unsigned.startsWith('.')) {
-    return (neg ? '-' : '') + '0' + unsigned;
+  if (candidate && JSON_NUMBER_RE.test(candidate)) {
+    return candidate;
   }
+  if (!Number.isFinite(value)) {
+    throw yamlError(
+      text,
+      lineCounter,
+      nodePosition(node),
+      'YAML_NON_FINITE',
+      'Non-finite number (Infinity/NaN) is not valid in JSON',
+    );
+  }
+  return Object.is(value, -0) ? '-0' : String(value);
+}
 
-  const match = /^([0-9]+)(?:\.([0-9]*))?([eE][+-]?[0-9]+)?$/.exec(unsigned);
-  if (!match) {
-    return Object.is(value, -0) ? '-0' : String(value);
-  }
-  let [, intPart, fracPart, expPart = ''] = match;
-  // JSON forbids leading zeros on integers (e.g. 0123 -> 123, 00 -> 0).
-  if (intPart.length > 1 && intPart.charCodeAt(0) === 48) {
-    intPart = intPart.replace(/^0+/, '') || '0';
-  }
-  if (fracPart !== undefined && fracPart.length > 0) {
-    return (neg ? '-' : '') + intPart + '.' + fracPart + expPart;
-  }
-  return (neg ? '-' : '') + intPart + expPart;
+function rawNodeSlice(node, text) {
+  return Array.isArray(node.range) ? text.slice(node.range[0], node.range[1]) : '';
 }
 
 function scalarKeyString(node, text, lineCounter) {
@@ -113,13 +176,55 @@ function scalarKeyString(node, text, lineCounter) {
   if (value === null || value === undefined) return 'null';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'number') {
-    const raw = node.srcToken?.source ?? (node.range ? text.slice(node.range[0], node.range[1]) : '');
-    return normalizeJsonNumberLiteral(raw, value, text, lineCounter, node);
+    return normalizeJsonNumberLiteral(rawNodeSlice(node, text), value, text, lineCounter, node);
   }
   return String(value);
 }
 
-function emitDocumentAsCompactJson(doc, text, lineCounter) {
+function createChunkedWriter(indentUnit) {
+  const chunks = [];
+  let buf = '';
+  let totalLength = 0;
+  const newlineIndents = indentUnit !== null ? ['\n'] : null;
+
+  function push(str) {
+    if (!str) return;
+    if (totalLength + str.length > MAX_OUTPUT_LENGTH) {
+      throw new RangeError('Formatted JSON exceeds the maximum string length');
+    }
+    totalLength += str.length;
+    if (str.length >= CHUNK_FLUSH_SIZE) {
+      if (buf) {
+        chunks.push(buf);
+        buf = '';
+      }
+      chunks.push(str);
+      return;
+    }
+    buf += str;
+    if (buf.length >= CHUNK_FLUSH_SIZE) {
+      chunks.push(buf);
+      buf = '';
+    }
+  }
+
+  function pushNewlineIndent(level) {
+    if (!newlineIndents) return;
+    while (newlineIndents.length <= level) {
+      newlineIndents.push(newlineIndents[newlineIndents.length - 1] + indentUnit);
+    }
+    push(newlineIndents[level]);
+  }
+
+  function finish() {
+    if (buf) chunks.push(buf);
+    return chunks.length === 1 ? chunks[0] : chunks.join('');
+  }
+
+  return { push, pushNewlineIndent, finish };
+}
+
+function assertNoDocErrors(doc, text, lineCounter) {
   if (doc.errors?.length) {
     const first = doc.errors[0];
     const pos = Array.isArray(first.pos) && typeof first.pos[0] === 'number' ? first.pos[0] : 0;
@@ -132,10 +237,14 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
       first.message || 'Invalid YAML syntax',
     );
   }
+}
 
-  if (!doc.contents) return 'null';
+function emitDocumentInto(doc, text, lineCounter, writer, startDepth, pretty) {
+  if (!doc.contents) {
+    writer.push('null');
+    return;
+  }
 
-  const chunks = [];
   let aliasExpansions = 0;
   const activeNodes = new Set();
 
@@ -174,20 +283,19 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
     validateTag(node);
     const value = node.value;
     if (value === null || value === undefined) {
-      chunks.push('null');
+      writer.push('null');
       return;
     }
     if (typeof value === 'boolean') {
-      chunks.push(value ? 'true' : 'false');
+      writer.push(value ? 'true' : 'false');
       return;
     }
     if (typeof value === 'number') {
-      const raw = node.srcToken?.source ?? (node.range ? text.slice(node.range[0], node.range[1]) : '');
-      chunks.push(normalizeJsonNumberLiteral(raw, value, text, lineCounter, node));
+      writer.push(normalizeJsonNumberLiteral(rawNodeSlice(node, text), value, text, lineCounter, node));
       return;
     }
     if (typeof value === 'string') {
-      chunks.push(JSON.stringify(value));
+      writer.push(JSON.stringify(value));
       return;
     }
     throw yamlError(
@@ -199,13 +307,13 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
     );
   }
 
-  // Iterative stack: { node, isMap, items, index }
+  // Iterative stack: { node, isMap, items, index, depth }
   const stack = [];
 
-  function enterNode(rawNode) {
+  function enterNode(rawNode, depth) {
     const node = resolveNode(rawNode);
     if (!node) {
-      chunks.push('null');
+      writer.push('null');
       return;
     }
     validateTag(node);
@@ -218,12 +326,12 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
         throw yamlError(text, lineCounter, nodePosition(node), 'YAML_ALIAS_LIMIT', 'Circular YAML alias is not supported in JSON');
       }
       if (node.items.length === 0) {
-        chunks.push('{}');
+        writer.push('{}');
         return;
       }
       activeNodes.add(node);
-      chunks.push('{');
-      stack.push({ node, isMap: true, items: node.items, index: 0 });
+      writer.push('{');
+      stack.push({ node, isMap: true, items: node.items, index: 0, depth });
       return;
     }
     if (isSeq(node)) {
@@ -231,29 +339,31 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
         throw yamlError(text, lineCounter, nodePosition(node), 'YAML_ALIAS_LIMIT', 'Circular YAML alias is not supported in JSON');
       }
       if (node.items.length === 0) {
-        chunks.push('[]');
+        writer.push('[]');
         return;
       }
       activeNodes.add(node);
-      chunks.push('[');
-      stack.push({ node, isMap: false, items: node.items, index: 0 });
+      writer.push('[');
+      stack.push({ node, isMap: false, items: node.items, index: 0, depth });
       return;
     }
     throw yamlError(text, lineCounter, nodePosition(node), 'INVALID_YAML', 'Unsupported YAML node type');
   }
 
-  enterNode(doc.contents);
+  enterNode(doc.contents, startDepth);
 
   while (stack.length > 0) {
     const frame = stack[stack.length - 1];
     if (frame.index >= frame.items.length) {
-      chunks.push(frame.isMap ? '}' : ']');
+      if (pretty) writer.pushNewlineIndent(frame.depth);
+      writer.push(frame.isMap ? '}' : ']');
       activeNodes.delete(frame.node);
       stack.pop();
       continue;
     }
     const idx = frame.index++;
-    if (idx > 0) chunks.push(',');
+    if (idx > 0) writer.push(',');
+    if (pretty) writer.pushNewlineIndent(frame.depth + 1);
 
     if (frame.isMap) {
       const pair = frame.items[idx];
@@ -262,7 +372,7 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
       }
       const keyNode = resolveNode(pair.key);
       if (!keyNode) {
-        chunks.push('"null":');
+        writer.push(pretty ? '"null": ' : '"null":');
       } else if (!isScalar(keyNode)) {
         throw yamlError(
           text,
@@ -272,28 +382,34 @@ function emitDocumentAsCompactJson(doc, text, lineCounter) {
           'Complex YAML keys (objects or arrays) cannot be represented in JSON',
         );
       } else {
-        chunks.push(JSON.stringify(scalarKeyString(keyNode, text, lineCounter)), ':');
+        writer.push(JSON.stringify(scalarKeyString(keyNode, text, lineCounter)));
+        writer.push(pretty ? ': ' : ':');
       }
-      enterNode(pair.value);
+      enterNode(pair.value, frame.depth + 1);
     } else {
-      enterNode(frame.items[idx]);
+      enterNode(frame.items[idx], frame.depth + 1);
     }
   }
-
-  return chunks.length === 1 ? chunks[0] : chunks.join('');
 }
 
 /**
  * Parse YAML (core schema) and convert to JSON preserving exact number literals.
  * Multiple documents are wrapped into a JSON array with `multiDocument: true`.
  */
-export function yamlToJson(text, { indent = '2' } = {}) {
+export function yamlToJson(text, { indent = '2', maxInputBytes = YAML_MAX_INPUT_BYTES } = {}) {
+  if (
+    typeof text === 'string'
+    && (text.length > maxInputBytes || (text.length > Math.floor(maxInputBytes / 3) && utf8ByteLength(text) > maxInputBytes))
+  ) {
+    throw yamlError(text, null, 0, 'YAML_INPUT_TOO_LARGE', 'YAML input exceeds the maximum supported size');
+  }
+
   const lineCounter = new LineCounter();
   const docs = parseAllDocuments(text, {
     schema: 'core',
     maxAliasCount: MAX_ALIAS_EXPANSIONS,
     lineCounter,
-    keepSourceTokens: true,
+    keepSourceTokens: false,
     uniqueKeys: true,
   });
 
@@ -301,18 +417,30 @@ export function yamlToJson(text, { indent = '2' } = {}) {
     return { text: 'null', multiDocument: false, documentCount: 0 };
   }
 
-  let compactJson;
-  const multiDocument = docs.length > 1;
-  if (!multiDocument) {
-    compactJson = emitDocumentAsCompactJson(docs[0], text, lineCounter);
-  } else {
-    const docJsons = docs.map((doc) => emitDocumentAsCompactJson(doc, text, lineCounter));
-    compactJson = '[' + docJsons.join(',') + ']';
+  for (const doc of docs) {
+    assertNoDocErrors(doc, text, lineCounter);
   }
 
-  const formatted = formatJson(compactJson, { indent, includeData: false });
+  const indentUnit = normalizeJsonIndent(indent);
+  const pretty = indentUnit !== null;
+  const writer = createChunkedWriter(indentUnit);
+  const multiDocument = docs.length > 1;
+
+  if (!multiDocument) {
+    emitDocumentInto(docs[0], text, lineCounter, writer, 0, pretty);
+  } else {
+    writer.push('[');
+    for (let i = 0; i < docs.length; i++) {
+      if (i > 0) writer.push(',');
+      if (pretty) writer.pushNewlineIndent(1);
+      emitDocumentInto(docs[i], text, lineCounter, writer, 1, pretty);
+    }
+    if (pretty) writer.pushNewlineIndent(0);
+    writer.push(']');
+  }
+
   return {
-    text: formatted.text,
+    text: writer.finish(),
     multiDocument,
     documentCount: docs.length,
   };

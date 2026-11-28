@@ -84,10 +84,12 @@ function setupBackground({ executeScript, grantedOrigins = [], registeredScripts
           for (const [k, v] of Object.entries(obj)) sessionStore.set(k, v);
         },
         async get(key) {
+          if (key === null) return Object.fromEntries(sessionStore.entries());
           return sessionStore.has(key) ? { [key]: sessionStore.get(key) } : {};
         },
-        async remove(key) {
-          sessionStore.delete(key);
+        async remove(keys) {
+          const list = Array.isArray(keys) ? keys : [keys];
+          for (const k of list) sessionStore.delete(k);
         },
       },
     },
@@ -168,10 +170,10 @@ test('context menu reads selection via executeScript, stores one-time token, and
   assert.equal(url.pathname, '/formatter.html');
   const token = url.searchParams.get('import');
   assert.ok(token);
-  assert.deepEqual(structuredClone(bg.sessionStore.get(`selection:${token}`)), {
-    text: '{\n  "exact": true\n}',
-    normalized: false,
-  });
+  const entry = structuredClone(bg.sessionStore.get(`selection:${token}`));
+  assert.equal(entry.text, '{\n  "exact": true\n}');
+  assert.equal(entry.normalized, false);
+  assert.equal(typeof entry.createdAt, 'number');
 });
 
 test('readActiveSelectionInPage extracts textarea selectionRange accurately', () => {
@@ -199,10 +201,10 @@ test('falls back to info.selectionText with normalized=true when executeScript i
   );
   assert.equal(bg.openedTabs.length, 1);
   const token = new URL(bg.openedTabs[0].url).searchParams.get('import');
-  assert.deepEqual(structuredClone(bg.sessionStore.get(`selection:${token}`)), {
-    text: '{"fallback": 1}',
-    normalized: true,
-  });
+  const fallbackEntry = structuredClone(bg.sessionStore.get(`selection:${token}`));
+  assert.equal(fallbackEntry.text, '{"fallback": 1}');
+  assert.equal(fallbackEntry.normalized, true);
+  assert.equal(typeof fallbackEntry.createdAt, 'number');
 });
 
 test('rejects selections exceeding 10 MB session storage limit without writing session storage', async () => {
@@ -258,4 +260,30 @@ test('format-page-json context menu injects detect.js and sends FORMAT_PAGE_ON_D
   await bg.handleContextMenuClick({ menuItemId: 'format-page-json' }, { id: 55 });
   assert.deepEqual(structuredClone(injected), [{ target: { tabId: 55 }, files: ['content/detect.js'] }]);
   assert.deepEqual(structuredClone(bg.sentMessages), [{ tabId: 55, msg: { type: 'FORMAT_PAGE_ON_DEMAND' } }]);
+});
+
+test('prunes expired selection tokens, handles SYNC_AUTO_FORMAT and oversized OPEN_IN_FORMATTER cleanly', async () => {
+  const bg = setupBackground();
+  bg.sessionStore.set('selection:expired-old', { text: '{"stale":1}', normalized: false, createdAt: Date.now() - 10 * 60 * 1000 });
+  bg.sessionStore.set('selection:fresh', { text: '{"fresh":1}', normalized: false, createdAt: Date.now() });
+
+  await bg.handleContextMenuClick({ menuItemId: 'open-selection' }, { id: 1, index: 0 });
+  assert.equal(bg.sessionStore.has('selection:expired-old'), false);
+  assert.equal(bg.sessionStore.has('selection:fresh'), true);
+
+  bg.setGrantedOrigins(['https://*/*']);
+  const syncResp = await new Promise((resolve) => {
+    const keepOpen = bg.listeners.messages[0]({ type: 'SYNC_AUTO_FORMAT' }, {}, resolve);
+    assert.equal(keepOpen, true);
+  });
+  assert.deepEqual(structuredClone(syncResp), { ok: true });
+  assert.deepEqual(structuredClone(bg.dynamicScripts.get('json-toolbox-auto-format').matches), ['https://*/*']);
+
+  const tabsBefore = bg.openedTabs.length;
+  const oversized = '"' + 'a'.repeat(10 * 1024 * 1024) + '"';
+  const tooLargeResp = await new Promise((resolve) => {
+    bg.listeners.messages[0]({ type: 'OPEN_IN_FORMATTER', text: oversized }, {}, resolve);
+  });
+  assert.deepEqual(structuredClone(tooLargeResp), { ok: false, reason: 'tooLarge' });
+  assert.equal(bg.openedTabs.length, tabsBefore);
 });

@@ -13,6 +13,8 @@ const STATE_COMMA = 5;
 const STATE_END = 6;
 
 const MAX_CONTAINER_DEPTH = 4 * 1024 * 1024;
+const MAX_OUTPUT_LENGTH = 0x1fffffe8;
+const CHUNK_FLUSH_SIZE = 65536;
 const UNICODE_ZS_RE = /\p{Zs}/u;
 const ID_START_RE = /^[\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}$_]$/u;
 const ID_PART_RE = /^[\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}$_\u200C\u200D]$/u;
@@ -63,14 +65,15 @@ function failAt(text, position, message) {
  * Returns `{ text, mapOffset(pos) }` or throws `SyntaxError` with original
  * `{ position, line, column }` metadata. Infinity / NaN are rejected per D6.
  */
-export function convertLenientJson(input) {
+export function convertLenientJson(input, { trackOffsets = true } = {}) {
   if (typeof input !== 'string') {
     throw new SyntaxError('Input is not valid JSON');
   }
   const len = input.length;
   const chunks = [];
-  const anchorsOut = [0];
-  const anchorsSrc = [0];
+  let buf = '';
+  const anchorsOut = trackOffsets ? [0] : null;
+  const anchorsSrc = trackOffsets ? [0] : null;
   let outLen = 0;
   let lastDelta = 0;
 
@@ -80,6 +83,7 @@ export function convertLenientJson(input) {
   let i = 0;
 
   function recordAnchor(outPos, srcPos) {
+    if (!trackOffsets) return;
     const last = anchorsOut.length - 1;
     if (anchorsOut[last] === outPos) {
       anchorsSrc[last] = srcPos;
@@ -90,14 +94,33 @@ export function convertLenientJson(input) {
     lastDelta = srcPos - outPos;
   }
 
+  function pushBuffered(str) {
+    if (outLen + str.length > MAX_OUTPUT_LENGTH) {
+      throw new RangeError('Formatted JSON exceeds the maximum string length');
+    }
+    outLen += str.length;
+    if (str.length >= CHUNK_FLUSH_SIZE) {
+      if (buf) {
+        chunks.push(buf);
+        buf = '';
+      }
+      chunks.push(str);
+      return;
+    }
+    buf += str;
+    if (buf.length >= CHUNK_FLUSH_SIZE) {
+      chunks.push(buf);
+      buf = '';
+    }
+  }
+
   function emit(str, srcStart, srcEnd) {
     if (!str) return;
-    if (srcStart - outLen !== lastDelta) {
+    if (trackOffsets && srcStart - outLen !== lastDelta) {
       recordAnchor(outLen, srcStart);
     }
-    chunks.push(str);
-    outLen += str.length;
-    if (srcEnd - outLen !== lastDelta) {
+    pushBuffered(str);
+    if (trackOffsets && srcEnd - outLen !== lastDelta) {
       recordAnchor(outLen, srcEnd);
     }
   }
@@ -554,12 +577,14 @@ export function convertLenientJson(input) {
   }
 
   recordAnchor(outLen, len);
+  if (buf) chunks.push(buf);
   const text = chunks.length === 1 ? chunks[0] : chunks.join('');
 
   return {
     text,
     mapOffset(pos) {
       const target = Math.max(0, Math.min(pos, outLen));
+      if (!trackOffsets) return target;
       let lo = 0;
       let hi = anchorsOut.length - 1;
       while (lo < hi) {

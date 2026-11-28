@@ -7,6 +7,8 @@ import { createPlainTextRows, createDiffTextRows, safeTextWindow, hasNonWhitespa
 import { createSessionGuard } from '../../src/shared/session-guard.js';
 import { createDocumentSession } from '../../src/shared/document-session.js';
 import { createComparisonSession } from '../../src/shared/comparison-session.js';
+import { YAML_MAX_INPUT_BYTES } from '../../src/core/yaml-to-json.js';
+import { MAX_FILE_SIZE } from '../../src/shared/file-import.js';
 
 // Minimal DOM for exercising real page handlers and lazy rendering in Node.
 // Browser layout/paint still needs browser verification.
@@ -195,6 +197,7 @@ export function loadPage(name, {
     sessionStorage: sessionStorageObj,
     URLSearchParams,
     URL,
+    TextEncoder,
     ...(chromeApi ? { chrome: chromeApi } : {}),
     initializePage: () => {},
     createTaskRunner: createRunner,
@@ -202,6 +205,8 @@ export function loadPage(name, {
     createDocumentSession: (options) => createDocumentSession({ ...options, createRunner }),
     createComparisonSession: (options) => createComparisonSession({ ...options, createRunner }),
     createFileImport,
+    YAML_MAX_INPUT_BYTES,
+    MAX_FILE_SIZE,
     // Browser checks exercise CodeMirror's layout, clipboard, and history.
     // The page tests only need its text and change notifications.
     createLargeInputEditor(host, { text, onChange }) {

@@ -3,6 +3,7 @@
 const MENU_OPEN_SELECTION = 'open-selection';
 const MENU_FORMAT_PAGE = 'format-page-json';
 const SESSION_SELECTION_PREFIX = 'selection:';
+const SELECTION_TTL_MS = 5 * 60 * 1000;
 // chrome.storage.session total quota is 10 MiB; stay safely below quota with key + JSON wrapper.
 const MAX_SESSION_BYTES = 10 * 1024 * 1024;
 const AUTO_FORMAT_SCRIPT_ID = 'json-toolbox-auto-format';
@@ -158,22 +159,44 @@ async function readSelection(tab, info) {
   return null;
 }
 
-async function openFormatterWithText(text, { normalized = false, openerTab = null } = {}) {
+async function pruneExpiredSelectionTokens(now = Date.now()) {
+  if (!chrome.storage?.session?.get || !chrome.storage?.session?.remove) return;
+  try {
+    const all = await chrome.storage.session.get(null);
+    if (!all) return;
+    const expired = [];
+    for (const [key, entry] of Object.entries(all)) {
+      if (!key.startsWith(SESSION_SELECTION_PREFIX)) continue;
+      if (!entry || typeof entry.createdAt !== 'number' || (now - entry.createdAt) >= SELECTION_TTL_MS) {
+        expired.push(key);
+      }
+    }
+    if (expired.length > 0) {
+      await chrome.storage.session.remove(expired);
+    }
+  } catch {
+    // Ignore session cleanup errors; normal consumption removes individual tokens.
+  }
+}
+
+async function openFormatterWithText(text, { normalized = false, openerTab = null, openErrorTab = true } = {}) {
+  const now = Date.now();
+  await pruneExpiredSelectionTokens(now);
   const token = createToken();
   const key = SESSION_SELECTION_PREFIX + token;
-  const payload = { text, normalized };
+  const payload = { text, normalized, createdAt: now };
   const estimatedBytes = utf8Encoder.encode(key + JSON.stringify(payload)).length;
   const tooLargeUrl = chrome.runtime.getURL('formatter.html?importError=tooLarge');
 
   if (estimatedBytes > MAX_SESSION_BYTES) {
-    await chrome.tabs.create(createTabOptions(tooLargeUrl, openerTab));
+    if (openErrorTab) await chrome.tabs.create(createTabOptions(tooLargeUrl, openerTab));
     return { ok: false, reason: 'tooLarge' };
   }
 
   try {
     await chrome.storage.session.set({ [key]: payload });
   } catch {
-    await chrome.tabs.create(createTabOptions(tooLargeUrl, openerTab));
+    if (openErrorTab) await chrome.tabs.create(createTabOptions(tooLargeUrl, openerTab));
     return { ok: false, reason: 'tooLarge' };
   }
 
@@ -220,6 +243,7 @@ chrome.runtime.onInstalled?.addListener(() => {
 });
 
 chrome.runtime.onStartup?.addListener(() => {
+  void pruneExpiredSelectionTokens();
   void syncAutoFormatScript();
 });
 
@@ -240,7 +264,12 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
     openFormatterWithText(message.text, {
       normalized: false,
       openerTab: sender?.tab ?? null,
+      openErrorTab: false,
     }).then((result) => sendResponse(result), () => sendResponse({ ok: false }));
+    return true;
+  }
+  if (message?.type === 'SYNC_AUTO_FORMAT') {
+    syncAutoFormatScript().then((ok) => sendResponse({ ok }), () => sendResponse({ ok: false }));
     return true;
   }
   return false;
