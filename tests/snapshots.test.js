@@ -41,9 +41,9 @@ function assertNumberLiterals(handler, snapshotId, options = {}) {
 
 test('snapshot retention is opt-in and responses never transfer parsed object graphs', () => {
   const handler = createTaskHandler();
-  assert.deepEqual(Object.keys(run(handler, { action: 'format', text: '{}' })), ['text']);
-  assert.deepEqual(Object.keys(run(handler, { action: 'parse', text: '{}' })), []);
-  assert.deepEqual(Object.keys(run(handler, { action: 'minify', text: '{}' })), ['text']);
+  assert.deepEqual(Object.keys(run(handler, { action: 'format', text: '{}' })), ['text', 'lenient']);
+  assert.deepEqual(Object.keys(run(handler, { action: 'parse', text: '{}' })), ['lenient']);
+  assert.deepEqual(Object.keys(run(handler, { action: 'minify', text: '{}' })), ['text', 'lenient']);
   const diff = run(handler, { action: 'diff', text: '{}', text2: '{"value":1}' });
   assert.equal(Object.hasOwn(diff, 'snapshotId'), false);
   for (const key of ['leftData', 'rightData', 'leftNumberLiterals', 'rightNumberLiterals']) {
@@ -59,7 +59,7 @@ test('snapshot retention is opt-in and responses never transfer parsed object gr
 test('format snapshots lazily populate original literals and reuse parsing across reformatting', (t) => {
   const handler = createTaskHandler();
   const formatted = run(handler, { action: 'format', text: numbers, retainSnapshot: true });
-  assert.deepEqual(Object.keys(formatted), ['text', 'snapshotId']);
+  assert.deepEqual(Object.keys(formatted), ['text', 'lenient', 'snapshotId']);
   const parseSpy = t.mock.method(JSON, 'parse');
   assertNumberLiterals(handler, formatted.snapshotId);
   const reformatted = run(handler, { action: 'format', text: numbers, indent: '4', retainSnapshot: true });

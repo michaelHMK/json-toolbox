@@ -1,0 +1,142 @@
+{
+  "en": {
+    "autoFormat": "Auto-format API & JSON responses in a virtual tree",
+    "compare": "Structural JSON diff with ignored paths",
+    "lenient": "Parse JSONC / JSON5 comments and trailing commas",
+    "yaml": "Two-way JSON ↔ YAML conversion with number precision",
+    "themes": "50 MiB large files and three comfortable themes"
+  },
+  "zh_CN": {
+    "autoFormat": "打开 API 即可看懂的自动树形格式化",
+    "compare": "忽略时间戳的结构化 JSON Diff",
+    "lenient": "支持注释与末尾逗号的 JSONC / JSON5 解析",
+    "yaml": "保留数字精度的 JSON ↔ YAML 双向转换",
+    "themes": "50 MiB 大文件编辑与三种主题外观"
+  },
+  "zh_TW": {
+    "autoFormat": "開啟 API 即可閱讀的自動樹狀格式化",
+    "compare": "支援忽略路徑的結構化 JSON 比對",
+    "lenient": "支援註解與結尾逗號的 JSONC / JSON5 解析",
+    "yaml": "保留數字精度的 JSON ↔ YAML 雙向轉換",
+    "themes": "50 MiB 大檔案編輯與三種主題外觀"
+  },
+  "zh_HK": {
+    "autoFormat": "打開 API 即時瀏覽的自動樹狀格式化",
+    "compare": "支援忽略路徑的結構化 JSON 比較",
+    "lenient": "支援註釋與結尾逗號的 JSONC / JSON5 解析",
+    "yaml": "保留數字精度的 JSON ↔ YAML 雙向轉換",
+    "themes": "50 MiB 大檔案編輯與三種主題外觀"
+  },
+  "ja": {
+    "autoFormat": "API 応答をそのまま見やすいツリー表示に",
+    "compare": "タイムスタンプ除外もできる構造化 JSON 比較",
+    "lenient": "コメント・末尾カンマ対応の JSONC / JSON5 解析",
+    "yaml": "数値精度を保つ JSON ↔ YAML 双方向変換",
+    "themes": "50 MiB 大容量ファイルと 3 つのテーマ"
+  },
+  "ko": {
+    "autoFormat": "API 응답을 바로 읽는 자동 트리 포맷팅",
+    "compare": "경로 제외를 지원하는 구조적 JSON 비교",
+    "lenient": "주석과 후행 쉼표를 지원하는 JSONC / JSON5 파싱",
+    "yaml": "숫자 정밀도를 유지하는 JSON ↔ YAML 양방향 변환",
+    "themes": "50 MiB 대용량 파일과 세 가지 테마"
+  },
+  "de": {
+    "autoFormat": "API- & JSON-Antworten automatisch als Baum formatieren",
+    "compare": "Struktureller JSON-Diff mit ignorierten Pfaden",
+    "lenient": "JSONC / JSON5 mit Kommentaren & Kommas parsen",
+    "yaml": "JSON ↔ YAML Konvertierung mit Zahlenpräzision",
+    "themes": "50 MiB große Dateien und drei Themen"
+  },
+  "fr": {
+    "autoFormat": "Formatage automatique des réponses API en arbre",
+    "compare": "Diff JSON structurel avec chemins ignorés",
+    "lenient": "Analyse JSONC / JSON5 avec commentaires",
+    "yaml": "Conversion JSON ↔ YAML avec précision numérique",
+    "themes": "Fichiers jusqu'à 50 Mio et trois thèmes"
+  },
+  "es": {
+    "autoFormat": "Formateo automático en árbol para respuestas API",
+    "compare": "Diff JSON estructural con rutas ignoradas",
+    "lenient": "Analiza JSONC / JSON5 con comentarios y comas",
+    "yaml": "Conversión bidireccional JSON ↔ YAML precisa",
+    "themes": "Archivos grandes de 50 MiB y tres temas"
+  },
+  "es_419": {
+    "autoFormat": "Formateo automático en árbol para respuestas API",
+    "compare": "Diff JSON estructural con rutas ignoradas",
+    "lenient": "Analiza JSONC / JSON5 con comentarios y comas",
+    "yaml": "Conversión bidireccional JSON ↔ YAML precisa",
+    "themes": "Archivos grandes de 50 MiB y tres temas"
+  },
+  "pt_BR": {
+    "autoFormat": "Formatação automática em árvore para APIs JSON",
+    "compare": "Diff JSON estrutural com caminhos ignorados",
+    "lenient": "Suporte a comentários e vírgulas em JSONC / JSON5",
+    "yaml": "Conversão bidirecional JSON ↔ YAML precisa",
+    "themes": "Arquivos de até 50 MiB e três temas"
+  },
+  "pt_PT": {
+    "autoFormat": "Formatação automática em árvore para APIs JSON",
+    "compare": "Diff JSON estrutural com caminhos ignorados",
+    "lenient": "Suporte a comentários e vírgulas em JSONC / JSON5",
+    "yaml": "Conversão bidirecional JSON ↔ YAML precisa",
+    "themes": "Ficheiros até 50 MiB e três temas"
+  },
+  "ru": {
+    "autoFormat": "Автоформатирование ответов API в дерево",
+    "compare": "Структурное сравнение JSON с исключением путей",
+    "lenient": "Разбор JSONC / JSON5 с комментариями",
+    "yaml": "Двусторонняя конвертация JSON ↔ YAML",
+    "themes": "Файлы до 50 МиБ и три темы оформления"
+  },
+  "ar": {
+    "autoFormat": "تنسيق تلقائي لاستجابات API و JSON كشجرة",
+    "compare": "مقارنة بنية JSON مع تجاهل المسارات",
+    "lenient": "تحليل JSONC / JSON5 مع التعليقات والفواصل",
+    "yaml": "تحويل ثنائي الاتجاه JSON ↔ YAML بدقة الأرقام",
+    "themes": "ملفات كبيرة حتى 50 MiB وثلاثة مظاهر"
+  },
+  "id": {
+    "autoFormat": "Format otomatis respons API JSON sebagai pohon",
+    "compare": "Diff JSON struktural dengan jalur yang diabaikan",
+    "lenient": "Urai komentar dan koma akhir JSONC / JSON5",
+    "yaml": "Konversi dua arah JSON ↔ YAML presisi tinggi",
+    "themes": "File besar 50 MiB dan tiga tema nyaman"
+  },
+  "vi": {
+    "autoFormat": "Tự động định dạng phản hồi API dạng cây",
+    "compare": "So sánh cấu trúc JSON và bỏ qua đường dẫn",
+    "lenient": "Phân tích chú thích và dấu phẩy cuối JSONC / JSON5",
+    "yaml": "Chuyển đổi hai chiều JSON ↔ YAML chính xác",
+    "themes": "Tệp lớn 50 MiB và ba giao diện tối ưu"
+  },
+  "it": {
+    "autoFormat": "Formattazione automatica ad albero per risposte API",
+    "compare": "Diff JSON strutturale con percorsi ignorati",
+    "lenient": "Supporto per commenti e virgole in JSONC / JSON5",
+    "yaml": "Conversione bidirezionale JSON ↔ YAML precisa",
+    "themes": "File fino a 50 MiB e tre temi visivi"
+  },
+  "ro": {
+    "autoFormat": "Formatare automată în arbore pentru răspunsuri API",
+    "compare": "Diff JSON structural cu căi ignorate",
+    "lenient": "Suport pentru comentarii și virgule în JSONC / JSON5",
+    "yaml": "Conversie bidirecțională JSON ↔ YAML precisă",
+    "themes": "Fișiere mari de 50 MiB și trei teme vizuale"
+  },
+  "tr": {
+    "autoFormat": "API ve JSON yanıtlarını otomatik ağaç biçimine dönüştür",
+    "compare": "Yoksayılan yollarla yapısal JSON karşılaştırması",
+    "lenient": "Yorumlu ve son virgüllü JSONC / JSON5 ayrıştırma",
+    "yaml": "Sayı hassasiyetli çift yönlü JSON ↔ YAML dönüşümü",
+    "themes": "50 MiB büyük dosyalar ve üç tema"
+  },
+  "pl": {
+    "autoFormat": "Automatyczne formatowanie odpowiedzi API jako drzewo",
+    "compare": "Strukturalny diff JSON z ignorowaniem ścieżek",
+    "lenient": "Obsługa komentarzy i przecinków w JSONC / JSON5",
+    "yaml": "Dwukierunkowa konwersja JSON ↔ YAML z precyzją",
+    "themes": "Duże pliki 50 MiB i trzy wygodne motywy"
+  }
+}

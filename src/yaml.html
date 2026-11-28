@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="titleYaml">JSON to YAML - JSON Toolbox</title>
+  <script src="shared/theme.js"></script>
+  <script src="shared/sidebar.js"></script>
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body data-page="yaml" data-action="toYaml" data-swap-href="json-from-yaml.html">
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="page-shell">
+      <header class="page-header">
+        <div class="page-heading">
+          <h1 data-i18n="navYaml">JSON → YAML</h1>
+          <p data-i18n="descYaml">Convert JSON or JSONC/JSON5 into clean YAML 1.2 while preserving number precision.</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-cancel" hidden data-i18n="btnCancel">Cancel</button>
+          <button id="btn-swap-direction" type="button" data-i18n="btnSwapDirection" data-i18n-title="btnSwapDirectionTitle" title="Switch direction and carry over current output">⇄ Swap direction</button>
+          <button id="btn-sample" data-i18n="btnSample">Sample</button>
+          <button id="btn-clear" data-i18n="btnClear">Clear</button>
+          <button id="btn-run" class="primary" data-i18n="btnToYaml" data-i18n-title="btnToYamlTitle" title="Convert JSON to YAML">Convert</button>
+        </div>
+      </header>
+
+      <div class="error-announcement" role="alert" aria-atomic="true">
+        <div id="error" class="notice" hidden></div>
+      </div>
+
+      <main class="workspace">
+        <section id="input-pane" class="pane input-pane">
+          <div class="pane-title">
+            <div class="pane-label">
+              <span data-i18n="paneInput">Input</span>
+              <span id="file-name" class="file-name" aria-live="polite" hidden></span>
+            </div>
+            <button id="btn-import" type="button" class="button-compact"
+              data-i18n="btnImportFile" data-i18n-title="btnImportFileTitle"
+              title="Choose a local .json file, or drop one into the input pane">Import file</button>
+            <input id="file-input" type="file" accept=".json" hidden>
+          </div>
+          <textarea id="input" dir="ltr" data-i18n-aria-label="paneInput" aria-label="Input" spellcheck="false" wrap="off"
+            data-i18n-placeholder="inputYamlPlaceholder"
+            placeholder="Paste JSON or drop a .json file here… (Cmd/Ctrl + Enter)"></textarea>
+          <div id="input-editor" class="large-input-editor" dir="ltr" hidden></div>
+          <div id="file-drop-hint" class="file-drop-hint" data-i18n="fileDropHint" hidden>Release to import a JSON file</div>
+        </section>
+        <section class="pane">
+          <div class="pane-title">
+            <div class="pane-label">
+              <span data-i18n="paneResult">Result</span>
+              <span id="status" class="status" role="status" aria-atomic="true"></span>
+              <span role="status" aria-atomic="true"><span id="busy" hidden data-i18n="busyText">Working…</span></span>
+            </div>
+            <button id="btn-copy" class="button-compact" data-i18n="btnCopy">Copy result</button>
+          </div>
+          <pre role="region" tabindex="0" id="output-text" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result"></pre>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="pages/transform.js"></script>
+</body>
+</html>

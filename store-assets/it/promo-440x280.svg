@@ -108,6 +108,6 @@
     <path d="M11 200h13" stroke="#55d6be" stroke-width="3" stroke-linecap="round"/>
   </g></g>
   <text x="30" y="208" fill="#fff" font-family="Arial, Noto Sans, sans-serif" font-size="32" font-weight="700" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">JSON Toolbox</text>
-  <text x="30" y="239" fill="#eeedff" font-family="Arial, Noto Sans, sans-serif" font-size="18" font-weight="400" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">Importa · Formatta · Confronta</text>
+  <text x="30" y="239" fill="#eeedff" font-family="Arial, Noto Sans, sans-serif" font-size="16" font-weight="400" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">Formatta · Diff · YAML · Auto</text>
   <text x="30" y="264" fill="#eeedff" font-family="Arial, Noto Sans, sans-serif" font-size="14" font-weight="600" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">Veloce. Riservato. Locale.</text>
 </svg>

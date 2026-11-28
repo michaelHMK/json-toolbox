@@ -9,7 +9,7 @@ import { extname, resolve } from 'node:path';
 const { root } = resolveExtension(process.argv[2]?.startsWith('--') ? '.' : process.argv[2]);
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const storageKey = 'json-toolbox.theme';
-const pages = ['formatter', 'minify', 'escape', 'unescape', 'compare'];
+const pages = ['formatter', 'minify', 'escape', 'unescape', 'yaml', 'json-from-yaml', 'compare'];
 const modes = ['normal', 'comfort', 'dark'];
 const colors = {
   normal: ['rgb(247, 248, 252)', 'rgb(255, 255, 255)', 'light'],
@@ -110,7 +110,7 @@ try {
       await reopened.close();
     }
   }
-  results.push('Five pages: normal default under a dark OS, three modes, reload/reopen persistence and CSS colors');
+  results.push('Seven pages: normal default under a dark OS, three modes, reload/reopen persistence and CSS colors');
 
   await page.goto(`${base}/formatter.html`);
   await select(page, 'comfort');
@@ -202,6 +202,21 @@ try {
     await localized.close();
   }
   results.push(`${locales.length} locales at desktop, 1280x500, tablet and 320px: theme labels translated, visible and contained`);
+
+  const viewerPage = await open(context, 'viewer');
+  for (const mode of modes) {
+    await page.evaluate(([k, v]) => localStorage.setItem(k, v), [storageKey, mode]);
+    await viewerPage.reload();
+    await viewerPage.waitForFunction((expected) => document.documentElement.dataset.theme === expected, mode);
+    const actual = await viewerPage.evaluate(() => [
+      getComputedStyle(document.body).backgroundColor,
+      getComputedStyle(document.querySelector('.pane')).backgroundColor,
+      getComputedStyle(document.documentElement).colorScheme,
+    ]);
+    assert.deepEqual(actual, colors[mode]);
+  }
+  await viewerPage.close();
+  results.push('viewer.html follows saved theme across normal, comfort and dark modes');
 
   if (process.env.THEME_SCREENSHOT_DIR) {
     const directory = resolve(process.env.THEME_SCREENSHOT_DIR);

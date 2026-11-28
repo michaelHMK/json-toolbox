@@ -38,6 +38,24 @@ const navItems = [
     ],
   },
   {
+    id: 'yaml',
+    href: 'yaml.html',
+    label: 'navYaml',
+    fallback: 'JSON → YAML',
+    shapes: [
+      ['path', { d: 'M7 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2M13 7h8M13 12h8M13 17h6M8 12h3' }],
+    ],
+  },
+  {
+    id: 'from-yaml',
+    href: 'json-from-yaml.html',
+    label: 'navFromYaml',
+    fallback: 'YAML → JSON',
+    shapes: [
+      ['path', { d: 'M3 7h8M3 12h8M3 17h6M17 5h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2M13 12h3' }],
+    ],
+  },
+  {
     id: 'compare',
     href: 'compare.html',
     label: 'navCompare',
@@ -210,8 +228,45 @@ export function renderNavigation() {
     ),
   );
 
+  const settingsSection = el('div', { class: 'sidebar-settings' },
+    el('div', { class: 'settings-heading', 'data-i18n': 'settingsLabel' }, 'SETTINGS'),
+    el('button', {
+      id: 'auto-format-pages',
+      class: 'setting-toggle',
+      type: 'button',
+      role: 'switch',
+      'aria-checked': 'false',
+      'data-i18n-title': 'autoFormatPagesTitle',
+      title: 'Automatically format JSON pages when browsing',
+    },
+      svgIcon('nav-icon setting-icon', [
+        ['circle', { cx: '12', cy: '12', r: '9' }],
+        ['path', { d: 'M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18' }],
+      ]),
+      el('span', { class: 'setting-copy' },
+        el('span', { class: 'setting-label', 'data-i18n': 'autoFormatPages' }, 'Auto-format JSON pages'),
+      ),
+      el('span', { class: 'switch-track', 'aria-hidden': 'true' }, el('span', { class: 'switch-thumb' })),
+    ),
+    el('div', { id: 'auto-format-sub', class: 'settings-sub', hidden: true },
+      el('button', {
+        id: 'auto-format-plain-text',
+        class: 'setting-toggle setting-sub-toggle',
+        type: 'button',
+        role: 'switch',
+        'aria-checked': 'false',
+      },
+        el('span', { class: 'setting-label', 'data-i18n': 'autoFormatPlainText' }, 'Include text/plain JSON'),
+        el('span', { class: 'switch-track', 'aria-hidden': 'true' }, el('span', { class: 'switch-thumb' })),
+      ),
+      el('p', { id: 'file-access-hint', class: 'settings-hint', 'data-i18n': 'hintFileAccess', hidden: true },
+        'Enable "Allow access to file URLs" in extension settings to format local file:// JSON.'),
+    ),
+  );
+
   const bottom = el('div', { class: 'sidebar-bottom' },
     el('div', { class: 'theme-picker' }, themeTrigger, themeSwitch),
+    settingsSection,
     el('div', { class: 'sidebar-footer', tabindex: '0' },
       el('span', { class: 'local-dot', 'aria-hidden': 'true' }),
       el('span', { class: 'sidebar-footer-label', 'data-i18n': 'localOnly' }, 'All data stays on your device'),

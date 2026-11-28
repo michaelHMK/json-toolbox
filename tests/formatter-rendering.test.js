@@ -145,3 +145,70 @@ test('clear invalidates pending parsing and search results', async () => {
     assert.equal(page.get('tree').children.length, 0);
   }
 });
+
+test('lenient JSONC input displays statusLenientParsed notice after formatting', async () => {
+  const page = loadFormatter();
+  page.get('input').value = '// comment\n{a: 1,}';
+  await page.doFormat();
+  assert.match(page.get('status').textContent, /statusLenientParsed/);
+  assert.equal(page.state.outputText, '{\n  "a": 1\n}');
+  page.doClear();
+});
+
+test('formatter consumes one-time selection token from chrome.storage.session and deletes it immediately', async () => {
+  const store = new Map([
+    ['selection:tok1', { text: '// note\n{a: 1,}', normalized: true }],
+  ]);
+  const removed = [];
+  const worker = createSessionWorker();
+  const page = loadPage('formatter', {
+    createTaskRunner: worker.createRunner,
+    expose: '{ state, getStatus: () => statusEl.textContent }',
+    search: '?import=tok1',
+    pathname: '/formatter.html',
+    chrome: {
+      storage: {
+        session: {
+          async get(key) { return store.has(key) ? { [key]: store.get(key) } : {}; },
+          async remove(key) { removed.push(key); store.delete(key); },
+        },
+      },
+    },
+  });
+  await settle();
+  await settle();
+  assert.deepEqual(removed, ['selection:tok1']);
+  assert.equal(store.size, 0);
+  assert.equal(page.state.outputText, '{\n  "a": 1\n}');
+  assert.match(page.get('status').textContent, /statusLenientParsed/);
+  assert.match(page.get('status').textContent, /statusSelectionNormalized/);
+});
+
+test('formatter reports expired or oversized selection import URL parameters', async () => {
+  const worker = createSessionWorker();
+  const expired = loadPage('formatter', {
+    createTaskRunner: worker.createRunner,
+    expose: '{ state }',
+    search: '?import=missing',
+    pathname: '/formatter.html',
+    chrome: {
+      storage: {
+        session: {
+          async get() { return {}; },
+          async remove() {},
+        },
+      },
+    },
+  });
+  await settle();
+  assert.equal(expired.get('error').textContent, 'errImportExpired');
+
+  const tooLarge = loadPage('formatter', {
+    createTaskRunner: worker.createRunner,
+    expose: '{ state }',
+    search: '?importError=tooLarge',
+    pathname: '/formatter.html',
+  });
+  await settle();
+  assert.equal(tooLarge.get('error').textContent, 'errSelectionTooLarge');
+});

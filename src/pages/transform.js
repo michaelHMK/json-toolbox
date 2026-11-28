@@ -4,7 +4,8 @@ import { hasNonWhitespace } from '../core/text-lines.js';
 import { createTaskRunner } from '../shared/worker-client.js';
 import { createSessionGuard } from '../shared/session-guard.js';
 import { createFeedback, createBusyFeedback, taskErrorMessage } from '../shared/feedback.js';
-import { createFileImport } from '../shared/file-import.js';
+import { YAML_MAX_INPUT_BYTES } from '../core/yaml-to-json.js';
+import { createFileImport, MAX_FILE_SIZE } from '../shared/file-import.js';
 import { createTextInput, LARGE_INPUT_THRESHOLD } from '../shared/text-input.js';
 import { createVirtualTextView } from '../shared/virtual-text.js';
 
@@ -17,6 +18,10 @@ const statusEl = document.getElementById('status');
 const busyEl = document.getElementById('busy');
 const errorEl = document.getElementById('error');
 const action = document.body.dataset.action;
+const swapHref = document.body.dataset.swapHref;
+const isYamlInput = action === 'fromYaml';
+const indentEl = isYamlInput ? document.getElementById('indent') : null;
+const swapDirectionBtn = swapHref ? document.getElementById('btn-swap-direction') : null;
 
 let outputText = '';
 let hasOutput = false;
@@ -42,6 +47,10 @@ const fileImport = createFileImport({
   triggerEl: document.getElementById('btn-import'),
   fileNameEl: document.getElementById('file-name'),
   dropHint: document.getElementById('file-drop-hint'),
+  extensions: isYamlInput ? ['.yaml', '.yml'] : ['.json'],
+  maxSize: isYamlInput ? YAML_MAX_INPUT_BYTES : MAX_FILE_SIZE,
+  typeErrorKey: isYamlInput ? 'errFileTypeYaml' : 'errFileType',
+  multipleErrorKey: isYamlInput ? 'errFileMultipleYaml' : 'errFileMultiple',
   onImport: ({ text }) => {
     resetDocument();
     textInput.setText(text);
@@ -54,20 +63,34 @@ const fileImport = createFileImport({
   onError: showError,
 });
 
+function needsWhitespaceCheck() {
+  return action === 'minify' || action === 'toYaml' || action === 'fromYaml';
+}
+
 async function runTransform() {
   const text = textInput.getText();
-  if (action === 'minify' ? !hasNonWhitespace(text) : !text) {
-    showError(t(action === 'minify' ? 'errNeedInput' : 'errNeedContent'));
+  if (needsWhitespaceCheck() ? !hasNonWhitespace(text) : !text) {
+    const emptyKey = action === 'fromYaml'
+      ? 'errNeedYamlInput'
+      : (action === 'minify' || action === 'toYaml') ? 'errNeedInput' : 'errNeedContent';
+    showError(t(emptyKey));
     return;
   }
   hideError();
   runTask.cancel({ onlyIfBusy: true });
   const version = guard.advance();
-  const res = await runTask(action, { text, retainSearch: false, includeTextIndex: true }, { key: 'transform' });
+  const payload = {
+    text,
+    retainSearch: false,
+    includeTextIndex: true,
+    ...(indentEl ? { indent: indentEl.value || '2' } : {}),
+  };
+  const res = await runTask(action, payload, { key: 'transform' });
   if (res.cancelled) return;
   if (!guard.isCurrent(version)) return;
   if (!res.ok) {
-    if (action === 'minify') showParseError(text, res);
+    if (action === 'minify' || action === 'toYaml') showParseError(text, res);
+    else if (action === 'fromYaml') showParseError(text, res, 'errYamlParseFailed');
     else if (action === 'unescape') showParseError(text, res, 'errUnescapeFailed');
     else showError(taskErrorMessage(res));
     return;
@@ -76,7 +99,19 @@ async function runTransform() {
   hasOutput = true;
   outputView.setText(outputText, res.result.lineIndex);
   if (action === 'minify') {
-    setStatus(t('statusMinified', [outputText.length.toLocaleString(), String(res.duration)]));
+    let status = t('statusMinified', [outputText.length.toLocaleString(), String(res.duration)]);
+    if (res.result.lenient) status += ' · ' + t('statusLenientParsed');
+    setStatus(status);
+  } else if (action === 'toYaml') {
+    let status = t('statusYamlGenerated', [outputText.length.toLocaleString(), String(res.duration)]);
+    if (res.result.lenient) status += ' · ' + t('statusLenientParsed');
+    setStatus(status);
+  } else if (action === 'fromYaml') {
+    let status = t('statusJsonFromYaml', [outputText.length.toLocaleString(), String(res.duration)]);
+    if (res.result.multiDocument) {
+      status += ' · ' + t('statusYamlMultiDoc', [String(res.result.documentCount)]);
+    }
+    setStatus(status);
   } else {
     setStatus(t(action === 'escape' ? 'statusEscaped' : 'statusUnescaped', [outputText.length.toLocaleString(), String(res.duration)]));
   }
@@ -111,21 +146,132 @@ function doClear() {
 function fillSample() {
   fileImport.reset();
   const appName = t('appName');
-  const sample = JSON.stringify({
-    name: appName === 'appName' ? 'JSON Toolbox' : appName,
-    free: true,
-    tags: ['local', 'fast'],
-    nested: { id: 1, value: null },
-  }, null, 2);
-  textInput.setText(action === 'unescape' ? JSON.stringify(sample).slice(1, -1) : sample);
+  const brand = appName === 'appName' ? 'JSON Toolbox' : appName;
+  if (action === 'fromYaml') {
+    textInput.setText([
+      '# Sample Kubernetes Deployment',
+      'apiVersion: apps/v1',
+      'kind: Deployment',
+      'metadata:',
+      `  name: ${JSON.stringify(brand)}`,
+      '  labels:',
+      "    country: 'NO'",
+      "    port: '0123'",
+      'spec:',
+      '  replicas: 2',
+      '  template:',
+      '    spec:',
+      '      containers:',
+      '        - name: web',
+      '          ports:',
+      '            - containerPort: 8080',
+    ].join('\n'));
+  } else {
+    const sample = JSON.stringify({
+      name: brand,
+      free: true,
+      tags: ['local', 'fast'],
+      nested: { id: 1, value: null },
+    }, null, 2);
+    textInput.setText(action === 'unescape' ? JSON.stringify(sample).slice(1, -1) : sample);
+  }
   hideError();
   runTransform();
+}
+
+const TRANSFER_PREFIX = 'json-toolbox.transfer:';
+const TRANSFER_MAX_BYTES = 10 * 1024 * 1024;
+const transferEncoder = new TextEncoder();
+
+async function saveTransfer(text) {
+  const token = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const key = TRANSFER_PREFIX + token;
+  const payload = { text };
+  const estimatedBytes = transferEncoder.encode(key + JSON.stringify(payload)).length;
+  if (estimatedBytes > TRANSFER_MAX_BYTES) {
+    return null;
+  }
+  if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+    try {
+      await chrome.storage.session.set({ [key]: payload });
+      return token;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(payload));
+      return token;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function takeTransfer(token) {
+  const key = TRANSFER_PREFIX + token;
+  if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+    const data = await chrome.storage.session.get(key);
+    await chrome.storage.session.remove(key);
+    return data?.[key]?.text ?? null;
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    const raw = sessionStorage.getItem(key);
+    sessionStorage.removeItem(key);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw)?.text ?? null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function doSwapDirection() {
+  if (!swapHref) return;
+  const text = hasOutput ? outputText : textInput.getText();
+  let target = swapHref;
+  if (text) {
+    const token = await saveTransfer(text);
+    if (!token) {
+      showError(t('errTransferTooLarge'));
+      return;
+    }
+    target = `${swapHref}?transfer=${encodeURIComponent(token)}`;
+  }
+  if (typeof location !== 'undefined' && typeof location.assign === 'function') {
+    location.assign(target);
+  }
+}
+
+async function checkPendingTransfer() {
+  if (typeof location === 'undefined' || !location.search) return;
+  const params = new URLSearchParams(location.search);
+  const token = params.get('transfer');
+  if (!token) return;
+  if (typeof history !== 'undefined' && typeof history.replaceState === 'function') {
+    history.replaceState(null, '', location.pathname);
+  }
+  const text = await takeTransfer(token);
+  if (typeof text !== 'string' || !text) return;
+  textInput.setText(text);
+  if (text.length > LARGE_INPUT_THRESHOLD) {
+    guard.defer(() => { void runTransform(); });
+  } else {
+    void runTransform();
+  }
 }
 
 document.getElementById('btn-run').addEventListener('click', runTransform);
 document.getElementById('btn-copy').addEventListener('click', doCopy);
 document.getElementById('btn-clear').addEventListener('click', doClear);
 document.getElementById('btn-sample').addEventListener('click', fillSample);
+swapDirectionBtn?.addEventListener('click', () => { void doSwapDirection(); });
 
 textInput.bindEvents({
   onChange() {
@@ -135,3 +281,5 @@ textInput.bindEvents({
   },
   onRun: runTransform,
 });
+
+void checkPendingTransfer();

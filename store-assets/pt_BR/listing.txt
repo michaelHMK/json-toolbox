@@ -1,40 +1,35 @@
 Nome
-JSON Toolbox
+JSON Toolbox - Formatador, Visualizador, Diff e YAML
 
 Descrição curta
-JSON Toolbox de alto desempenho: formate, minifique, escape e compare localmente. Sem anúncios, rastreamento ou coleta de dados.
+Formatador, visualizador, diff JSON/JSON5 e conversor YAML local. Trata arquivos de 50 MiB e APIs offline sem rastreamento.
 
 Descrição detalhada
-O JSON Toolbox permite formatar, explorar e comparar JSON em uma aba dedicada do navegador. Funciona totalmente offline, sem conta nem permissões adicionais.
+O JSON Toolbox é um formatador JSON, visualizador JSON, comparador JSON e conversor JSON para YAML rápido e offline com suporte a JSONC e JSON5 em uma aba dedicada. Nenhuma permissão de acesso a sites é solicitada na instalação, sem avisos e sem conta.
 
-Formatar e explorar
-- Formate JSON com recuo de 2 espaços, 4 espaços ou tabulações.
-- Veja erros de sintaxe com linha, coluna e navegação até o erro; uma verificação local fornece a posição quando o navegador não a informa.
-- Explore uma árvore recolhível com rolagem virtual, expansão por nível, busca por chave ou valor e navegação entre correspondências.
-- Copie o resultado completo com um clique.
+Formatar, explorar e JSONC / JSON5
+- Formate JSON com recuo de 2 espaços, 4 espaços ou tabulações mantendo a precisão exata de inteiros grandes e decimais.
+- Faz fallback automático do JSON estrito para JSONC / JSON5 quando há comentários, vírgulas finais, aspas simples, chaves sem aspas ou números hexadecimais.
+- Veja erros de sintaxe com linha, coluna e navegação até a posição, além de verificação local complementar.
+- Explore uma árvore virtual recolhível com expansão por nível, busca por chave ou valor e cópia com um clique.
+
+Conversão JSON <-> YAML
+- Converta JSON para YAML 1.2 e YAML de volta para JSON preservando a precisão numérica, com suporte a YAML multidocumento e proteção contra aliases excessivos.
+- Inverta a direção de conversão diretamente na ferramenta.
+
+Páginas JSON automáticas e menu de contexto
+- Selecione texto em qualquer página e clique com o botão direito em "Abrir seleção no JSON Toolbox".
+- Use "Formatar JSON desta página" sob demanda via activeTab sem conceder permissões permanentes.
+- A opção "Formatar páginas JSON automaticamente" na barra lateral vem desativada por padrão e só pede permissão opcional quando ativada, com alternância Original / Formatado, cópia, abrir na ferramenta e opção text/plain.
 
 Importar arquivos locais
-- Em qualquer uma das cinco ferramentas, escolha um arquivo ou arraste-o para a área de entrada.
-- Importe um arquivo .json em UTF-8 por vez, de até 50 MiB. A ferramenta é executada automaticamente após a importação. A comparação começa quando as duas entradas contêm texto.
-- Ao importar um arquivo grande, colar um texto longo ou arrastá-lo para o campo de entrada, o conteúdo é aberto diretamente no editor. Você pode editar e copiar o texto inteiro.
+- Em todas as sete ferramentas, selecione ou arraste um arquivo UTF-8 (.json de até 50 MiB; .yaml/.yml de até 10 MiB em YAML -> JSON).
+- Arquivos grandes ou textos longos abrem diretamente no editor para edição e cópia completa.
 
-Minificar, escapar e remover escapes
-- Alterne entre as ferramentas pela barra lateral.
-- Remova espaços em branco desnecessários para colocar o JSON em uma única linha. O JSON inválido gera uma mensagem de erro, com a localização quando disponível.
-- Escape texto para inseri-lo em uma string JSON ou restaure o texto original de uma string com escapes e copie o resultado.
+Minificar, escapar e comparar JSON
+- Minificação em uma linha (também com JSONC/JSON5), escape/remoção de escape de strings JSON e diff estrutural completo (por índice ou chave id, caminhos ignorados, somente diferenças e diff de texto linha a linha).
 
-Comparar JSON
-- Veja diferenças estruturais por caminho: adições, remoções, alterações de valor e de tipo.
-- Compare arrays por índice ou pareie itens por um campo-chave, como id.
-- Ignore caminhos específicos, como campos de data e hora.
-- Explore a árvore completa com diferenças destacadas ou mostre só as diferenças e navegue entre elas.
-- Alterne para a comparação de texto linha a linha do JSON formatado.
-
-Aparência
-- Escolha Normal, Conforto ou Escuro na barra lateral, com prévias em miniatura. Normal é o modo padrão.
-- Apenas a escolha do tema é salva localmente, para ser restaurada ao trocar de ferramenta ou reabrir a extensão. As entradas e os resultados não são salvos.
-
-Privacidade
-Todo o processamento acontece no navegador. Sem coleta ou envio de dados, solicitações de rede, código remoto, anúncios ou rastreamento. O histórico de entradas não é salvo. Quando você copia, a extensão grava o texto selecionado, a entrada ou o resultado na área de transferência do sistema. Quando você cola, ela processa apenas o texto que você fornece.
+Aparência e privacidade
+- Escolha Normal, Conforto ou Escuro na barra lateral (sincronizado com o visualizador embutido). Tudo roda localmente na memória: sem coleta, uploads, requisições de rede, anúncios ou rastreamento.
 
 As entradas e os resultados completos permanecem na memória; o desempenho depende do dispositivo e da estrutura dos dados. As visualizações virtuais renderizam apenas parte do conteúdo por vez, então a busca nativa do navegador cobre somente a parte renderizada. Use a busca na árvore ou copie o resultado completo quando necessário. Quando há muitas diferenças, os trechos de texto sem correspondência podem ser exibidos em blocos inteiros.

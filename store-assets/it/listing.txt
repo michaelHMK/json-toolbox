@@ -1,40 +1,31 @@
 Nome
-JSON Toolbox
+JSON Toolbox - Formattatore, Viewer, Diff e YAML
 
 Descrizione breve
-JSON veloce: formatta, minifica, applica escape e confronta in locale. Niente annunci, tracciamento o raccolta dati.
+Formattatore, visualizzatore, diff JSON/JSON5 e convertitore YAML locale. Gestisce file da 50 MiB e API offline senza tracciamento.
 
 Descrizione dettagliata
-JSON Toolbox permette di formattare, esplorare e confrontare JSON in una scheda dedicata del browser. Funziona interamente offline, senza account né autorizzazioni aggiuntive.
+JSON Toolbox è un formattatore JSON, visualizzatore JSON, strumento di confronto JSON e convertitore JSON in YAML veloce e offline con supporto JSONC e JSON5 in una scheda dedicata. Nessun permesso sui siti richiesto all'installazione, nessun avviso e nessun account necessario.
 
-Formattare ed esplorare
-- Formatta JSON con rientri di 2 spazi, 4 spazi o tabulazioni.
-- Visualizza gli errori di sintassi con riga, colonna e navigazione alla posizione; un controllo locale individua la posizione quando il browser non la fornisce.
-- Esplora un albero comprimibile con scorrimento virtuale, espansione per livello, ricerca di chiavi o valori e navigazione tra le corrispondenze.
-- Copia il risultato completo con un clic.
+Formattare, esplorare e JSONC / JSON5
+- Formatta JSON con 2 spazi, 4 spazi o tabulazioni mantenendo intatta la precisione di grandi interi e decimali.
+- Passa automaticamente da JSON rigoroso a JSONC / JSON5 per gestire commenti, virgole finali, apici singoli, chiavi senza virgolette ed esadecimali.
+- Visualizza gli errori di sintassi con riga, colonna e salto alla posizione, ed esplora un albero virtuale comprimibile con ricerca di chiavi/valori e copia in un clic.
 
-Importare file locali
-- In ciascuno dei cinque strumenti, scegli un file o trascinalo nel riquadro di input.
-- Importa un file .json UTF-8 alla volta, fino a 50 MiB per file. Lo strumento si avvia automaticamente dopo l’importazione. Il confronto inizia quando entrambi i riquadri contengono del testo.
-- Quando importi un file di grandi dimensioni, incolli un testo lungo o lo trascini nel campo di input, il contenuto si apre direttamente nell’editor. Puoi modificare e copiare l’intero testo.
+Conversione bidirezionale JSON <-> YAML
+- Converti JSON in YAML 1.2 e YAML in JSON preservando la precisione dei numeri, con supporto YAML multi-documento e protezione contro alias ciclici.
+- Inverti la direzione di conversione direttamente nello strumento.
 
-Minificare, applicare e rimuovere escape
-- Passa da uno strumento all’altro tramite la barra laterale.
-- Rimuovi gli spazi superflui per ottenere JSON su una sola riga. Gli errori JSON vengono segnalati con la posizione, quando disponibile.
-- Applica escape al testo per inserirlo in una stringa JSON o ripristina il testo originale di una stringa con escape, quindi copia il risultato.
+Formattazione automatica delle pagine JSON e menu contestuale
+- Seleziona del testo su qualsiasi pagina e scegli dal menu contestuale «Apri selezione in JSON Toolbox».
+- Usa su richiesta «Formatta JSON in questa pagina» tramite activeTab senza concedere permessi permanenti.
+- L'interruttore opzionale «Formatta automaticamente le pagine JSON» nella barra laterale è disattivato per impostazione predefinita e richiede i permessi opzionali solo quando attivato, con vista Originale / Formattato, copia, apertura nello strumento e opzione text/plain.
 
-Confrontare JSON
-- Visualizza le differenze strutturali per percorso: aggiunte, rimozioni, cambiamenti di valore e di tipo.
-- Confronta gli array per indice o abbina gli elementi tramite un campo chiave, come id.
-- Ignora i percorsi selezionati, ad esempio i campi data e ora.
-- Esplora l’intero albero con le differenze evidenziate oppure mostra solo le differenze e naviga tra di esse.
-- Passa al confronto testuale riga per riga del JSON formattato.
+Importare file locali, minificare, escape e confrontare
+- In tutti e sette gli strumenti importa file UTF-8 (.json fino a 50 MiB; .yaml/.yml fino a 10 MiB in YAML -> JSON).
+- Minifica su una riga (anche JSONC/JSON5), applica o rimuovi escape delle stringhe e confronta strutture per indice o chiave (es. id) ignorando i percorsi scelti o in diff testuale.
 
-Aspetto
-- Scegli Normale, Riposo visivo o Scuro dalla barra laterale, con anteprime in miniatura. Normale è l’opzione predefinita.
-- La scelta del tema viene memorizzata localmente tra gli strumenti e alla riapertura. Input e risultati non vengono salvati.
-
-Privacy
-Tutta l’elaborazione avviene nel browser. Nessuna raccolta o caricamento di dati, richiesta di rete, codice remoto, pubblicità o tracciamento. La cronologia degli input non viene salvata. Quando copi, l’estensione scrive negli appunti di sistema il testo selezionato, l’input o il risultato. Quando incolli, elabora solo il testo che fornisci.
+Aspetto e privacy
+- Scegli Normale, Riposo visivo o Scuro (sincronizzato con il visualizzatore integrato). Tutto avviene localmente in memoria: nessuna raccolta dati, nessuna richiesta di rete, nessuna pubblicità e nessun tracciamento.
 
 Gli input e i risultati completi restano in memoria; le prestazioni dipendono dal dispositivo e dalla struttura dei dati. Le viste virtuali mostrano solo una parte del contenuto alla volta, quindi la ricerca integrata del browser copre solo la parte visualizzata. Usa la ricerca nell’albero o copia il risultato completo quando necessario. In caso di differenze testuali estese, le sezioni non corrispondenti possono essere mostrate come blocchi interi.

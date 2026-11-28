@@ -1,11 +1,36 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
+  "short_name": "JSON Toolbox",
   "version": "1.7.0",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "file:///*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "viewer.html"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
+      "use_dynamic_url": true
+    }
+  ],
   "content_security_policy": {
-    "extension_pages": "default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
+    "extension_pages": "default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors http: https: file:"
   },
   "action": {
     "default_title": "__MSG_actionTitle__",

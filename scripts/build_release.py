@@ -21,25 +21,34 @@ RUNTIME_FILES = (
     'styles/components/tree.css', 'styles/components/text-view.css',
     'styles/pages/formatter.css', 'styles/pages/compare.css',
     'formatter.html', 'compare.html', 'minify.html', 'escape.html', 'unescape.html',
-    'pages/formatter.js', 'pages/compare.js', 'pages/transform.js',
+    'yaml.html', 'json-from-yaml.html', 'viewer.html',
+    'styles/pages/viewer.css',
+    'pages/formatter.js', 'pages/compare.js', 'pages/transform.js', 'pages/viewer.js',
+    'content/detect.js',
     'shared/page.js', 'shared/navigation.js', 'shared/i18n.js', 'shared/theme.js', 'shared/sidebar.js',
+    'shared/auto-format-settings.js',
     'shared/worker-client.js', 'shared/worker-protocol.js', 'shared/feedback.js',
     'shared/session-guard.js', 'shared/document-session.js', 'shared/comparison-session.js',
     'shared/file-import.js', 'shared/text-input.js',
     'shared/large-input-editor.js', 'vendor/codemirror.js', 'vendor/codemirror.LICENSE.txt',
+    'vendor/yaml.js', 'vendor/yaml.LICENSE.txt',
     'shared/clipboard.js',
     'shared/virtual-tree.js', 'shared/virtual-text.js',
     'worker/index.js', 'worker/tasks.js', 'worker/tree-tasks.js',
-    'core/json.js', 'core/json-path.js', 'core/parse-error.js', 'core/preview.js',
+    'core/json.js', 'core/lenient-json.js', 'core/yaml-emit.js', 'core/yaml-to-json.js',
+    'core/json-path.js', 'core/parse-error.js', 'core/preview.js',
     'core/tree-model.js', 'core/escape.js', 'core/search.js',
     'core/structural-diff.js', 'core/text-diff.js', 'core/text-lines.js',
 )
 
 FORBIDDEN_MANIFEST_KEYS = (
-    'permissions', 'optional_permissions', 'host_permissions',
-    'optional_host_permissions', 'content_scripts',
-    'web_accessible_resources', 'externally_connectable',
+    'optional_permissions', 'host_permissions',
+    'content_scripts', 'externally_connectable',
 )
+ALLOWED_PERMISSIONS = {'contextMenus', 'activeTab', 'scripting', 'storage'}
+ALLOWED_OPTIONAL_HOST_PERMISSIONS = {'http://*/*', 'https://*/*', 'file:///*'}
+ALLOWED_WEB_ACCESSIBLE_RESOURCES = {'viewer.html'}
+ALLOWED_FRAME_ANCESTORS = ({"'none'"}, {'http:', 'https:', 'file:'})
 REQUIRED_EXACT_CSP = {
     'default-src': {"'none'"},
     'script-src': {"'self'"},
@@ -51,7 +60,6 @@ REQUIRED_EXACT_CSP = {
     'base-uri': {"'none'"},
     'form-action': {"'none'"},
     'frame-src': {"'none'"},
-    'frame-ancestors': {"'none'"},
 }
 JS_TOKEN_RE = re.compile(
     r'"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'|`(?:\\.|[^`\\])*`|/\*[\s\S]*?\*/|//[^\n]*'
@@ -67,10 +75,48 @@ def strip_js_comments(source):
     return JS_TOKEN_RE.sub(replace, source)
 
 
+def check_string_allowlist(manifest, field, allowed):
+    value = manifest.get(field)
+    if value is None:
+        return
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f'隐私门禁拒绝无效的 manifest 字段 {field}')
+    if len(set(value)) != len(value):
+        raise ValueError(f'隐私门禁拒绝重复的 {field} 声明')
+    disallowed = sorted(set(value) - allowed)
+    if disallowed:
+        raise ValueError(f'隐私门禁拒绝未授权的 {field}: {", ".join(disallowed)}')
+
+
 def check_manifest_security(manifest):
     for key in FORBIDDEN_MANIFEST_KEYS:
         if manifest.get(key):
             raise ValueError(f'隐私门禁拒绝 manifest 字段: {key}')
+    check_string_allowlist(manifest, 'permissions', ALLOWED_PERMISSIONS)
+    check_string_allowlist(manifest, 'optional_host_permissions', ALLOWED_OPTIONAL_HOST_PERMISSIONS)
+    if 'short_name' in manifest:
+        short_name = manifest['short_name']
+        if not isinstance(short_name, str) or not 1 <= len(short_name) <= 12:
+            raise ValueError('short_name 必须为 1–12 个字符')
+    war = manifest.get('web_accessible_resources')
+    if war is not None:
+        if not isinstance(war, list):
+            raise ValueError('隐私门禁拒绝无效的 manifest 字段 web_accessible_resources')
+        for entry in war:
+            if not isinstance(entry, dict):
+                raise ValueError('隐私门禁拒绝无效的 web_accessible_resources 条目')
+            if entry.get('use_dynamic_url') is not True:
+                raise ValueError('web_accessible_resources 必须启用 use_dynamic_url: true')
+            resources = entry.get('resources')
+            matches = entry.get('matches')
+            if (not isinstance(resources, list) or not resources
+                    or not all(isinstance(item, str) for item in resources)
+                    or not set(resources).issubset(ALLOWED_WEB_ACCESSIBLE_RESOURCES)):
+                raise ValueError('隐私门禁拒绝未授权的 web_accessible_resources 资源')
+            if (not isinstance(matches, list) or not matches
+                    or not all(isinstance(item, str) for item in matches)
+                    or not set(matches).issubset(ALLOWED_OPTIONAL_HOST_PERMISSIONS)):
+                raise ValueError('隐私门禁拒绝未授权的 web_accessible_resources matches')
     csp = manifest.get('content_security_policy', {}).get('extension_pages', '')
     if not isinstance(csp, str) or not csp.strip():
         raise ValueError('manifest.json 缺少 content_security_policy.extension_pages')
@@ -87,12 +133,16 @@ def check_manifest_security(manifest):
     for directive, expected in REQUIRED_EXACT_CSP.items():
         if directives.get(directive) != expected:
             raise ValueError(f'CSP 指令 {directive} 必须为 {" ".join(sorted(expected))}')
+    if directives.get('frame-ancestors') not in ALLOWED_FRAME_ANCESTORS:
+        raise ValueError("CSP 指令 frame-ancestors 仅允许 'none' 或 http: https: file:")
     style_src = directives.get('style-src', set())
     if "'self'" not in style_src or not style_src.issubset({"'self'", "'unsafe-inline'"}):
         raise ValueError("CSP 指令 style-src 仅允许 'self' 与必要的 'unsafe-inline'")
     for directive, values in directives.items():
         for value in values:
             lower = value.lower()
+            if directive == 'frame-ancestors' and lower in ('http:', 'https:', 'file:'):
+                continue
             if lower in ("'unsafe-eval'", "'wasm-unsafe-eval'", '*') or lower.startswith(('http:', 'https:', 'data:', 'blob:')):
                 raise ValueError(f'CSP 指令 {directive} 包含禁止来源: {value}')
 
@@ -126,7 +176,7 @@ def check_html_security(name, source):
     css_pos = source.find('<link rel="stylesheet" href="styles/app.css">')
     if theme_pos < 0 or css_pos < 0 or theme_pos > css_pos:
         raise ValueError(f'{name} 必须在 styles/app.css 之前同步加载 shared/theme.js')
-    if sidebar_pos < 0 or sidebar_pos > css_pos:
+    if name != 'viewer.html' and (sidebar_pos < 0 or sidebar_pos > css_pos):
         raise ValueError(f'{name} 必须在 styles/app.css 之前同步加载 shared/sidebar.js')
 
 

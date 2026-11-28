@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Định dạng, Xem, So sánh & YAML"
   },
   "extDescription": {
-    "message": "JSON Toolbox hiệu suất cao: định dạng, rút gọn, escape và so sánh cục bộ. Không quảng cáo, theo dõi hay thu thập dữ liệu."
+    "message": "Công cụ định dạng, xem, so sánh JSON/JSON5 và chuyển đổi YAML cục bộ. Xử lý tệp 50 MiB và trang API ngoại tuyến, không theo dõi."
   },
   "actionTitle": {
     "message": "Mở JSON Toolbox"
@@ -517,5 +517,175 @@
   },
   "errWorkerFailed": {
     "message": "Tiến trình nền đã dừng đột ngột. Vui lòng thử lại."
+  },
+  "statusLenientParsed": {
+    "message": "Đã phân tích dưới dạng JSONC/JSON5 (đã xóa chú thích, xuất JSON chuẩn)"
+  },
+  "titleYaml": {
+    "message": "JSON sang YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML sang JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Chuyển đổi JSON hoặc JSONC/JSON5 sang YAML 1.2 mà vẫn giữ độ chính xác số."
+  },
+  "descFromYaml": {
+    "message": "Chuyển đổi tài liệu YAML sang JSON có định dạng mà vẫn giữ độ chính xác số."
+  },
+  "btnToYaml": {
+    "message": "Chuyển đổi"
+  },
+  "btnToYamlTitle": {
+    "message": "Chuyển JSON sang YAML"
+  },
+  "btnFromYaml": {
+    "message": "Chuyển đổi"
+  },
+  "btnFromYamlTitle": {
+    "message": "Chuyển YAML sang JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Đổi chiều"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Đổi chiều chuyển đổi và mang theo kết quả hiện tại"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Dán JSON hoặc thả tệp .json vào đây… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Dán YAML hoặc thả tệp .yaml / .yml vào đây… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Chọn tệp .yaml hoặc .yml cục bộ, hoặc thả vào khung nhập"
+  },
+  "fileDropYamlHint": {
+    "message": "Thả để nhập tệp YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "Chỉ hỗ trợ tệp .yaml hoặc .yml"
+  },
+  "errFileMultipleYaml": {
+    "message": "Chỉ nhập một tệp YAML mỗi lần"
+  },
+  "errNeedYamlInput": {
+    "message": "Vui lòng nhập nội dung YAML trước"
+  },
+  "errYamlParseFailed": {
+    "message": "Phân tích YAML thất bại: "
+  },
+  "errInvalidYaml": {
+    "message": "Cú pháp YAML không hợp lệ."
+  },
+  "errYamlAliasLimit": {
+    "message": "Quá nhiều bí danh YAML hoặc tham chiếu vòng."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Thẻ YAML không được hỗ trợ (như !!binary hoặc thẻ tùy chỉnh)."
+  },
+  "errYamlComplexKey": {
+    "message": "Khóa YAML phức tạp (đối tượng hoặc mảng) không được hỗ trợ trong JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Không thể biểu diễn Infinity và NaN trong JSON chuẩn."
+  },
+  "statusYamlGenerated": {
+    "message": "Đã chuyển sang YAML · $count$ ký tự · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Đã chuyển sang JSON · $count$ ký tự · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "Đã gộp $count$ tài liệu YAML thành mảng JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Mở đoạn đã chọn trong JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "Văn bản đã chọn vượt quá giới hạn truyền 10 MB. Hãy sao chép và dán hoặc nhập tệp."
+  },
+  "errImportExpired": {
+    "message": "Nội dung đã nhập đã hết hạn hoặc không còn khả dụng."
+  },
+  "statusSelectionNormalized": {
+    "message": "Khoảng trắng có thể đã được trình duyệt chuẩn hóa"
+  },
+  "menuFormatPage": {
+    "message": "Định dạng JSON trên trang này"
+  },
+  "settingsLabel": {
+    "message": "CÀI ĐẶT"
+  },
+  "autoFormatPages": {
+    "message": "Tự động định dạng trang JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Tự động định dạng phản hồi JSON khi duyệt web"
+  },
+  "autoFormatPlainText": {
+    "message": "Bao gồm JSON dạng text/plain"
+  },
+  "hintFileAccess": {
+    "message": "Để định dạng tệp file:// cục bộ, hãy bật “Cho phép truy cập vào URL của tệp” trong phần cài đặt tiện ích."
+  },
+  "errPageNotJson": {
+    "message": "Trang này không phải là JSON hợp lệ."
+  },
+  "viewerTitle": {
+    "message": "Trình xem JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Đã định dạng"
+  },
+  "btnOpenToolbox": {
+    "message": "Mở trong JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "Trang này đã chặn định dạng nhúng."
+  },
+  "statusViewerReady": {
+    "message": "Đã định dạng · $count$ ký tự · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "errTransferTooLarge": {
+    "message": "Nội dung vượt quá giới hạn truyền 10 MB. Hãy sao chép và dán hoặc nhập tệp thay thế."
+  },
+  "errYamlInputTooLarge": {
+    "message": "Dữ liệu YAML vượt quá giới hạn chuyển đổi 10 MiB."
   }
 }

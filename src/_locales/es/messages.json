@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Formateador, Visor, Diff y YAML"
   },
   "extDescription": {
-    "message": "Herramientas JSON rápidas: formatea, minifica, escapa y compara en tu dispositivo. Sin anuncios, rastreo ni recopilación de datos."
+    "message": "Formateador, visor, diff JSON/JSON5 y conversor YAML local. Soporta archivos de 50 MiB y páginas API sin conexión ni rastreo."
   },
   "actionTitle": {
     "message": "Abrir JSON Toolbox"
@@ -517,5 +517,175 @@
   },
   "errWorkerFailed": {
     "message": "El proceso de trabajo se detuvo inesperadamente. Inténtelo de nuevo."
+  },
+  "statusLenientParsed": {
+    "message": "Analizado como JSONC/JSON5 (comentarios eliminados, salida JSON estándar)"
+  },
+  "titleYaml": {
+    "message": "JSON a YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML a JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Convierte JSON o JSONC/JSON5 a YAML 1.2 conservando la precisión numérica."
+  },
+  "descFromYaml": {
+    "message": "Convierte documentos YAML a JSON formateado conservando la precisión numérica."
+  },
+  "btnToYaml": {
+    "message": "Convertir"
+  },
+  "btnToYamlTitle": {
+    "message": "Convertir JSON a YAML"
+  },
+  "btnFromYaml": {
+    "message": "Convertir"
+  },
+  "btnFromYamlTitle": {
+    "message": "Convertir YAML a JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Invertir dirección"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Cambiar dirección y llevar el resultado actual"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Pega JSON o suelta un archivo .json aquí… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Pega YAML o suelta un archivo .yaml / .yml aquí… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Elige un archivo .yaml o .yml local, o suéltalo en el panel de entrada"
+  },
+  "fileDropYamlHint": {
+    "message": "Suelta para importar un archivo YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "Solo se admiten archivos .yaml o .yml"
+  },
+  "errFileMultipleYaml": {
+    "message": "Importa solo un archivo YAML a la vez"
+  },
+  "errNeedYamlInput": {
+    "message": "Introduce primero contenido YAML"
+  },
+  "errYamlParseFailed": {
+    "message": "Error al analizar YAML: "
+  },
+  "errInvalidYaml": {
+    "message": "Sintaxis YAML no válida."
+  },
+  "errYamlAliasLimit": {
+    "message": "Demasiados alias YAML o referencia circular."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Etiqueta YAML no compatible (como !!binary o personalizada)."
+  },
+  "errYamlComplexKey": {
+    "message": "Las claves YAML complejas (objetos o arreglos) no son válidas en JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity y NaN no pueden representarse en JSON estándar."
+  },
+  "statusYamlGenerated": {
+    "message": "Convertido a YAML · $count$ car. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Convertido a JSON · $count$ car. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "$count$ documentos YAML combinados en un arreglo JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Abrir selección en JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "El texto seleccionado supera el límite de 10 MB. Copia y pega o importa un archivo."
+  },
+  "errImportExpired": {
+    "message": "El texto importado ha caducado o ya no está disponible."
+  },
+  "statusSelectionNormalized": {
+    "message": "Es posible que el navegador haya normalizado los espacios"
+  },
+  "menuFormatPage": {
+    "message": "Formatear JSON en esta página"
+  },
+  "settingsLabel": {
+    "message": "AJUSTES"
+  },
+  "autoFormatPages": {
+    "message": "Autoformatear páginas JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Formatear automáticamente respuestas JSON al navegar"
+  },
+  "autoFormatPlainText": {
+    "message": "Incluir JSON en text/plain"
+  },
+  "hintFileAccess": {
+    "message": "Para archivos file:// locales, activa «Permitir el acceso a las URL de archivo» en los detalles de la extensión."
+  },
+  "errPageNotJson": {
+    "message": "Esta página no es un JSON válido."
+  },
+  "viewerTitle": {
+    "message": "Visor JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Formateado"
+  },
+  "btnOpenToolbox": {
+    "message": "Abrir en JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "Esta página bloqueó el formateo incrustado."
+  },
+  "statusViewerReady": {
+    "message": "Formateado · $count$ car. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "errTransferTooLarge": {
+    "message": "El contenido supera el límite de transferencia de 10 MB. Cópialo y pégalo o importa un archivo."
+  },
+  "errYamlInputTooLarge": {
+    "message": "La entrada YAML supera el límite de conversión de 10 MiB."
   }
 }

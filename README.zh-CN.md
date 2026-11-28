@@ -4,7 +4,7 @@
 
 **为大 JSON 优化，所有处理都在本地完成。**
 
-JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V3），提供 JSON 格式化、压缩、转义与对比。零权限、零上传、零追踪，无广告，安装后即可离线使用。
+JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V3），提供 JSON / JSONC / JSON5 格式化、压缩、转义、JSON ↔ YAML 双向转换与结构对比，并支持按需或可选自动美化网页 JSON。默认零网站访问权限、安装无权限警告，零上传、零追踪，无广告，安装后即可离线使用。
 
 当前版本见 [`src/manifest.json`](src/manifest.json) 中的 `version` 字段。
 
@@ -20,9 +20,9 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 ## 隐私
 
 - **不上传、不追踪**：扩展不发起网络请求，不加载远程代码，没有遥测、广告或追踪 SDK。
-- **零额外扩展权限**：不申请网站访问或存储权限，不读取网页内容、浏览历史、Cookie 或账号信息，见 [`src/manifest.json`](src/manifest.json)。
-- **不保存输入记录**：输入与结果仅在工具页及本地 Worker 的内存中处理，不主动写入浏览器存储、文件或云端；只在你执行复制时写入系统剪贴板。
-- **界面偏好仅保存在本地**：`localStorage` 仅保存你选择的主题和侧边栏折叠状态，不保存输入内容，也不需要新增扩展权限。
+- **默认零网站访问权限（安装无权限警告）**：`src/manifest.json` 仅声明 `contextMenus`、`activeTab`、`scripting`、`storage`，并将网站权限定义在 `optional_host_permissions`（`http://*/*`、`https://*/*`、`file:///*`）；未主动开启前不读取任何网页，安装与更新均不弹出警告。
+- **按需右键菜单**：在网页选中文本点击「在 JSON 工具箱中打开选中内容」或点击「格式化此页 JSON」时，仅在点击当次于内存中读取对应内容；选区内容通过内存态 `chrome.storage.session` 一次性令牌（上限 10 MB）传入并在读取后立即删除。
+- **不保存输入记录**：输入、本地文件、网页响应和结果仅在工具页及本地 Worker 内存中处理；本机仅保存主题、侧边栏折叠状态（`localStorage`）以及默认关闭的“同时格式化纯文本页面”开关状态（`chrome.storage.local`）。
 
 完整的数据处理说明见[隐私政策](PRIVACY.md)；商店使用[公开托管版本](https://github.com/michaelHMK/json-toolbox/blob/main/PRIVACY.md)。
 
@@ -30,12 +30,24 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 
 | 页面 | 说明 |
 | --- | --- |
-| **JSON 格式化** | 美化（2 空格 / 4 空格 / Tab）；语法错误提示，浏览器提供位置时显示行列并跳转；树形折叠、按层级展开、key/值搜索与高亮跳转；一键复制 |
-| **JSON 压缩** | 去除空白压缩为单行；提示无效 JSON，显示可用的行列位置 |
+| **JSON 格式化** | 美化（2 空格 / 4 空格 / Tab），完整保留大整数与小数字面精度；严格 JSON 失败时自动回退到 JSONC / JSON5 宽松解析（支持行/块注释、末尾逗号、单引号、无引号键名、十六进制整数）并显示状态提示；语法错误行列导航；树形折叠、按层级展开、搜索与一键复制 |
+| **JSON 压缩** | 去除空白压缩为单行（兼容 JSONC / JSON5 宽松回退）；提示无效 JSON 及错误行列位置 |
 | **JSON 转义 / 去转义** | 文本与 JSON 字符串互转，一键复制 |
-| **JSON 对比** | 双 JSON 结构化 diff（新增 / 删除 / 变更 / 类型变化）；数组按下标或主键配对；可忽略指定路径；树形高亮与「只看差异」；文本逐行 diff |
+| **JSON → YAML** | 将 JSON / JSONC / JSON5 转换为规范 YAML 1.2（完整保留数位精度、安全引号与多行块标量），支持一键交换转换方向 |
+| **YAML → JSON** | 将 YAML 1.2（支持多文档 YAML 转 JSON 数组）转回标准 JSON，保留数字精度并防范循环与过量别名 |
+| **JSON 对比** | 双 JSON / JSONC / JSON5 结构化 diff（新增 / 删除 / 变更 / 类型变化）；数组按下标或主键配对；可忽略指定路径；树形高亮与「只看差异」；文本逐行 diff |
 
-格式化、压缩、转义、去转义页面和对比页的两侧输入均支持通过文件选择器或拖拽导入本地 UTF-8 `.json` 文件（每个最大 50 MiB）。导入后保留原文并自动执行操作，对比页在两侧都有输入后自动对比。大文件和粘贴的大段文本都可以直接编辑、全文复制。遇到语法错误时，可跳转到浏览器提供的错误位置。
+各输入页支持选择文件或拖拽导入 UTF-8 本地文件（JSON 及对比工具支持 `.json`，单个最大 50 MiB；`YAML → JSON` 支持 `.yaml` / `.yml`，最大 10 MiB），导入后自动执行操作。还可在任意网页选中文字后右键「在 JSON 工具箱中打开选中内容」，直接打开并格式化。
+
+## 自动格式化网页 JSON
+
+网页 JSON 自动格式化默认**关闭**；默认安装不会触碰任何网站内容，也不申请网站访问权限。
+
+- **按需模式**：在任意页面右键选择「格式化此页 JSON」，仅利用 `activeTab` 临时读取当前标签页；若不是有效 JSON，会给出轻量提示并保持原页不变。
+- **可选自动模式**：在侧边栏「设置」中开启「自动格式化网页中的 JSON」开关时，浏览器才会弹出可选网站访问授权（`http://*/*`、`https://*/*`、`file:///*`）；关闭开关或在 `chrome://extensions/` 撤销权限后自动格式化立即失效。
+- **可选纯文本开关**：同时开启「同时格式化纯文本页面」（默认关闭）后，才会尝试格式化以 `{` 或 `[` 开头且能完整解析为严格 JSON 的 `text/plain` 响应。
+- **本地 `file://` 页面**：除扩展开关外，还需在 `chrome://extensions/` 详情页手动启用「允许访问文件网址」。
+- **安全嵌入与降级**：检测通过的页面通过 `viewer.html` 隔离内嵌框架展示（启用 `use_dynamic_url: true` 并跟随扩展主题），提供 **格式化 / 原文** 切换、搜索、复制与「在工具箱中打开」；在启用严格 `Cross-Origin-Embedder-Policy: require-corp` 的网站若拦截扩展框架，会恢复原文并在页顶展示提供「在工具箱中打开」的降级提示条。
 
 侧边栏可在各工具页之间切换，桌面端支持收起为紧凑图标轨以释放更多工作区宽度，折叠状态会在本地记住。`src/_locales/` 包含 20 个语言及地区版本：英文（`en`）、简体中文（`zh_CN`）、繁体中文（台湾 `zh_TW`、香港 `zh_HK`）、日语（`ja`）、韩语（`ko`）、德语（`de`）、法语（`fr`）、西班牙语（`es`）及拉美西语（`es_419`）、葡萄牙语（巴西 `pt_BR`、葡萄牙 `pt_PT`）、俄语（`ru`）、阿拉伯语（`ar`）、印度尼西亚语（`id`）、越南语（`vi`）、意大利语（`it`）、罗马尼亚语（`ro`）、土耳其语（`tr`）和波兰语（`pl`）。Chrome 根据浏览器界面语言选择翻译，默认语言为英文；扩展 API 不可用时，页面静态文案也以英文兜底。阿拉伯语界面从右向左排列，JSON 输入、输出和树始终从左向右显示。
 
@@ -57,15 +69,18 @@ JSON 工具箱是一个以性能和隐私为核心的 Chrome 扩展（Manifest V
 ```
 src/                   # 完整扩展目录，在 Chrome 中加载此目录
   manifest.json        # 扩展清单
-  *.html               # 五个工具页的稳定入口
-  background.js        # Service Worker：点击扩展图标时打开工具页
+  *.html               # 七个工具页及内嵌网页查看器 viewer.html 的入口
+  background.js        # Service Worker：工具栏打开、右键菜单、权限与脚本同步、令牌传递
+  content/
+    detect.js          # 文档初始阶段的网页 JSON 检测与嵌入式查看宿主脚本
   pages/               # 页面交互、视图状态与渲染
     formatter.js
     compare.js
-    transform.js       # 压缩、转义、去转义共用页面逻辑
-  shared/              # 浏览器界面、文档/对比会话与 Worker 通信
-  vendor/              # 扩展自带的 CodeMirror 编辑器及第三方许可证
-  core/                # 纯算法：JSON 排版、路径、搜索、结构对比、文本对比等
+    transform.js       # 压缩、转义、去转义、YAML 双向转换共用页面逻辑
+    viewer.js          # 内嵌网页 JSON 查看器逻辑（隔离 iframe）
+  shared/              # 浏览器界面、自动格式化设置、文档/对比会话与 Worker 通信
+  vendor/              # 扩展自带的 CodeMirror 编辑器、YAML 解析器及第三方许可证
+  core/                # 纯算法：JSON/JSONC/JSON5、YAML 1.2 生成与解析、路径、搜索与 diff
   worker/
     index.js           # Web Worker 消息入口
     tasks.js           # 操作分发、搜索数据缓存与错误响应
@@ -75,20 +90,21 @@ src/                   # 完整扩展目录，在 Chrome 中加载此目录
     base.css           # 全局基础规则
     layout.css         # 应用共用布局
     components/        # 导航、主题选择器、控件、编辑器、树与文本视图
-    pages/             # 格式化与对比页面样式
+    pages/             # 格式化、对比与内嵌查看器样式
   icons/               # 扩展图标（manifest 引用）
-  _locales/            # 国际化文案
+  _locales/            # 国际化文案（20 个语言及地区）
 scripts/
   build_release.py     # 发布检查与白名单打包（Python 标准库）
   gen_icons.py         # 重新生成 src/icons/ 下 PNG（可选）
-  store-assets/        # 商店截图与宣传图生成脚本
+  store-assets/        # 商店截图、宣传图生成脚本与顶部标语 captions.json
   vendor-codemirror/   # 编辑器的依赖锁文件和构建脚本
+  vendor-yaml/         # YAML 解析器的依赖锁文件和构建脚本
 tests/                 # 算法与通信契约、发布文件检查
-bench/                 # 格式化/搜索/对比算法基准与可选浏览器验证
+bench/                 # 格式化/搜索/对比/YAML 算法基准与可选浏览器验证
 package.json           # 原生 ES modules 与开发命令
-STORE_LISTING.md       # Chrome 商店上架文案与表单说明
+STORE_LISTING.md       # Chrome 商店上架文案、权限理由与表单说明
 PRIVACY.md             # 中英文隐私政策（由当前公开仓库托管）
-store-assets/          # 商店截图、宣传图与上架文案（不打进扩展 ZIP）
+store-assets/          # 商店截图、宣传图、关键词清单与上架文案（不打进扩展 ZIP）
 dist/                  # 生成的扩展 ZIP 与校验文件，已加入 Git 忽略规则
 ```
 
@@ -144,13 +160,14 @@ node bench/remote-state.mjs
 node bench/input-focus.mjs
 node bench/native-paste.mjs .
 node bench/theme.mjs
+node bench/auto-format.mjs
 ```
 
 浏览器验证命令中的 `.` 等目录参数指向仓库，脚本会加载其中的 `src/` 扩展目录，也兼容旧版本将扩展放在仓库根目录的布局；还可以直接传入扩展目录。
 
-运行 `node bench/browser.mjs --large-edit`，可用自动生成的 10 MiB 单行 JSON 文件在五个工具页验证大文本编辑。要复现自己的样本，运行 `node bench/browser.mjs --large-edit path/to/large.min.json`，传入超过大输入阈值、没有换行的有效 UTF-8 JSON 文件。报告从文件输入的 change 事件开始计时，包含读取、解码及浏览器首次有机会绘制编辑器的耗时，并单独记录按键响应时间。脚本还检查能否复制全文，并核对各工具处理编辑后文本的结果。
+运行 `node bench/browser.mjs --large-edit`，可用自动生成的 10 MiB 单行 JSON 文件在核心文本编辑工具页验证大文本编辑。要复现自己的样本，运行 `node bench/browser.mjs --large-edit path/to/large.min.json`，传入超过大输入阈值、没有换行的有效 UTF-8 JSON 文件。报告从文件输入的 change 事件开始计时，包含读取、解码及浏览器首次有机会绘制编辑器的耗时，并单独记录按键响应时间。脚本还检查能否复制全文，并核对各工具处理编辑后文本的结果。
 
-CI 还会校验发布 ZIP 的摘要，解包加载扩展，启动后台 Worker，并在五个工具页各执行一次操作。本地复验可使用 Playwright 配套的完整版 Chromium，或将 `CHROMIUM_EXECUTABLE` 指向 Chromium 或 Chrome for Testing。将刚构建的 ZIP 传给脚本。
+CI 还会校验发布 ZIP 的摘要，解包加载扩展，启动后台 Worker，在各工具页执行冒烟操作并验证选中文本右键菜单链路。本地复验可使用 Playwright 配套的完整版 Chromium，或将 `CHROMIUM_EXECUTABLE` 指向 Chromium 或 Chrome for Testing。将刚构建的 ZIP 传给脚本。
 
 ```bash
 npm run build:release
@@ -185,16 +202,19 @@ BENCH_VERIFY=0 node bench/file-import.mjs /path/to/baseline-checkout
 
 日常使用优先按上文加载扩展。仅预览页面时可运行 `python3 -m http.server 8000 --directory src`，访问 `http://localhost:8000/formatter.html`；原生模块不支持直接双击 HTML 的 `file://` 方式，HTTP 预览也不提供 Chrome 扩展国际化 API。
 
-## 重新构建内置编辑器
+## 重新构建内置依赖
 
-扩展随附可读的 CodeMirror 6 ES module。日常开发、测试、打包和加载扩展都直接使用仓库中的文件。需要重新生成编辑器时，从仓库根目录运行以下命令。
+扩展随附可读的 CodeMirror 6 与 YAML 1.2 解析器（`eemeli/yaml`）ES module 产物。日常开发、测试、打包和加载扩展都直接使用 `src/vendor/` 中已提交的文件。需要重新构建时，从仓库根目录运行以下命令。
 
 ```bash
 npm ci --prefix scripts/vendor-codemirror --include=dev --ignore-scripts
 npm run build --prefix scripts/vendor-codemirror
+
+npm ci --prefix scripts/vendor-yaml --ignore-scripts --no-audit --no-fund
+npm run build --prefix scripts/vendor-yaml
 ```
 
-锁文件固定了所有依赖和 esbuild 的版本。构建脚本先将 `scripts/vendor-codemirror/long-line-scroll.patch` 应用到 `@codemirror/view`，再生成 `src/vendor/codemirror.js` 及配套的许可证文件。更新编辑器依赖时，请复核补丁，并一起提交锁文件和这两份产物。[依赖包版本与许可证](src/vendor/codemirror.LICENSE.txt)
+锁文件固定了各依赖与 esbuild 的版本。编辑器构建会先将 `scripts/vendor-codemirror/long-line-scroll.patch` 应用到 `@codemirror/view` 再输出 `src/vendor/codemirror.js` 与许可证文件；YAML 构建输出 `src/vendor/yaml.js` 与 `yaml.LICENSE.txt`。更新依赖时请复核产物并同步提交锁文件与生成文件。[编辑器许可证](src/vendor/codemirror.LICENSE.txt) · [YAML 许可证](src/vendor/yaml.LICENSE.txt)
 
 ## 重新生成图标
 
@@ -231,9 +251,10 @@ python3 scripts/build_release.py
 
 ### 上传前功能检查
 
-- 点击扩展图标打开工具页；在扩展管理页确认没有加载错误。
-- 检查格式化的三种缩进、无效 JSON 定位、树形展开、搜索、复制与清空。
-- 检查压缩、转义和去转义，包括换行、引号、反斜杠和 Unicode 文本。
+- 点击扩展图标打开工具页；在 `chrome://extensions/` 确认安装无权限警告且没有加载错误。
+- 检查格式化页的三种缩进、无效 JSON 定位、树形展开、搜索与复制，以及带注释/末尾逗号/单引号/十六进制的 JSONC/JSON5 宽松解析提示。
+- 检查压缩、转义、去转义、`JSON → YAML` 与 `YAML → JSON`（含方向互换、`.yaml`/`.yml` 导入及数字精度保留）。
 - 检查 JSON 对比的新增、删除、值及类型变化，数组主键配对、忽略路径、只看差异与文本对比。
+- 检查网页选中文本右键「在 JSON 工具箱中打开选中内容」、页面右键「格式化此页 JSON」，以及侧边栏可选「自动格式化网页中的 JSON」开关和权限撤销行为。
 - 检查中文、英文和阿拉伯语文案，包括从右到左的界面布局、从左到右的代码区域及本地化可访问名称。检查树的键盘导航和状态、错误的读屏播报，断网后重复主要操作。
 - 发布材料与实际版本保持一致，不承诺未经验证的文件处理速度。

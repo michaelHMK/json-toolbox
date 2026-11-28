@@ -1,40 +1,31 @@
 Tên
-JSON Toolbox
+JSON Toolbox - Định dạng, Xem, So sánh & YAML
 
 Mô tả ngắn
-JSON Toolbox hiệu suất cao: định dạng, rút gọn, escape và so sánh cục bộ. Không quảng cáo, theo dõi hay thu thập dữ liệu.
+Công cụ định dạng, xem, so sánh JSON/JSON5 và chuyển đổi YAML cục bộ. Xử lý tệp 50 MiB và trang API ngoại tuyến, không theo dõi.
 
 Mô tả chi tiết
-JSON Toolbox giúp bạn định dạng, duyệt và so sánh JSON trong một thẻ trình duyệt riêng. Công cụ hoạt động hoàn toàn ngoại tuyến, không cần tài khoản hay quyền bổ sung.
+JSON Toolbox là công cụ định dạng JSON, trình xem JSON, so sánh JSON và chuyển đổi JSON sang YAML ngoại tuyến hiệu năng cao, hỗ trợ JSONC và JSON5 trong một thẻ riêng. Không yêu cầu quyền trang web khi cài đặt, không cảnh báo quyền và không cần tài khoản.
 
-Định dạng và duyệt
-- Định dạng JSON với thụt lề 2 dấu cách, 4 dấu cách hoặc Tab.
-- Xem lỗi cú pháp cùng vị trí dòng/cột và chuyển đến lỗi, có cơ chế dự phòng cục bộ khi trình duyệt không cung cấp vị trí.
-- Duyệt cây có thể thu gọn với cuộn ảo, mở rộng theo cấp, tìm khóa/giá trị và chuyển giữa các kết quả tìm kiếm.
-- Sao chép toàn bộ kết quả chỉ bằng một lần nhấp.
+Định dạng, duyệt & JSONC / JSON5
+- Định dạng JSON với thụt lề 2 dấu cách, 4 dấu cách hoặc Tab, giữ nguyên độ chính xác của số nguyên lớn và số thập phân.
+- Tự động chuyển từ JSON nghiêm ngặt sang phân tích JSONC / JSON5 cho chú thích, dấu phẩy cuối, nháy đơn, khóa không ngoặc kép và số thập lục phân.
+- Xem lỗi cú pháp với dòng/cột và điều hướng tới vị trí lỗi, duyệt cây ảo có thể thu gọn, tìm khóa/giá trị và sao chép chỉ với một nhấp chuột.
 
-Nhập tệp cục bộ
-- Trên cả năm trang công cụ, bạn có thể chọn tệp hoặc kéo thả tệp vào khung đầu vào.
-- Mỗi lần nhập một tệp .json mã hóa UTF-8, tối đa 50 MiB. Công cụ tự động chạy sau khi nhập. Công cụ so sánh bắt đầu khi cả hai khung đầu vào đều có văn bản.
-- Khi bạn nhập tệp lớn, dán hoặc kéo thả một đoạn văn bản dài, nội dung sẽ mở ngay trong trình chỉnh sửa. Bạn có thể chỉnh sửa và sao chép toàn bộ văn bản.
+Chuyển đổi hai chiều JSON <-> YAML
+- Chuyển JSON sang YAML 1.2 và YAML về JSON, giữ nguyên độ chính xác số, hỗ trợ YAML nhiều tài liệu và bảo vệ chống bí danh vòng lặp.
+- Đổi chiều chuyển đổi ngay trên giao diện.
 
-Rút gọn, thêm escape và bỏ escape
-- Chuyển giữa các công cụ chuyên biệt bằng thanh bên.
-- Xóa khoảng trắng không cần thiết để đưa JSON về một dòng. JSON không hợp lệ sẽ được báo lỗi, kèm vị trí lỗi nếu có.
-- Thêm escape vào văn bản để dùng trong chuỗi JSON hoặc khôi phục nội dung chuỗi có escape về văn bản gốc, sau đó sao chép kết quả.
+Tự động định dạng trang JSON & menu chuột phải
+- Chọn văn bản trên trang web bất kỳ và nhấp chuột phải "Mở vùng chọn trong JSON Toolbox".
+- Dùng "Định dạng JSON trên trang này" khi cần thông qua activeTab mà không cấp quyền trang web vĩnh viễn.
+- Công tắc tùy chọn "Tự động định dạng trang JSON" trong thanh bên mặc định TẮT và chỉ xin quyền trang web khi bạn bật lên, hỗ trợ chuyển Gốc / Đã định dạng, Sao chép, Mở trong công cụ và tùy chọn text/plain.
 
-So sánh JSON
-- Xem khác biệt về cấu trúc theo đường dẫn: phần thêm, xóa, thay đổi giá trị và thay đổi kiểu dữ liệu.
-- So sánh mảng theo chỉ số hoặc ghép các phần tử theo trường khóa như id.
-- Bỏ qua các đường dẫn đã chọn, chẳng hạn trường dấu thời gian.
-- Duyệt toàn bộ cây với các khác biệt được tô nổi hoặc chỉ hiển thị phần khác biệt, kèm điều hướng giữa các khác biệt.
-- Chuyển sang so sánh văn bản từng dòng của JSON đã định dạng.
+Nhập tệp cục bộ, rút gọn, escape & so sánh
+- Trên cả bảy trang công cụ, chọn hoặc kéo thả tệp UTF-8 (.json tối đa 50 MiB; .yaml/.yml tối đa 10 MiB ở YAML -> JSON).
+- Rút gọn một dòng (hỗ trợ JSONC/JSON5), thêm/bỏ escape chuỗi JSON và so sánh cấu trúc theo khóa (như id), bỏ qua đường dẫn hoặc so sánh văn bản từng dòng.
 
-Giao diện
-- Chọn Thông thường, Dịu mắt hoặc Tối từ thanh bên với hình xem trước thu nhỏ. Thông thường là chế độ mặc định.
-- Lựa chọn giao diện được ghi nhớ cục bộ giữa các công cụ và sau khi mở lại. Nội dung đầu vào và kết quả không được lưu.
-
-Quyền riêng tư
-Mọi xử lý đều diễn ra trong trình duyệt của bạn. Không thu thập hay tải dữ liệu lên, không gửi yêu cầu mạng, không có mã từ xa, quảng cáo hay theo dõi. Lịch sử đầu vào không được lưu. Khi bạn sao chép, tiện ích ghi văn bản đã chọn, nội dung đầu vào hoặc kết quả vào bộ nhớ tạm của hệ thống. Khi bạn dán, tiện ích chỉ xử lý văn bản bạn cung cấp.
+Giao diện & Quyền riêng tư
+- Chọn Thông thường, Dịu mắt hoặc Tối (đồng bộ cả trong trình xem nhúng). Mọi xử lý diễn ra cục bộ trong bộ nhớ; không thu thập, không tải lên, không gửi yêu cầu mạng, không quảng cáo hay theo dõi.
 
 Đầu vào và kết quả lớn được giữ trong bộ nhớ; hiệu suất phụ thuộc vào thiết bị và cấu trúc dữ liệu của bạn. Chế độ xem ảo chỉ hiển thị một phần nội dung tại mỗi thời điểm, nên tính năng Tìm của trình duyệt chỉ tìm trong phần đã hiển thị. Hãy dùng tìm kiếm trong cây hoặc sao chép toàn bộ kết quả khi cần. Với các khác biệt văn bản lớn, những phần không khớp có thể được hiển thị thành khối nguyên vẹn.

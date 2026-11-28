@@ -1,40 +1,35 @@
 Nom
-JSON Toolbox
+JSON Toolbox - Formateur, Visionneuse, Diff & YAML
 
 Description courte
-Outils JSON rapides : formater, minifier, échapper et comparer en local. Sans publicité, suivi ni collecte de données.
+Formateur, visionneuse, diff JSON/JSON5 et convertisseur YAML local. Gère fichiers de 50 Mio et API hors ligne, sans suivi.
 
 Description détaillée
-JSON Toolbox permet de formater, parcourir et comparer du JSON dans un onglet dédié du navigateur. Tout fonctionne hors ligne, sans compte ni autorisation supplémentaire.
+JSON Toolbox est un formateur JSON, une visionneuse JSON, un outil de comparaison JSON et un convertisseur JSON vers YAML rapide fonctionnant hors ligne (avec prise en charge JSONC et JSON5). Aucune autorisation d'accès aux sites n'est demandée à l'installation, sans avertissement ni compte requis.
 
-Formater et parcourir
-- Formatez le JSON avec une indentation de 2 espaces, 4 espaces ou tabulations.
-- Consultez les erreurs de syntaxe avec la ligne, la colonne et un accès à la position ; une vérification locale complète les informations manquantes du navigateur.
-- Parcourez une arborescence repliable avec défilement virtuel, déploiement par niveau, recherche de clés ou de valeurs et navigation entre les résultats.
-- Copiez le résultat complet en un clic.
+Formater, parcourir et JSONC / JSON5
+- Formatez le JSON avec 2 ou 4 espaces ou tabulations tout en préservant exactement les grands entiers et décimaux.
+- Bascule automatiquement du JSON strict vers JSONC / JSON5 pour analyser commentaires, virgules finales, guillemets simples, clés sans guillemets et entiers hexadécimaux.
+- Affichez les erreurs de syntaxe avec ligne, colonne, navigation directe et repli local lorsque le navigateur omet la position.
+- Parcourez une arborescence virtuelle repliable avec déploiement par niveau, recherche clé/valeur, navigation entre résultats et copie en un clic.
+
+Conversion bidirectionnelle JSON <-> YAML
+- Convertissez JSON en YAML 1.2 et YAML en JSON dans des vues dédiées tout en préservant la précision des nombres et les flux YAML multi-documents.
+- Inversez le sens de conversion directement depuis l'outil.
+
+Formatage automatique de pages JSON et menu contextuel
+- Sélectionnez du texte sur n'importe quelle page et faites clic droit → « Ouvrir la sélection dans JSON Toolbox ».
+- Formatez une page JSON à la demande via le menu contextuel « Formater le JSON de cette page » grâce à activeTab, sans permission permanente.
+- L'interrupteur optionnel « Formater automatiquement les pages JSON » est désactivé par défaut ; il ne demande les permissions optionnelles qu'à l'activation, avec bascule Brut / Formaté, copie, ouverture dans l'outil et option text/plain.
 
 Importer des fichiers locaux
-- Dans chacun des cinq outils, choisissez un fichier ou déposez-le dans une zone de saisie.
-- Importez un fichier .json encodé en UTF-8 à la fois, dans la limite de 50 MiB par fichier. L’outil démarre automatiquement après l’importation. La comparaison commence dès que les deux zones de saisie contiennent du texte.
-- Importez un fichier volumineux ou collez ou déposez un long texte dans la zone de saisie. Le contenu s’ouvre directement dans l’éditeur, où vous pouvez le modifier et le copier en entier.
+- Dans les sept outils, importez un fichier UTF-8 par sélection ou glisser-déposer (.json jusqu'à 50 Mio ; .yaml/.yml jusqu'à 10 Mio pour YAML -> JSON).
+- Les fichiers volumineux et longs textes s'ouvrent directement dans l'éditeur pour une édition et une copie complètes.
 
-Minifier, échapper et déséchapper
-- Passez d’un outil à l’autre avec la barre latérale.
-- Supprimez les espaces inutiles pour obtenir un JSON sur une seule ligne. Les erreurs JSON sont signalées, avec leur position lorsqu’elle est disponible.
-- Échappez du texte pour l’insérer dans une chaîne JSON ou restaurez le texte d’origine d’une chaîne échappée, puis copiez le résultat.
+Minifier, échapper et comparer du JSON
+- Minification sur une ligne (avec JSONC/JSON5), échappement/déséchappement de chaînes JSON et diff structurel complet (par indice ou champ clé id, chemins ignorés, vue différences seules et diff texte ligne par ligne).
 
-Comparer du JSON
-- Consultez les différences structurelles par chemin : ajouts, suppressions, changements de valeur et de type.
-- Comparez les tableaux par indice ou associez les éléments par un champ clé, tel que id.
-- Ignorez certains chemins, par exemple les champs d’horodatage.
-- Affichez l’arborescence complète avec les différences en surbrillance ou uniquement les différences, et passez de l’une à l’autre.
-- Passez à la comparaison ligne par ligne du JSON formaté.
-
-Apparence
-- Choisissez Normal, Confort ou Sombre dans la barre latérale, avec des aperçus miniatures. Normal est le mode par défaut.
-- Seul le choix du thème est mémorisé localement, entre les outils et après réouverture. Les saisies et les résultats ne sont pas enregistrés.
-
-Confidentialité
-Tout est traité localement dans le navigateur. Aucune collecte ni transmission de données, aucune requête réseau, aucun code distant, aucune publicité ni aucun suivi. L’historique des saisies n’est pas enregistré. Lorsque vous copiez, l’extension place le texte sélectionné, la saisie ou le résultat dans le presse-papiers du système. Lorsque vous collez, elle traite uniquement le texte que vous fournissez.
+Apparence et confidentialité
+- Choisissez Normal, Confort ou Sombre (synchronisé avec la visionneuse intégrée). Tout reste traité localement en mémoire : aucune collecte, aucune requête réseau, aucune publicité et aucun suivi.
 
 Les données et résultats complets restent en mémoire ; les performances dépendent de l’appareil et de la structure des données. Les vues virtuelles n’affichent qu’une partie du contenu à la fois : la recherche native du navigateur ne couvre que cette partie. Utilisez la recherche dans l’arborescence ou copiez le résultat complet si nécessaire. En cas de différences textuelles importantes, les sections non correspondantes peuvent être affichées par blocs entiers.

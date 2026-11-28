@@ -13,7 +13,7 @@
   </g>
   <text x="779" y="112" fill="#eeedff" font-family="Noto Sans Arabic, Arial, sans-serif" font-size="22" font-weight="700" direction="rtl" unicode-bidi="isolate" text-anchor="start" data-max-width="588" data-min-x="190" data-max-x="780">محسّن لملفات JSON الكبيرة</text>
   <text x="779" y="250" fill="#fff" font-family="Arial, Noto Sans, sans-serif" font-size="72" font-weight="700" direction="ltr" unicode-bidi="isolate" text-anchor="end" data-max-width="698" data-min-x="80" data-max-x="780">JSON Toolbox</text>
-  <text x="779" y="330" fill="#eeedff" font-family="Noto Sans Arabic, Arial, sans-serif" font-size="38" font-weight="400" direction="rtl" unicode-bidi="isolate" text-anchor="start" data-max-width="698" data-min-x="80" data-max-x="780">استيراد · تنسيق · مقارنة</text>
+  <text x="779" y="330" fill="#eeedff" font-family="Noto Sans Arabic, Arial, sans-serif" font-size="33" font-weight="400" direction="rtl" unicode-bidi="isolate" text-anchor="start" data-max-width="698" data-min-x="80" data-max-x="780">تنسيق · مقارنة · YAML · تلقائي</text>
   <text x="779" y="402" fill="#eeedff" font-family="Noto Sans Arabic, Arial, sans-serif" font-size="25" font-weight="600" direction="rtl" unicode-bidi="isolate" text-anchor="start" data-max-width="698" data-min-x="80" data-max-x="780">أداء عالٍ. خصوصية. معالجة محلية.</text>
   <circle cx="771" cy="459" r="5" fill="#a8efd7"/>
   <text x="753" y="466" fill="#e0dfff" font-family="Noto Sans Arabic, Arial, sans-serif" font-size="20" font-weight="400" direction="rtl" unicode-bidi="isolate" text-anchor="start" data-max-width="672" data-min-x="80" data-max-x="754">تتم معالجة جميع البيانات على جهازك.</text>

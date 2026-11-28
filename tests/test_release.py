@@ -133,7 +133,7 @@ class ReleaseTests(unittest.TestCase):
                 mutate.assert_not_called()
 
     def test_omitted_import_and_worker_entry_are_rejected(self):
-        for omitted in ['core/json.js', 'worker/index.js', 'shared/large-input-editor.js']:
+        for omitted in ['core/json.js', 'worker/index.js', 'shared/large-input-editor.js', 'vendor/yaml.js']:
             with self.subTest(omitted=omitted):
                 files = tuple(name for name in build_release.RUNTIME_FILES if name != omitted)
                 with patch.object(build_release, 'RUNTIME_FILES', files):
@@ -146,11 +146,31 @@ class ReleaseTests(unittest.TestCase):
             shutil.copytree(build_release.ROOT, root)
             manifest_path = root / 'manifest.json'
             baseline = json.loads(manifest_path.read_text(encoding='utf-8'))
+            # Allowlisted permissions and optional_host_permissions must pass.
+            with patch.object(build_release, 'ROOT', root):
+                manifest_path.write_text(json.dumps({
+                    **baseline,
+                    'permissions': ['contextMenus', 'activeTab', 'scripting', 'storage'],
+                    'optional_host_permissions': ['http://*/*', 'https://*/*', 'file:///*'],
+                    'web_accessible_resources': [{
+                        'resources': ['viewer.html'],
+                        'matches': ['http://*/*', 'https://*/*', 'file:///*'],
+                        'use_dynamic_url': True,
+                    }],
+                }), encoding='utf-8')
+                self.check()
             cases = [
-                ({**baseline, 'permissions': ['storage']}, '隐私门禁'),
+                ({**baseline, 'permissions': ['tabs']}, '未授权的 permissions'),
+                ({**baseline, 'permissions': ['storage', 'clipboardRead']}, '未授权的 permissions'),
                 ({**baseline, 'host_permissions': ['<all_urls>']}, '隐私门禁'),
+                ({**baseline, 'content_scripts': [{'matches': ['<all_urls>'], 'js': ['content/detect.js']}]}, '隐私门禁'),
+                ({**baseline, 'optional_host_permissions': ['<all_urls>']}, '未授权的 optional_host_permissions'),
+                ({**baseline, 'web_accessible_resources': [{'resources': ['viewer.html'], 'matches': ['http://*/*'], 'use_dynamic_url': False}]}, 'use_dynamic_url'),
+                ({**baseline, 'web_accessible_resources': [{'resources': ['formatter.html'], 'matches': ['http://*/*'], 'use_dynamic_url': True}]}, 'web_accessible_resources 资源'),
+                ({**baseline, 'web_accessible_resources': [{'resources': ['viewer.html'], 'matches': ['<all_urls>'], 'use_dynamic_url': True}]}, 'web_accessible_resources matches'),
                 ({**baseline, 'content_security_policy': {'extension_pages': "script-src 'self'; object-src 'self'; connect-src 'none'"}}, 'default-src'),
                 ({**baseline, 'content_security_policy': {'extension_pages': baseline['content_security_policy']['extension_pages'].replace("object-src 'none'", "object-src 'self'")}}, 'object-src'),
+                ({**baseline, 'content_security_policy': {'extension_pages': baseline['content_security_policy']['extension_pages'].replace("frame-ancestors http: https: file:", "frame-ancestors *")}}, 'frame-ancestors'),
                 ({**baseline, 'content_security_policy': {'extension_pages': baseline['content_security_policy']['extension_pages'].replace("style-src 'self' 'unsafe-inline'", "style-src 'self' https://evil.example")}}, 'style-src'),
             ]
             for mutated, pattern in cases:

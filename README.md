@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 **Built for large JSON. All processing stays local.**
 
-JSON Toolbox is a Chrome extension (Manifest V3) built around performance and privacy, with tools to format, minify, escape, and compare JSON. Zero permissions, uploads, or tracking. It works offline after installation and includes no ads.
+JSON Toolbox is a Chrome extension (Manifest V3) built around performance and privacy, with tools to format, minify, escape, convert to/from YAML, and compare JSON. Zero website access by default and zero permission warnings on install, zero uploads or tracking, and offline operation with no ads.
 
 See the `version` field in [`src/manifest.json`](src/manifest.json) for the current version.
 
@@ -20,9 +20,9 @@ See [Performance Checks](#performance-checks) below for verification commands an
 ## Privacy
 
 - **No uploads or tracking**: the extension makes no network requests, loads no remote code, and includes no telemetry, ads, or tracking SDKs.
-- **No extra extension permissions**: no website access or storage permissions, and no reading of website content, browsing history, cookies, or account information. See [`src/manifest.json`](src/manifest.json).
-- **No saved input history**: inputs and results are processed only in the memory of the tool page and its local Worker. The extension does not write them to browser storage, files, or cloud services; it writes to the system clipboard only when you copy.
-- **Local interface preferences**: only your theme choice and sidebar state are saved in `localStorage` on your device. This does not save input content or require additional extension permissions.
+- **Zero website access by default (zero install warnings)**: `src/manifest.json` requests only `contextMenus`, `activeTab`, `scripting`, and `storage`, plus `optional_host_permissions` (`http://*/*`, `https://*/*`, `file:///*`) which remain ungranted until you opt in. Installing or updating triggers no host-permission warnings.
+- **On-demand right-click actions**: highlighting text on any page and choosing **"Open selection in JSON Toolbox"**, or choosing **"Format JSON on this page"**, runs strictly in memory on user click. Selections are passed via a one-time token in `chrome.storage.session` (≤ 10 MB) and deleted immediately when loaded.
+- **No saved input history**: inputs, files, webpage payloads, and results are processed only in memory and never persisted to disk or cloud services; only your theme choice, sidebar collapsed state (`localStorage`), and optional plain-text auto-format preference (`chrome.storage.local`, default off) are stored locally.
 
 See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [publicly hosted version](https://github.com/michaelHMK/json-toolbox/blob/main/PRIVACY.md) for the store listing.
 
@@ -30,12 +30,24 @@ See the [privacy policy](PRIVACY.md) for full data-handling details. Use the [pu
 
 | Tool | Features |
 | --- | --- |
-| **JSON Formatter** | Pretty-print with 2 spaces, 4 spaces, or tabs; report syntax errors and show line/column positions with cursor navigation when available; browse collapsible trees, expand by depth, search keys and values, navigate highlighted matches, and copy results |
-| **JSON Minifier** | Remove whitespace to produce a single line; report invalid JSON with line/column positions when available |
+| **JSON Formatter** | Pretty-print with 2 spaces, 4 spaces, or tabs, keeping large integers and decimal precision intact; strict-first automatic lenient JSONC / JSON5 fallback (comments, trailing commas, single-quoted strings, unquoted keys, hex literals) with status notification; syntax error line/column navigation; collapsible virtual tree with level expansion, search, and one-click copy |
+| **JSON Minifier** | Remove whitespace to produce a single line (also supporting lenient JSONC / JSON5 fallback); report invalid JSON with line/column positions |
 | **JSON Escape / Unescape** | Convert between plain text and escaped JSON string content, with one-click copying |
-| **JSON Compare** | Compare JSON structures for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
+| **JSON → YAML** | Convert JSON or JSONC/JSON5 into YAML 1.2 with clean quoting, multiline block scalars, preserved number literals, and one-click direction swap |
+| **YAML → JSON** | Convert YAML 1.2 (including multi-document YAML streams into JSON arrays) back to formatted JSON while preserving number precision and protecting against circular or oversized aliases |
+| **JSON Compare** | Compare JSON structures (or JSONC/JSON5 inputs) for additions, removals, value changes, and type changes; match array elements by index or key; ignore selected paths; highlight differences in trees, show only differences, and compare text line by line |
 
-Formatter, Minifier, Escape, Unescape, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file) through file pickers or drag-and-drop. Importing preserves the original text and runs the operation. Compare runs once both inputs are present. You can edit or copy the entire input, including large files and pasted text, and jump to a syntax error when the browser provides its position.
+Formatter, Minifier, Escape, Unescape, `JSON → YAML`, and both Compare inputs accept local UTF-8 `.json` files (up to 50 MiB per file), while `YAML → JSON` accepts `.yaml` and `.yml` files (up to 10 MiB) through file pickers or drag-and-drop. Importing preserves original text and runs automatically. You can also right-click selected text on any page and choose **Open selection in JSON Toolbox** to format it immediately.
+
+## Auto-Format JSON Pages
+
+Auto-formatting web pages is **off by default**, so installed extensions never touch web pages or request site permissions until you opt in.
+
+- **On-demand page formatting**: right-click on any page and click **Format JSON on this page** (`activeTab` grants temporary access for that click only; non-JSON pages show a brief notice).
+- **Opt-in automatic formatting**: toggle **Settings → Auto-format JSON pages** in the sidebar. Chrome prompts for optional site access (`http://*/*`, `https://*/*`, `file:///*`); toggling it off or revoking site permissions in `chrome://extensions/` immediately stops auto-formatting.
+- **Optional plain-text JSON**: enable **Also format plain-text pages** (default off) if you want raw `text/plain` pages beginning with `{` or `[` that parse cleanly as strict JSON to open in the viewer too.
+- **Local `file://` JSON**: Chrome additionally requires turning on **Allow access to file URLs** on the extension's `chrome://extensions/` details page.
+- **Isolated viewer & fallback**: qualifying JSON pages render in an embedded `viewer.html` frame (`use_dynamic_url: true`, sharing your theme) with **Formatted / Raw** view toggle, search, **Copy result**, and **Open in JSON Toolbox**. On sites with strict `Cross-Origin-Embedder-Policy: require-corp` headers that block extension frames, a lightweight banner keeps the raw page intact and offers **Open in JSON Toolbox**.
 
 Use the sidebar to switch between tools; on desktop it can also collapse into a compact icon rail to free up workspace width, and its state is remembered locally. The interface includes 20 locale catalogs in `src/_locales/`: English (`en`), Simplified Chinese (`zh_CN`), Traditional Chinese for Taiwan (`zh_TW`) and Hong Kong (`zh_HK`), Japanese (`ja`), Korean (`ko`), German (`de`), French (`fr`), Spanish (`es`) and Latin American Spanish (`es_419`), Portuguese for Brazil (`pt_BR`) and Portugal (`pt_PT`), Russian (`ru`), Arabic (`ar`), Indonesian (`id`), Vietnamese (`vi`), Italian (`it`), Romanian (`ro`), Turkish (`tr`), and Polish (`pl`). Chrome chooses translations from its UI language, with English as the default. Static page text also falls back to English when the extension API is unavailable. Arabic uses a right-to-left interface; JSON input, output, and trees remain left-to-right.
 
@@ -57,15 +69,18 @@ Use **Tab** to enter a JSON tree. **Up/Down** move between visible nodes, **Righ
 ```
 src/                   # Complete extension; load this directory in Chrome
   manifest.json        # Extension manifest
-  *.html               # Stable entry points for the five tool pages
-  background.js        # Service Worker: opens the toolbox when the extension icon is clicked
+  *.html               # Entry points for all seven tool pages plus viewer.html
+  background.js        # Service Worker: toolbar tab, right-click menus, permissions, script sync & transfer tokens
+  content/
+    detect.js          # Document-start page JSON detector and isolated viewer host
   pages/               # Page interactions, view state, and rendering
     formatter.js
     compare.js
-    transform.js       # Shared page logic for minify, escape, and unescape
-  shared/              # Browser UI, document/comparison sessions, and Worker transport
-  vendor/              # Bundled CodeMirror editor and third-party licenses
-  core/                # Pure algorithms: JSON formatting, paths, search, structural/text diff
+    transform.js       # Shared page logic for minify, escape, unescape, yaml, and json-from-yaml
+    viewer.js          # Embedded page viewer logic (sandboxed iframe host)
+  shared/              # Browser UI, auto-format settings, document/comparison sessions, and Worker transport
+  vendor/              # Bundled CodeMirror editor, vendored YAML parser, and third-party licenses
+  core/                # Pure algorithms: JSON/JSONC/JSON5, YAML 1.2 emitter/parser, paths, search, diff
   worker/
     index.js           # Web Worker message entry point
     tasks.js           # Task dispatch, cached search data, and error responses
@@ -75,20 +90,21 @@ src/                   # Complete extension; load this directory in Chrome
     base.css           # Global defaults
     layout.css         # Shared application layout
     components/        # Navigation, theme picker, controls, editor, tree, text view
-    pages/             # Formatter and comparison page styles
+    pages/             # Formatter, comparison, and viewer page styles
   icons/               # Extension icons referenced by the manifest
-  _locales/            # Translations
+  _locales/            # Translations (20 locales)
 scripts/
   build_release.py     # Release validation and allowlist packaging using Python's standard library
   gen_icons.py         # Regenerate PNG files in src/icons/ (optional)
-  store-assets/        # Store screenshot and promotional image generators
+  store-assets/        # Store screenshot & promotional image generator + captions.json
   vendor-codemirror/   # Locked dependencies and build script for the editor bundle
+  vendor-yaml/         # Locked dependencies and build script for the vendored YAML parser
 tests/                 # Algorithm and messaging contracts, release validation
-bench/                 # Formatting/search/diff benchmarks and optional browser checks
+bench/                 # Formatting/search/diff/YAML benchmarks and optional browser checks
 package.json           # Native ES modules and development commands
-STORE_LISTING.md       # Chrome Web Store listing copy and submission guidance
+STORE_LISTING.md       # Chrome Web Store listing copy, permission justifications, and submission guidance
 PRIVACY.md             # English and Chinese privacy policy hosted in the public repository
-store-assets/          # Store screenshots, promotional images, and listing copy; excluded from the extension ZIP
+store-assets/          # Store screenshots, promotional images, keyword matrix, and listing copy; excluded from ZIP
 dist/                  # Generated extension ZIP and checksum; ignored by Git
 ```
 
@@ -144,13 +160,14 @@ node bench/remote-state.mjs
 node bench/input-focus.mjs
 node bench/native-paste.mjs .
 node bench/theme.mjs
+node bench/auto-format.mjs
 ```
 
 Browser check directory arguments such as `.` refer to a checkout; the scripts load its `src/` extension directory and also recognize the root layout of older checkouts. You can pass an extension directory directly.
 
-Run `node bench/browser.mjs --large-edit` to test all five tools with a generated 10 MiB single-line JSON file. To reproduce a case with your own file, run `node bench/browser.mjs --large-edit path/to/large.min.json` with valid UTF-8 JSON above the large-input threshold and no line breaks. The report measures from the file input’s change event through reading, decoding, and the first opportunity to paint the editor. It also measures keystroke latency, verifies full copying, and checks each tool’s result after editing.
+Run `node bench/browser.mjs --large-edit` to test the core text-editor tool pages with a generated 10 MiB single-line JSON file. To reproduce a case with your own file, run `node bench/browser.mjs --large-edit path/to/large.min.json` with valid UTF-8 JSON above the large-input threshold and no line breaks. The report measures from the file input’s change event through reading, decoding, and the first opportunity to paint the editor. It also measures keystroke latency, verifies full copying, and checks each tool’s result after editing.
 
-CI also verifies the release ZIP checksum, unpacks the extension, starts its background worker, and runs one operation on each of the five tool pages. To run this locally, use Playwright's full Chromium browser or set `CHROMIUM_EXECUTABLE` to Chromium or Chrome for Testing. Pass the ZIP produced by the build.
+CI also verifies the release ZIP checksum, unpacks the extension, starts its background worker, runs smoke operations across the tool pages, and exercises the selection context-menu flow. To run this locally, use Playwright's full Chromium browser or set `CHROMIUM_EXECUTABLE` to Chromium or Chrome for Testing. Pass the ZIP produced by the build.
 
 ```bash
 npm run build:release
@@ -185,16 +202,19 @@ The editor for large inputs and the large output views use virtual rendering. Na
 
 For normal use, load the extension as described above. To preview the pages, run `python3 -m http.server 8000 --directory src` and visit `http://localhost:8000/formatter.html`. Native modules cannot be loaded by opening the HTML files directly through `file://`, and HTTP previews do not provide Chrome's extension internationalization API.
 
-## Rebuild the Bundled Editor
+## Rebuild Vendored Dependencies
 
-The extension ships with a readable ES module for CodeMirror 6. Normal development, testing, packaging, and loading the extension use the checked-in files. To regenerate the editor, run these commands from the repository root.
+The extension ships with readable ES module bundles for CodeMirror 6 and the YAML 1.2 parser (`eemeli/yaml`). Normal development, testing, packaging, and loading the extension use the checked-in files under `src/vendor/`. To regenerate either bundle, run these commands from the repository root.
 
 ```bash
 npm ci --prefix scripts/vendor-codemirror --include=dev --ignore-scripts
 npm run build --prefix scripts/vendor-codemirror
+
+npm ci --prefix scripts/vendor-yaml --ignore-scripts --no-audit --no-fund
+npm run build --prefix scripts/vendor-yaml
 ```
 
-The lockfile pins the packages and esbuild. The build applies `scripts/vendor-codemirror/long-line-scroll.patch` to `@codemirror/view` and writes `src/vendor/codemirror.js` and the accompanying license notices. When updating editor dependencies, review the patch and commit the lockfile and both generated files together. [Package versions and licenses](src/vendor/codemirror.LICENSE.txt)
+The lockfiles pin the packages and esbuild. The editor build applies `scripts/vendor-codemirror/long-line-scroll.patch` to `@codemirror/view` and writes `src/vendor/codemirror.js` with `codemirror.LICENSE.txt`; the YAML build outputs `src/vendor/yaml.js` with `yaml.LICENSE.txt`. When updating dependencies, review the patch/output and commit the lockfile and generated files together. See [editor licenses](src/vendor/codemirror.LICENSE.txt) and [YAML license](src/vendor/yaml.LICENSE.txt).
 
 ## Regenerate Icons
 
@@ -231,9 +251,10 @@ Before uploading to the Chrome Web Store, extract the ZIP to a new directory, lo
 
 ### Pre-Upload Functional Checklist
 
-- Click the extension icon to open the toolbox and confirm that the extension management page shows no loading errors.
-- Check all three indentation options, invalid JSON location reporting, tree expansion, search, copying, and clearing.
-- Check minify, escape, and unescape with newlines, quotes, backslashes, and Unicode text.
+- Click the extension icon to open the toolbox and confirm `chrome://extensions/` shows zero permission warnings and no loading errors.
+- Check Formatter with strict JSON, all three indentation options, invalid JSON location reporting, tree expansion, search, copying, and lenient JSONC/JSON5 inputs (comments, trailing commas, unquoted keys, hex integers).
+- Check minify, escape, unescape, `JSON → YAML`, and `YAML → JSON` (including direction swap, `.yaml`/`.yml` import, and preserved number literals).
 - Check additions, removals, value changes, and type changes in JSON Compare, along with array key matching, ignored paths, differences-only mode, and text comparison.
+- Check right-click **"Open selection in JSON Toolbox"** on selected page/textarea text, right-click **"Format JSON on this page"**, and the opt-in **Settings → Auto-format JSON pages** switch (including revoking permissions).
 - Check English, Chinese, and Arabic interface text, including right-to-left layout, left-to-right code, and translated accessible names. Check keyboard tree navigation and screen-reader announcements for status and errors, then repeat the main operations while offline.
 - Keep release materials consistent with the actual version, and avoid claims about file-processing speed that have not been verified.

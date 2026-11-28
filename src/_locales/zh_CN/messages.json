@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON 工具箱"
+    "message": "JSON 工具箱 - 格式化、树形查看、对比与 YAML 转换"
   },
   "extDescription": {
-    "message": "高性能 JSON 工具箱：格式化、压缩、转义与去转义、树形搜索、结构与文本对比。数据仅在本地处理，无广告、无追踪、不收集数据。"
+    "message": "本地 JSON/JSONC/JSON5 格式化、树形查看、Diff 对比与 YAML 互转，支持 50 MiB 大文件及网页 JSON 格式化。无广告无追踪。"
   },
   "actionTitle": {
     "message": "打开 JSON 工具箱"
@@ -517,5 +517,175 @@
   },
   "errWorkerFailed": {
     "message": "后台任务意外停止，请重试。"
+  },
+  "statusLenientParsed": {
+    "message": "已按 JSONC/JSON5 解析，注释已去除，输出为标准 JSON"
+  },
+  "titleYaml": {
+    "message": "JSON 转 YAML - JSON 工具箱"
+  },
+  "titleFromYaml": {
+    "message": "YAML 转 JSON - JSON 工具箱"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "将 JSON 或 JSONC/JSON5 转换为规范的 YAML 1.2，完整保留数字精度。"
+  },
+  "descFromYaml": {
+    "message": "将 YAML 文档转换为格式化 JSON，完整保留数字精度。"
+  },
+  "btnToYaml": {
+    "message": "转换为 YAML"
+  },
+  "btnToYamlTitle": {
+    "message": "将 JSON 转换为 YAML"
+  },
+  "btnFromYaml": {
+    "message": "转换为 JSON"
+  },
+  "btnFromYamlTitle": {
+    "message": "将 YAML 转换为 JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ 交换方向"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "切换转换方向并带入当前输出"
+  },
+  "inputYamlPlaceholder": {
+    "message": "在此粘贴 JSON 或拖入 .json 文件…（Cmd/Ctrl + Enter 转换）"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "在此粘贴 YAML 或拖入 .yaml / .yml 文件…（Cmd/Ctrl + Enter 转换）"
+  },
+  "btnImportYamlTitle": {
+    "message": "选择本地 .yaml 或 .yml 文件，也可以拖到输入区"
+  },
+  "fileDropYamlHint": {
+    "message": "释放以导入 YAML 文件"
+  },
+  "errFileTypeYaml": {
+    "message": "仅支持 .yaml 或 .yml 文件"
+  },
+  "errFileMultipleYaml": {
+    "message": "一次只能导入一个 YAML 文件"
+  },
+  "errNeedYamlInput": {
+    "message": "请先输入 YAML 内容"
+  },
+  "errYamlParseFailed": {
+    "message": "YAML 解析失败："
+  },
+  "errInvalidYaml": {
+    "message": "YAML 语法无效。"
+  },
+  "errYamlAliasLimit": {
+    "message": "YAML 别名引用过多或存在循环引用。"
+  },
+  "errYamlUnsupportedTag": {
+    "message": "不支持的 YAML 标签（如 !!binary 或自定义标签）。"
+  },
+  "errYamlComplexKey": {
+    "message": "JSON 不支持将对象或数组作为 YAML 键。"
+  },
+  "errYamlNonFinite": {
+    "message": "标准 JSON 无法表示 Infinity 或 NaN。"
+  },
+  "statusYamlGenerated": {
+    "message": "已转为 YAML · $count$ 字符 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "已转为 JSON · $count$ 字符 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "已将 $count$ 个 YAML 文档合并为 JSON 数组",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "用 JSON 工具箱打开选中文本"
+  },
+  "errSelectionTooLarge": {
+    "message": "选中文本超过 10 MB 传输限制，请改用复制粘贴或文件导入。"
+  },
+  "errImportExpired": {
+    "message": "导入的选中内容已过期或已被使用。"
+  },
+  "statusSelectionNormalized": {
+    "message": "空白可能已被浏览器规范化"
+  },
+  "menuFormatPage": {
+    "message": "格式化此页 JSON"
+  },
+  "settingsLabel": {
+    "message": "设置"
+  },
+  "autoFormatPages": {
+    "message": "自动格式化网页中的 JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "打开网页返回的 JSON 时自动展示树形视图"
+  },
+  "autoFormatPlainText": {
+    "message": "同时识别 text/plain 中的 JSON"
+  },
+  "hintFileAccess": {
+    "message": "如需格式化本地 file:// JSON 文件，请在扩展详情页开启“允许访问文件网址”。"
+  },
+  "errPageNotJson": {
+    "message": "此页面不是有效的 JSON。"
+  },
+  "viewerTitle": {
+    "message": "JSON 查看器 - JSON 工具箱"
+  },
+  "viewFormatted": {
+    "message": "格式化"
+  },
+  "btnOpenToolbox": {
+    "message": "在工具页打开"
+  },
+  "viewerFallbackNotice": {
+    "message": "此页面禁止嵌入格式化视图。"
+  },
+  "statusViewerReady": {
+    "message": "已格式化 · $count$ 字符 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "errTransferTooLarge": {
+    "message": "内容超过 10 MB 传递上限，请改为复制粘贴或导入文件。"
+  },
+  "errYamlInputTooLarge": {
+    "message": "YAML 输入超过 10 MiB 转换上限。"
   }
 }

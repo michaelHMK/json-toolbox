@@ -47,6 +47,7 @@ let viewRequestVersion = 0;
 let treeView = null;
 let displayedDocument = null;
 let treeDocument = null;
+let pendingNormalizedNotice = false;
 
 const session = createDocumentSession({
   onReset: invalidateViewRequest,
@@ -143,6 +144,7 @@ async function ensureTreeData() {
       return;
     }
     displayedDocument = res.document;
+    if (res.result?.lenient) setStatus(t('statusLenientParsed'));
   });
   return applied && res.ok;
 }
@@ -189,6 +191,7 @@ async function doFormat() {
   }, (res) => {
     applied = true;
     if (!res.ok) {
+      pendingNormalizedNotice = false;
       invalidateViewRequest();
       showParseError(text, res);
       return;
@@ -211,7 +214,12 @@ async function doFormat() {
     }
   });
   if (!applied || !res.ok || (followup && !(await followup))) return;
-  session.apply(res, () => setStatus(t('statusFormatted', [state.outputText.length.toLocaleString(), String(res.duration)])));
+  const normalized = pendingNormalizedNotice;
+  pendingNormalizedNotice = false;
+  let status = t('statusFormatted', [state.outputText.length.toLocaleString(), String(res.duration)]);
+  if (res.result.lenient) status += ' · ' + t('statusLenientParsed');
+  if (normalized) status += ' · ' + t('statusSelectionNormalized');
+  session.apply(res, () => setStatus(status));
 }
 
 async function doCopy() {
@@ -224,6 +232,7 @@ async function doCopy() {
 }
 
 function resetDocument() {
+  pendingNormalizedNotice = false;
   invalidateViewRequest();
   clearTimeout(searchTimer);
   searchTimer = 0;
@@ -429,6 +438,7 @@ searchInput.addEventListener('keydown', (e) => {
 
 textInput.bindEvents({
   onChange() {
+    pendingNormalizedNotice = false;
     fileImport.reset();
     invalidateViewRequest();
     session.cancel({ onlyIfBusy: true });
@@ -438,3 +448,41 @@ textInput.bindEvents({
     if (autoFormatChk.checked) session.defer(() => { void doFormat(); });
   },
 });
+
+const SELECTION_PREFIX = 'selection:';
+
+async function checkPendingImport() {
+  if (typeof location === 'undefined' || !location.search) return;
+  const params = new URLSearchParams(location.search);
+  const importError = params.get('importError');
+  const token = params.get('import');
+  if (!importError && !token) return;
+  if (typeof history !== 'undefined' && typeof history.replaceState === 'function') {
+    history.replaceState(null, '', location.pathname);
+  }
+  if (importError === 'tooLarge') {
+    showError(t('errSelectionTooLarge'));
+    return;
+  }
+  const key = SELECTION_PREFIX + token;
+  let entry = null;
+  if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+    const stored = await chrome.storage.session.get(key);
+    await chrome.storage.session.remove(key);
+    entry = stored?.[key] ?? null;
+  }
+  if (!entry || typeof entry.text !== 'string') {
+    showError(t('errImportExpired'));
+    return;
+  }
+  resetDocument();
+  pendingNormalizedNotice = Boolean(entry.normalized);
+  textInput.setText(entry.text);
+  if (entry.text.length > LARGE_INPUT_THRESHOLD) {
+    session.defer(() => { void doFormat(); });
+  } else {
+    void doFormat();
+  }
+}
+
+void checkPendingImport();

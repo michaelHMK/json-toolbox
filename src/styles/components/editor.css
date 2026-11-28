@@ -24,8 +24,8 @@
   font-size: 12px;
   font-weight: 500;
 }
-.pane-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.pane-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+.pane-label { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pane-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: nowrap; flex-shrink: 0; }
 
 .pane > textarea {
   flex: 1;
@@ -71,7 +71,6 @@
 .large-input-editor .cm-content:has(> .cm-line:only-child) { flex-basis: auto !important; }
 .large-input-editor .cm-line { padding: 0 18px; }
 .input-pane { position: relative; }
-.input-pane .pane-label { flex: 1; }
 .file-name {
   flex: 1;
   min-width: 0;
@@ -106,5 +105,10 @@
 .input-pane.is-dragging { border-color: var(--accent); }
 
 @media (max-width: 1100px) {
+  .page-shell { padding: 24px 20px 22px; }
   .pane-actions { gap: 6px; }
+}
+
+@media (max-width: 900px) {
+  .pane-actions { flex-wrap: wrap; }
 }

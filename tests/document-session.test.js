@@ -249,3 +249,24 @@ test('query invalidation suppresses an already completed search before UI applic
   assert.equal(latest.result.matchCount, 0);
   session.clear();
 });
+
+test('document-session does not reuse leniently cached document for strict parse and forwards includeTextIndex', async () => {
+  const { session } = setup();
+  const lenientText = '{a: 1}';
+  const first = await session.parse(lenientText, undefined, { strict: false });
+  assert.equal(first.ok, true);
+  assert.equal(first.result.lenient, true);
+
+  const second = await session.parse(lenientText, undefined, { strict: true });
+  assert.equal(second.ok, false);
+  assert.equal(second.code, 'INVALID_JSON');
+
+  const largeStrict = '[' + '1,'.repeat(140 * 1024) + '2]';
+  const third = await session.parse(largeStrict, undefined, { strict: true, includeTextIndex: true });
+  assert.equal(third.ok, true);
+  assert.ok(third.result.lineIndex);
+  const cached = await session.parse(largeStrict, undefined, { strict: true, includeTextIndex: true });
+  assert.equal(cached.ok, true);
+  assert.ok(cached.result.lineIndex);
+  session.clear();
+});

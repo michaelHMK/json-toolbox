@@ -17,12 +17,17 @@ export function formatFileSize(size) {
   return `${Number((size / (1024 * 1024)).toFixed(1))} MiB`;
 }
 
-export async function readJsonFile(file) {
-  if (!file?.name || !/\.json$/i.test(file.name)) {
-    throw new FileImportError('errFileType');
+function matchesExtension(name, extensions) {
+  const lower = String(name || '').toLowerCase();
+  return extensions.some((ext) => lower.endsWith(ext));
+}
+
+export async function readTextFile(file, { extensions = ['.json'], maxSize = MAX_FILE_SIZE, typeErrorKey = 'errFileType' } = {}) {
+  if (!file?.name || !matchesExtension(file.name, extensions)) {
+    throw new FileImportError(typeErrorKey);
   }
-  if (file.size > MAX_FILE_SIZE) {
-    throw new FileImportError('errFileTooLarge', [formatFileSize(MAX_FILE_SIZE)]);
+  if (file.size > maxSize) {
+    throw new FileImportError('errFileTooLarge', [formatFileSize(maxSize)]);
   }
   if (file.size === 0) throw new FileImportError('errFileEmpty');
 
@@ -44,8 +49,16 @@ export async function readJsonFile(file) {
   return { name: file.name, size: file.size, text };
 }
 
+export function readJsonFile(file) {
+  return readTextFile(file, { extensions: ['.json'], typeErrorKey: 'errFileType' });
+}
+
 export function createFileImport({
   dropZone, fileInput, triggerEl, fileNameEl, dropHint,
+  extensions = ['.json'],
+  maxSize = MAX_FILE_SIZE,
+  typeErrorKey = 'errFileType',
+  multipleErrorKey = 'errFileMultiple',
   onImport, onError,
 }) {
   const defaultButtonLabel = triggerEl.textContent;
@@ -89,7 +102,7 @@ export function createFileImport({
     setReading(true);
     let result;
     try {
-      result = await readJsonFile(file);
+      result = await readTextFile(file, { extensions, maxSize, typeErrorKey });
     } catch (error) {
       if (version === sequence) {
         reportError(error, file);
@@ -147,7 +160,7 @@ export function createFileImport({
     if (files.length !== 1) {
       sequence++;
       setReading(false);
-      onError(t('errFileMultiple'));
+      onError(t(multipleErrorKey));
       return;
     }
     void importFile(files[0]);

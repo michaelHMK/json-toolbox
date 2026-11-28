@@ -7,6 +7,8 @@ import { createPlainTextRows, createDiffTextRows, safeTextWindow, hasNonWhitespa
 import { createSessionGuard } from '../../src/shared/session-guard.js';
 import { createDocumentSession } from '../../src/shared/document-session.js';
 import { createComparisonSession } from '../../src/shared/comparison-session.js';
+import { YAML_MAX_INPUT_BYTES } from '../../src/core/yaml-to-json.js';
+import { MAX_FILE_SIZE } from '../../src/shared/file-import.js';
 
 // Minimal DOM for exercising real page handlers and lazy rendering in Node.
 // Browser layout/paint still needs browser verification.
@@ -150,6 +152,11 @@ export function loadPage(name, {
   createTaskRunner,
   translate = (key) => key,
   copyText = async () => true,
+  search = '',
+  pathname = `/${name}.html`,
+  sessionStorageData = new Map(),
+  onNavigate = () => {},
+  chrome: chromeApi,
 }) {
   const elements = new Map();
   const get = (id) => {
@@ -162,6 +169,18 @@ export function loadPage(name, {
     addRange(range) { this.ranges.push(range); },
   };
   const createRunner = createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) }));
+  const locationObj = { search, pathname, assign: onNavigate };
+  const historyObj = {
+    replaceState(_state, _title, url) {
+      locationObj.search = '';
+      if (typeof url === 'string') locationObj.pathname = url;
+    },
+  };
+  const sessionStorageObj = {
+    getItem: (k) => (sessionStorageData.has(k) ? sessionStorageData.get(k) : null),
+    setItem: (k, v) => { sessionStorageData.set(k, String(v)); },
+    removeItem: (k) => { sessionStorageData.delete(k); },
+  };
   const context = vm.createContext({
     document: {
       ...createDocument(),
@@ -173,12 +192,21 @@ export function loadPage(name, {
         setEnd(node, offset) { this.endContainer = node; this.endOffset = offset; },
       }),
     },
+    location: locationObj,
+    history: historyObj,
+    sessionStorage: sessionStorageObj,
+    URLSearchParams,
+    URL,
+    TextEncoder,
+    ...(chromeApi ? { chrome: chromeApi } : {}),
     initializePage: () => {},
     createTaskRunner: createRunner,
     createSessionGuard,
     createDocumentSession: (options) => createDocumentSession({ ...options, createRunner }),
     createComparisonSession: (options) => createComparisonSession({ ...options, createRunner }),
     createFileImport,
+    YAML_MAX_INPUT_BYTES,
+    MAX_FILE_SIZE,
     // Browser checks exercise CodeMirror's layout, clipboard, and history.
     // The page tests only need its text and change notifications.
     createLargeInputEditor(host, { text, onChange }) {
