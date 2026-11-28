@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - منسق وعارض ومقارنة JSON و YAML"
   },
   "extDescription": {
-    "message": "أدوات JSON سريعة للتنسيق والتصغير والتهريب والمقارنة محليًا. بلا إعلانات أو تتبع أو جمع للبيانات."
+    "message": "منسق وعارض ومقارنة JSON وJSON5 ومحول YAML محلي. يعالج ملفات 50 MiB وصفحات API دون اتصال أو تتبع أو إعلانات."
   },
   "actionTitle": {
     "message": "فتح JSON Toolbox"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "توقفت عملية الخلفية بشكل غير متوقع. حاول مرة أخرى."
+  },
+  "statusLenientParsed": {
+    "message": "تم التحليل كـ JSONC/JSON5 (أُزيلت التعليقات، المخرج JSON قياسي)"
+  },
+  "titleYaml": {
+    "message": "JSON إلى YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML إلى JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "تحويل JSON أو JSONC/JSON5 إلى YAML 1.2 مع الحفاظ على دقة الأرقام."
+  },
+  "descFromYaml": {
+    "message": "تحويل مستندات YAML إلى JSON منسق مع الحفاظ على دقة الأرقام."
+  },
+  "btnToYaml": {
+    "message": "تحويل"
+  },
+  "btnToYamlTitle": {
+    "message": "تحويل JSON إلى YAML"
+  },
+  "btnFromYaml": {
+    "message": "تحويل"
+  },
+  "btnFromYamlTitle": {
+    "message": "تحويل YAML إلى JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ تبديل الاتجاه"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "تبديل الاتجاه ونقل المخرج الحالي"
+  },
+  "inputYamlPlaceholder": {
+    "message": "ألصق JSON أو أسقط ملف .json هنا… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "ألصق YAML أو أسقط ملف .yaml / .yml هنا… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "اختر ملف .yaml أو .yml محليًا أو أسقطه في لوحة الإدخال"
+  },
+  "fileDropYamlHint": {
+    "message": "أفلت لاستيراد ملف YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "تُدعم ملفات .yaml و .yml فقط"
+  },
+  "errFileMultipleYaml": {
+    "message": "استورد ملف YAML واحدًا فقط في كل مرة"
+  },
+  "errNeedYamlInput": {
+    "message": "يرجى إدخال محتوى YAML أولاً"
+  },
+  "errYamlParseFailed": {
+    "message": "فشل تحليل YAML: "
+  },
+  "errInvalidYaml": {
+    "message": "بنية YAML غير صالحة."
+  },
+  "errYamlAliasLimit": {
+    "message": "الأسماء المستعارة في YAML كثيرة جدًا أو دائرية."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "وسم YAML غير مدعوم (مثل !!binary أو وسم مخصص)."
+  },
+  "errYamlComplexKey": {
+    "message": "مفاتيح YAML المركبة (كائنات أو مصفوفات) غير مدعومة في JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "لا يمكن تمثيل Infinity و NaN في JSON القياسي."
+  },
+  "statusYamlGenerated": {
+    "message": "تم التحويل إلى YAML · $count$ حرفًا · $time$ مللي ثانية",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "تم التحويل إلى JSON · $count$ حرفًا · $time$ مللي ثانية",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "تم دمج $count$ مستندات YAML في مصفوفة JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "فتح النص المحدد في JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "يتجاوز النص المحدد حد النقل البالغ 10 ميغابايت. انسخ والصق أو استورد ملفًا بدلاً من ذلك."
+  },
+  "errImportExpired": {
+    "message": "انتهت صلاحية النص المستورد أو لم يعد متاحًا."
+  },
+  "statusSelectionNormalized": {
+    "message": "ربما تم توحيد المسافات بواسطة المتصفح"
+  },
+  "menuFormatPage": {
+    "message": "تنسيق JSON في هذه الصفحة"
+  },
+  "settingsLabel": {
+    "message": "الإعدادات"
+  },
+  "autoFormatPages": {
+    "message": "تنسيق صفحات JSON تلقائيًا"
+  },
+  "autoFormatPagesTitle": {
+    "message": "تنسيق استجابات JSON تلقائيًا عند التصفح"
+  },
+  "autoFormatPlainText": {
+    "message": "تضمين JSON من نوع text/plain"
+  },
+  "hintFileAccess": {
+    "message": "لتنسيق ملفات file:// المحلية، فعّل «السماح بالوصول إلى عناوين URL للملفات» في إعدادات الإضافة."
+  },
+  "errPageNotJson": {
+    "message": "هذه الصفحة ليست JSON صالحًا."
+  },
+  "viewerTitle": {
+    "message": "عارض JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "منسق"
+  },
+  "btnOpenToolbox": {
+    "message": "فتح في JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "حظرت هذه الصفحة التنسيق المدمج."
+  },
+  "statusViewerReady": {
+    "message": "منسق · $count$ حرفًا · $time$ مللي ثانية",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

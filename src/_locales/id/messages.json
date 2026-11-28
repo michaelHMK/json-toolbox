@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Pemformat, Penampil, Diff & YAML"
   },
   "extDescription": {
-    "message": "JSON Toolbox cepat: format, minifikasi, escape, dan bandingkan secara lokal. Tanpa iklan, pelacakan, atau pengumpulan data."
+    "message": "Pemformat, penampil, diff JSON/JSON5, dan konverter YAML lokal. Tangani file 50 MiB & halaman API offline tanpa pelacakan."
   },
   "actionTitle": {
     "message": "Buka JSON Toolbox"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "Proses latar belakang berhenti secara tak terduga. Coba lagi."
+  },
+  "statusLenientParsed": {
+    "message": "Diurai sebagai JSONC/JSON5 (komentar dihapus, keluaran JSON standar)"
+  },
+  "titleYaml": {
+    "message": "JSON ke YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML ke JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Konversi JSON atau JSONC/JSON5 ke YAML 1.2 sambil menjaga presisi angka."
+  },
+  "descFromYaml": {
+    "message": "Konversi dokumen YAML ke JSON terformat sambil menjaga presisi angka."
+  },
+  "btnToYaml": {
+    "message": "Konversi"
+  },
+  "btnToYamlTitle": {
+    "message": "Konversi JSON ke YAML"
+  },
+  "btnFromYaml": {
+    "message": "Konversi"
+  },
+  "btnFromYamlTitle": {
+    "message": "Konversi YAML ke JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Tukar arah"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Ubah arah dan bawa hasil saat ini"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Tempel JSON atau jatuhkan file .json di sini… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Tempel YAML atau jatuhkan file .yaml / .yml di sini… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Pilih file .yaml atau .yml lokal, atau jatuhkan ke panel input"
+  },
+  "fileDropYamlHint": {
+    "message": "Lepaskan untuk mengimpor file YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "Hanya file .yaml atau .yml yang didukung"
+  },
+  "errFileMultipleYaml": {
+    "message": "Impor hanya satu file YAML sekaligus"
+  },
+  "errNeedYamlInput": {
+    "message": "Masukkan konten YAML terlebih dahulu"
+  },
+  "errYamlParseFailed": {
+    "message": "Gagal mengurai YAML: "
+  },
+  "errInvalidYaml": {
+    "message": "Sintaks YAML tidak valid."
+  },
+  "errYamlAliasLimit": {
+    "message": "Terlalu banyak alias YAML atau referensi melingkar."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Tag YAML tidak didukung (seperti !!binary atau tag kustom)."
+  },
+  "errYamlComplexKey": {
+    "message": "Kunci YAML kompleks (objek atau array) tidak didukung di JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity dan NaN tidak dapat direpresentasikan di JSON standar."
+  },
+  "statusYamlGenerated": {
+    "message": "Dikonversi ke YAML · $count$ karakter · $time$ md",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Dikonversi ke JSON · $count$ karakter · $time$ md",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "$count$ dokumen YAML digabung menjadi array JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Buka teks terpilih di JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "Teks terpilih melebihi batas transfer 10 MB. Salin dan tempel atau impor file sebagai gantinya."
+  },
+  "errImportExpired": {
+    "message": "Pilihan yang diimpor telah kedaluwarsa atau tidak lagi tersedia."
+  },
+  "statusSelectionNormalized": {
+    "message": "Spasi mungkin telah dinormalisasi oleh browser"
+  },
+  "menuFormatPage": {
+    "message": "Format JSON di halaman ini"
+  },
+  "settingsLabel": {
+    "message": "PENGATURAN"
+  },
+  "autoFormatPages": {
+    "message": "Format otomatis halaman JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Format otomatis respons JSON saat menjelajah"
+  },
+  "autoFormatPlainText": {
+    "message": "Sertakan JSON text/plain"
+  },
+  "hintFileAccess": {
+    "message": "Untuk file file:// lokal, aktifkan “Izinkan akses ke URL file” di detail ekstensi."
+  },
+  "errPageNotJson": {
+    "message": "Halaman ini bukan JSON yang valid."
+  },
+  "viewerTitle": {
+    "message": "Penampil JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Terformat"
+  },
+  "btnOpenToolbox": {
+    "message": "Buka di JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "Halaman ini memblokir pemformatan tersemat."
+  },
+  "statusViewerReady": {
+    "message": "Diformat · $count$ karakter · $time$ md",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Formatter, Viewer, Diff & YAML"
   },
   "extDescription": {
-    "message": "High-performance JSON Toolbox: format, minify, escape and compare locally. No ads, tracking or data collection."
+    "message": "Local JSON & JSON5 formatter, viewer, diff, and YAML converter. Handles 50 MiB files & API pages offline with zero tracking."
   },
   "actionTitle": {
     "message": "Open JSON Toolbox"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "The worker stopped unexpectedly. Please try again."
+  },
+  "statusLenientParsed": {
+    "message": "Parsed as JSONC/JSON5 (comments removed, standard JSON output)"
+  },
+  "titleYaml": {
+    "message": "JSON to YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML to JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Convert JSON or JSONC/JSON5 into clean YAML 1.2 while preserving number precision."
+  },
+  "descFromYaml": {
+    "message": "Convert YAML documents to formatted JSON while preserving number precision."
+  },
+  "btnToYaml": {
+    "message": "Convert"
+  },
+  "btnToYamlTitle": {
+    "message": "Convert JSON to YAML"
+  },
+  "btnFromYaml": {
+    "message": "Convert"
+  },
+  "btnFromYamlTitle": {
+    "message": "Convert YAML to JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Swap direction"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Switch direction and carry over current output"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Paste JSON or drop a .json file here… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Paste YAML or drop a .yaml / .yml file here… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Choose a local .yaml or .yml file, or drop one into the input pane"
+  },
+  "fileDropYamlHint": {
+    "message": "Release to import a YAML file"
+  },
+  "errFileTypeYaml": {
+    "message": "Only .yaml or .yml files are supported"
+  },
+  "errFileMultipleYaml": {
+    "message": "Import only one YAML file at a time"
+  },
+  "errNeedYamlInput": {
+    "message": "Please enter YAML content first"
+  },
+  "errYamlParseFailed": {
+    "message": "YAML parse failed: "
+  },
+  "errInvalidYaml": {
+    "message": "Invalid YAML syntax."
+  },
+  "errYamlAliasLimit": {
+    "message": "Too many or circular YAML aliases."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Unsupported YAML tag (such as !!binary or custom tags)."
+  },
+  "errYamlComplexKey": {
+    "message": "Complex YAML keys (objects or arrays) are not supported in JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity and NaN cannot be represented in standard JSON."
+  },
+  "statusYamlGenerated": {
+    "message": "Converted to YAML · $count$ chars · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Converted to JSON · $count$ chars · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "Merged $count$ YAML documents into a JSON array",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Open selection in JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "Selected text exceeds the 10 MB transfer limit. Copy and paste or import a file instead."
+  },
+  "errImportExpired": {
+    "message": "Imported selection has expired or is no longer available."
+  },
+  "statusSelectionNormalized": {
+    "message": "Whitespace may have been normalized by the browser"
+  },
+  "menuFormatPage": {
+    "message": "Format JSON on this page"
+  },
+  "settingsLabel": {
+    "message": "SETTINGS"
+  },
+  "autoFormatPages": {
+    "message": "Auto-format JSON pages"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Automatically format JSON responses on visited pages"
+  },
+  "autoFormatPlainText": {
+    "message": "Include text/plain JSON"
+  },
+  "hintFileAccess": {
+    "message": "To format local file:// JSON, enable “Allow access to file URLs” in Chrome extension settings."
+  },
+  "errPageNotJson": {
+    "message": "This page is not valid JSON."
+  },
+  "viewerTitle": {
+    "message": "JSON Viewer - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Formatted"
+  },
+  "btnOpenToolbox": {
+    "message": "Open in JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "This page blocked embedded formatting."
+  },
+  "statusViewerReady": {
+    "message": "Formatted · $count$ chars · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Biçimlendirici, Görüntüleyici, Diff & YAML"
   },
   "extDescription": {
-    "message": "Hızlı JSON araçları: yerel biçimlendirme, küçültme, kaçış ve karşılaştırma. Reklam, izleme veya veri toplama yok."
+    "message": "Yerel JSON/JSON5 biçimlendirici, görüntüleyici, diff ve YAML dönüştürücü. 50 MiB dosyaları ve API sayfalarını izlemeden işler."
   },
   "actionTitle": {
     "message": "JSON Toolbox uygulamasını aç"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "Arka plan işçisi beklenmedik şekilde durdu. Lütfen yeniden deneyin."
+  },
+  "statusLenientParsed": {
+    "message": "JSONC/JSON5 olarak ayrıştırıldı (yorumlar kaldırıldı, standart JSON çıktısı)"
+  },
+  "titleYaml": {
+    "message": "JSON’dan YAML’e - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML’den JSON’a - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "JSON veya JSONC/JSON5 verisini sayı hassasiyetini koruyarak YAML 1.2 biçimine dönüştürün."
+  },
+  "descFromYaml": {
+    "message": "YAML belgelerini sayı hassasiyetini koruyarak biçimlendirilmiş JSON’a dönüştürün."
+  },
+  "btnToYaml": {
+    "message": "Dönüştür"
+  },
+  "btnToYamlTitle": {
+    "message": "JSON’u YAML’e dönüştür"
+  },
+  "btnFromYaml": {
+    "message": "Dönüştür"
+  },
+  "btnFromYamlTitle": {
+    "message": "YAML’i JSON’a dönüştür"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Yönü değiştir"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Dönüştürme yönünü değiştir ve mevcut çıktıyı aktar"
+  },
+  "inputYamlPlaceholder": {
+    "message": "JSON yapıştırın veya .json dosyası bırakın… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "YAML yapıştırın veya .yaml / .yml dosyası bırakın… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Yerel .yaml veya .yml dosyası seçin ya da giriş alanına bırakın"
+  },
+  "fileDropYamlHint": {
+    "message": "YAML dosyasını içe aktarmak için bırakın"
+  },
+  "errFileTypeYaml": {
+    "message": "Yalnızca .yaml veya .yml dosyaları desteklenir"
+  },
+  "errFileMultipleYaml": {
+    "message": "Tek seferde yalnızca bir YAML dosyası içe aktarın"
+  },
+  "errNeedYamlInput": {
+    "message": "Lütfen önce YAML içeriği girin"
+  },
+  "errYamlParseFailed": {
+    "message": "YAML ayrıştırma başarısız: "
+  },
+  "errInvalidYaml": {
+    "message": "Geçersiz YAML sözdizimi."
+  },
+  "errYamlAliasLimit": {
+    "message": "Çok fazla veya döngüsel YAML takma adı."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Desteklenmeyen YAML etiketi (ör. !!binary veya özel etiket)."
+  },
+  "errYamlComplexKey": {
+    "message": "Karmaşık YAML anahtarları (nesne veya dizi) JSON’da desteklenmez."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity ve NaN standart JSON içinde gösterilemez."
+  },
+  "statusYamlGenerated": {
+    "message": "YAML’e dönüştürüldü · $count$ kar. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "JSON’a dönüştürüldü · $count$ kar. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "$count$ YAML belgesi bir JSON dizisinde birleştirildi",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Seçimi JSON Toolbox ile aç"
+  },
+  "errSelectionTooLarge": {
+    "message": "Seçilen metin 10 MB aktarım sınırını aşıyor. Kopyalayıp yapıştırın veya dosya içe aktarın."
+  },
+  "errImportExpired": {
+    "message": "İçe aktarılan seçimin süresi doldu veya artık kullanılamıyor."
+  },
+  "statusSelectionNormalized": {
+    "message": "Boşluklar tarayıcı tarafından normalleştirilmiş olabilir"
+  },
+  "menuFormatPage": {
+    "message": "Bu sayfadaki JSON’u biçimlendir"
+  },
+  "settingsLabel": {
+    "message": "AYARLAR"
+  },
+  "autoFormatPages": {
+    "message": "JSON sayfalarını otomatik biçimlendir"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Ziyaret edilen sayfalardaki JSON yanıtlarını otomatik biçimlendir"
+  },
+  "autoFormatPlainText": {
+    "message": "text/plain JSON’u da dahil et"
+  },
+  "hintFileAccess": {
+    "message": "Yerel file:// JSON için uzantı ayarlarından “Dosya URL’lerine erişime izin ver” seçeneğini açın."
+  },
+  "errPageNotJson": {
+    "message": "Bu sayfa geçerli bir JSON değil."
+  },
+  "viewerTitle": {
+    "message": "JSON Görüntüleyici - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Biçimlendirilmiş"
+  },
+  "btnOpenToolbox": {
+    "message": "JSON Toolbox ile aç"
+  },
+  "viewerFallbackNotice": {
+    "message": "Bu sayfa gömülü biçimlendirmeyi engelledi."
+  },
+  "statusViewerReady": {
+    "message": "Biçimlendirildi · $count$ kar. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

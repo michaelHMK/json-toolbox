@@ -45,6 +45,8 @@ try {
     ['minify', input, '{"units":7}'],
     ['escape', input, escaped],
     ['unescape', escaped, input],
+    ['yaml', input, 'units: 7\n'],
+    ['json-from-yaml', 'units: 7\n', '{\n  "units": 7\n}'],
   ]) {
     await page.goto(base + tool + '.html');
     await page.locator('#input').fill(source);
@@ -71,6 +73,35 @@ try {
     await change.waitFor();
     assert.ok((await change.textContent()).includes(value));
   }
+  // Exercise context menu selection handoff -> formatter tab -> session storage cleanup.
+  const sourcePage = await context.newPage();
+  await sourcePage.bringToFront();
+  await sourcePage.setContent('<pre id="json">{\n  "fromSelection": 1,\n  "nested": [true]\n}</pre>');
+  await sourcePage.evaluate(() => {
+    const pre = document.getElementById('json');
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+  const [newTab] = await Promise.all([
+    context.waitForEvent('page'),
+    background.evaluate(async () => {
+      const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      await handleContextMenuClick(
+        { menuItemId: 'open-selection', selectionText: '{ "fromSelection": 1, "nested": [true] }' },
+        active,
+      );
+    }),
+  ]);
+  await newTab.waitForLoadState('domcontentloaded');
+  await newTab.waitForFunction(() => document.querySelector('#output-text')?.textContent?.includes('"fromSelection": 1'));
+  const remainingSession = await background.evaluate(() => chrome.storage.session.get(null));
+  assert.deepEqual(remainingSession, {});
+  await newTab.close();
+  await sourcePage.close();
+
   await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   errors.push(...await page.evaluate(() => window.__smokeWindowErrors));
   assert.deepEqual(errors, []);

@@ -1,40 +1,31 @@
 Nazwa
-JSON Toolbox
+JSON Toolbox - Formatowanie, Podgląd, Diff i YAML
 
 Krótki opis
-Szybkie narzędzia JSON: formatowanie, minifikacja, escapowanie i porównywanie lokalnie. Bez reklam, śledzenia i zbierania danych.
+Lokalny formater, podgląd, diff JSON/JSON5 i konwerter YAML. Obsługuje pliki 50 MiB oraz strony API offline bez śledzenia.
 
 Szczegółowy opis
-JSON Toolbox umożliwia formatowanie, przeglądanie i porównywanie danych JSON w osobnej karcie przeglądarki. Działa całkowicie offline, bez konta i dodatkowych uprawnień.
+JSON Toolbox to szybki, działający offline program do formatowania JSON, podglądu JSON, porównywania JSON i konwersji JSON na YAML z obsługą JSONC i JSON5 w osobnej karcie przeglądarki. Nie wymaga uprawnień do stron podczas instalacji, nie wyświetla ostrzeżeń i nie wymaga konta.
 
-Formatowanie i przeglądanie
-- Formatuj JSON z wcięciami o szerokości 2 lub 4 spacji albo za pomocą tabulatorów.
-- Zobacz błędy składni z numerem wiersza i kolumny oraz przejdź do miejsca błędu. Gdy przeglądarka nie podaje lokalizacji, uzupełnia ją lokalna kontrola.
-- Przeglądaj zwijane drzewo z wirtualnym przewijaniem, rozwijaniem według poziomu, wyszukiwaniem kluczy i wartości oraz przechodzeniem między dopasowaniami.
-- Kopiuj cały wynik jednym kliknięciem.
+Formatowanie, przeglądanie i JSONC / JSON5
+- Formatuj JSON z wcięciami 2 lub 4 spacji albo tabulatorów z pełnym zachowaniem precyzji dużych liczb całkowitych i dziesiętnych.
+- Automatycznie przełącza się ze ścisłego JSON na JSONC / JSON5 przy komentarzach, końcowych przecinkach, pojedynczych cudzysłowach, kluczach bez cudzysłowów i liczbach szesnastkowych.
+- Wyświetla błędy składni z numerem wiersza i kolumny oraz nawigacją do błędu, rozwijane drzewo wirtualne, wyszukiwanie kluczy i wartości oraz kopiowanie jednym kliknięciem.
 
-Importowanie lokalnych plików
-- W każdym z pięciu narzędzi wybierz plik lub przeciągnij go do pola danych wejściowych.
-- Importuj po jednym pliku .json w kodowaniu UTF-8 o rozmiarze do 50 MiB. Narzędzie uruchamia się automatycznie po imporcie. Porównanie rozpoczyna się, gdy oba pola zawierają tekst.
-- Po zaimportowaniu dużego pliku, wklejeniu długiego tekstu lub przeciągnięciu go do pola wejściowego treść otwiera się bezpośrednio w edytorze. Możesz edytować i kopiować cały tekst.
+Dwukierunkowa konwersja JSON <-> YAML
+- Konwertuj JSON na YAML 1.2 oraz YAML na JSON z zachowaniem precyzji liczb, obsługą wielodokumentowych strumieni YAML i ochroną przed zapętlonymi aliasami.
+- Odwracaj kierunek konwersji bezpośrednio w narzędziu.
 
-Minifikacja, escapowanie i cofanie escapowania
-- Przełączaj narzędzia za pomocą paska bocznego.
-- Usuń zbędne białe znaki, aby uzyskać JSON w jednym wierszu. Nieprawidłowy JSON jest zgłaszany wraz z lokalizacją błędu, jeśli jest dostępna.
-- Dodaj sekwencje ucieczki do tekstu przeznaczonego do ciągu znaków JSON lub przywróć z takiego ciągu pierwotny tekst, a następnie skopiuj wynik.
+Automatyczne formatowanie stron JSON i menu kontekstowe
+- Zaznacz tekst na dowolnej stronie i kliknij prawym przyciskiem „Otwórz zaznaczenie w JSON Toolbox”.
+- Używaj na żądanie opcji „Formatuj JSON na tej stronie” przez activeTab bez nadawania stałych uprawnień witrynom.
+- Opcjonalny przełącznik „Automatycznie formatuj strony JSON” na pasku bocznym jest domyślnie WYŁĄCZONY i prosi o opcjonalne uprawnienia dopiero po włączeniu (z widokiem Oryginał / Sformatowany, kopiowaniem, otwarciem w narzędziu i opcją text/plain).
 
-Porównanie JSON
-- Zobacz różnice strukturalne według ścieżki: dodania, usunięcia, zmiany wartości i zmiany typów.
-- Porównuj tablice według indeksu lub dopasowuj elementy według pola klucza, na przykład id.
-- Ignoruj wybrane ścieżki, na przykład pola znaczników czasu.
-- Przeglądaj całe drzewo z wyróżnionymi różnicami lub wyświetlaj tylko różnice i przechodź między nimi.
-- Przełącz na porównywanie sformatowanego tekstu JSON wiersz po wierszu.
+Import lokalnych plików, minifikacja i porównywanie JSON
+- We wszystkich siedmiu narzędziach importuj pliki UTF-8 do 50 MiB (.json oraz .yaml/.yml w YAML -> JSON).
+- Minifikuj do jednej linii (także JSONC/JSON5), dodawaj/cofaj sekwencje ucieczki i porównuj strukturę według indeksu lub klucza id, ignorując wybrane ścieżki i przełączając na diff tekstowy.
 
-Wygląd
-- Wybierz motyw Normalny, Komfort oczu lub Ciemny z paska bocznego, korzystając z miniatur podglądu. Domyślny motyw to Normalny.
-- Wybór motywu jest zapamiętywany lokalnie przy przełączaniu narzędzi i po ponownym otwarciu rozszerzenia. Dane wejściowe i wyniki nie są zapisywane.
-
-Prywatność
-Całe przetwarzanie odbywa się w przeglądarce. Bez zbierania ani przesyłania danych, żądań sieciowych, zdalnego kodu, reklam i śledzenia. Historia danych wejściowych nie jest zapisywana. Podczas kopiowania rozszerzenie zapisuje w schowku systemowym zaznaczony tekst, dane wejściowe lub wynik. Podczas wklejania przetwarza tylko wklejony tekst.
+Wygląd i prywatność
+- Wybierz motyw Normalny, Komfort oczu lub Ciemny (współdzielony z wbudowaną przeglądarką stron). Całe przetwarzanie odbywa się lokalnie w pamięci: bez wysyłania danych, żądań sieciowych, reklam i śledzenia.
 
 Duże dane wejściowe i wyniki pozostają w pamięci; wydajność zależy od urządzenia i struktury danych. Widoki wirtualne renderują jednocześnie tylko część zawartości, dlatego wbudowane wyszukiwanie przeglądarki obejmuje wyłącznie wyrenderowaną część. W razie potrzeby użyj wyszukiwania w drzewie lub skopiuj cały wynik. Przy rozległych różnicach tekstowych niedopasowane fragmenty mogą być wyświetlane jako całe bloki.

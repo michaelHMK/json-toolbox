@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createFormatSource, FORMAT_CASES } from './format-data.mjs';
+import { convertLenientJson } from '../src/core/lenient-json.js';
 
 // Each operation runs in its own process so peak RSS is comparable. Example:
 // node --expose-gc bench/format.mjs --size-mib=25 --samples=3 --assert-ratio=2.5
@@ -12,10 +13,16 @@ const samples = Number(args.samples || 3);
 if (!(sizeMiB > 0 && Number.isInteger(samples) && samples > 0)) throw new Error('Invalid benchmark size or sample count');
 
 if (args.child) {
-  const text = createFormatSource(args.case, sizeMiB);
+  const text = args.child === 'jsonc'
+    ? '// JSONC fallback reference benchmark\n' + createFormatSource('canon', sizeMiB).replace(/\]$/, ',]')
+    : createFormatSource(args.case, sizeMiB);
   const run = args.child === 'native' ? () => JSON.stringify(JSON.parse(text), null, 2)
     : args.child === 'nativeMinify' ? () => JSON.stringify(JSON.parse(text))
-      : () => formatJson(text, { indent: args.child === 'minify' ? null : '2', includeNumberLiterals: args.child === 'tree' }).text;
+      : args.child === 'jsonc' ? () => {
+        try { return formatJson(text, { indent: '2', includeNumberLiterals: false }).text; }
+        catch { return formatJson(convertLenientJson(text).text, { indent: '2', includeNumberLiterals: false }).text; }
+      }
+        : () => formatJson(text, { indent: args.child === 'minify' ? null : '2', includeNumberLiterals: args.child === 'tree' }).text;
   // Warm up the scanner without retaining a second full-size output.
   formatJson('[{"value":1.20,"nested":[1,2,3]}]');
   const timings = [];
@@ -32,7 +39,8 @@ if (args.child) {
 } else {
   for (const name of args.case ? [args.case] : FORMAT_CASES) {
     const results = {};
-    for (const operation of ['native', 'format', 'tree', 'nativeMinify', 'minify']) {
+    const operations = ['native', 'format', 'tree', 'nativeMinify', 'minify', ...(name === 'canon' ? ['jsonc'] : [])];
+    for (const operation of operations) {
       const child = spawnSync(process.execPath, ['--expose-gc', fileURLToPath(import.meta.url), `--child=${operation}`, `--case=${name}`, `--size-mib=${sizeMiB}`, `--samples=${samples}`, ...(args.module ? [`--module=${args.module}`] : [])], { encoding: 'utf8' });
       if (child.status !== 0) throw new Error(child.stderr || `Benchmark exited ${child.status}`);
       results[operation] = JSON.parse(child.stdout);

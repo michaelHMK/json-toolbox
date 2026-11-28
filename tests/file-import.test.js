@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { File } from 'node:buffer';
 import {
-  MAX_FILE_SIZE, createFileImport, formatFileSize, readJsonFile,
+  MAX_FILE_SIZE, createFileImport, formatFileSize, readJsonFile, readTextFile,
 } from '../src/shared/file-import.js';
 import { Element, loadPage } from './helpers/page-dom.js';
 import { LARGE_INPUT_THRESHOLD } from '../src/shared/text-input.js';
@@ -71,6 +71,12 @@ test('only .json filenames are accepted regardless of MIME type', async () => {
   for (const name of ['data.txt', 'data.jsonl', 'data.ndjson', 'data', 'data.zip']) {
     await expectKey(readJsonFile(jsonFile('{}', name)), 'errFileType');
   }
+});
+
+test('YAML file import configuration accepts .yaml and .yml and rejects other types', async () => {
+  assert.equal((await readTextFile(jsonFile('a: 1', 'deploy.YAML'), { extensions: ['.yaml', '.yml'], typeErrorKey: 'errFileTypeYaml' })).text, 'a: 1');
+  assert.equal((await readTextFile(jsonFile('a: 1', 'config.yml'), { extensions: ['.yaml', '.yml'], typeErrorKey: 'errFileTypeYaml' })).text, 'a: 1');
+  await expectKey(readTextFile(jsonFile('{}', 'data.json'), { extensions: ['.yaml', '.yml'], typeErrorKey: 'errFileTypeYaml' }), 'errFileTypeYaml');
 });
 
 test('the exact size limit is accepted and larger files are rejected before reading', async () => {

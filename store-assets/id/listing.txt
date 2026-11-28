@@ -1,40 +1,31 @@
 Nama
-JSON Toolbox
+JSON Toolbox - Pemformat, Penampil, Diff & YAML
 
 Deskripsi singkat
-JSON Toolbox cepat: format, minifikasi, escape, dan bandingkan secara lokal. Tanpa iklan, pelacakan, atau pengumpulan data.
+Pemformat, penampil, diff JSON/JSON5, dan konverter YAML lokal. Tangani file 50 MiB & halaman API offline tanpa pelacakan.
 
 Deskripsi lengkap
-JSON Toolbox membantu Anda memformat, menelusuri, dan membandingkan JSON di tab browser tersendiri. Semua fitur bekerja sepenuhnya offline, tanpa akun atau izin tambahan.
+JSON Toolbox adalah pemformat JSON, penampil JSON, pembanding JSON, dan konverter JSON ke YAML offline yang cepat dengan dukungan JSONC dan JSON5 di tab tersendiri. Tanpa permintaan izin situs web saat pemasangan, tanpa peringatan izin, dan tanpa akun.
 
-Format dan telusuri
-- Rapikan JSON dengan indentasi 2 spasi, 4 spasi, atau Tab.
-- Lihat kesalahan sintaks beserta baris/kolom dan navigasi ke lokasi kesalahan, dengan metode cadangan lokal jika browser tidak memberikan lokasinya.
-- Jelajahi pohon yang dapat diciutkan dengan pengguliran virtual, perluasan menurut tingkat, pencarian kunci/nilai, dan navigasi antarhasil pencarian.
-- Salin hasil lengkap dengan sekali klik.
+Format, telusuri & JSONC / JSON5
+- Rapikan JSON dengan indentasi 2 spasi, 4 spasi, atau Tab sambil mempertahankan presisi bilangan bulat besar dan desimal.
+- Beralih otomatis dari JSON ketat ke penguraian JSONC / JSON5 yang toleran untuk komentar, koma akhir, kutipan tunggal, kunci tanpa kutip, dan heksadesimal.
+- Lihat kesalahan sintaks beserta baris, kolom, dan navigasi ke posisi kesalahan, serta jelajahi pohon virtual dengan pencarian kunci/nilai dan salin sekali klik.
 
-Impor file lokal
-- Di kelima halaman alat, pilih file atau seret dan lepaskan file ke panel masukan.
-- Impor satu file .json UTF-8 dalam satu waktu, hingga 50 MiB per file. Alat berjalan otomatis setelah impor. Perbandingan dimulai jika kedua panel masukan berisi teks.
-- Saat Anda mengimpor file besar, menempelkan teks panjang, atau menyeretnya ke kolom masukan, isinya langsung terbuka di editor. Anda dapat mengedit dan menyalin seluruh teks.
+Konversi dua arah JSON <-> YAML
+- Konversi JSON ke YAML 1.2 dan YAML kembali ke JSON dengan presisi angka tetap terjaga, dukungan YAML multi-dokumen, serta perlindungan alias.
+- Balik arah konversi langsung dari alat.
 
-Minifikasi, escape, dan hapus escape
-- Beralih antaralat melalui bilah samping.
-- Hapus spasi yang tidak diperlukan untuk menghasilkan JSON satu baris. JSON yang tidak valid akan dilaporkan, beserta lokasi kesalahan jika tersedia.
-- Terapkan escape pada teks untuk string JSON atau pulihkan konten string dengan escape ke teks aslinya, lalu salin hasilnya.
+Format otomatis halaman JSON & menu klik kanan
+- Pilih teks di halaman mana pun lalu klik kanan "Buka pilihan di JSON Toolbox".
+- Gunakan "Format JSON halaman ini" sesuai kebutuhan melalui activeTab tanpa izin situs permanen.
+- Tombol opsional "Format halaman JSON secara otomatis" di bilah samping nonaktif secara default dan hanya meminta izin host opsional saat diaktifkan, lengkap dengan sakelar Asli / Diformat, Salin, Buka di alat, dan opsi text/plain.
 
-Bandingkan JSON
-- Lihat perbedaan struktur berdasarkan jalur: penambahan, penghapusan, perubahan nilai, dan perubahan tipe.
-- Bandingkan array menurut indeks atau cocokkan item berdasarkan bidang kunci seperti id.
-- Abaikan jalur tertentu, seperti bidang stempel waktu.
-- Telusuri seluruh pohon dengan perbedaan yang disorot atau tampilkan hanya perbedaan, dengan navigasi antarperbedaan.
-- Beralih ke perbandingan teks baris demi baris pada JSON yang telah diformat.
+Impor file lokal, minifikasi, escape & bandingkan
+- Di ketujuh alat, pilih atau seret file UTF-8 hingga 50 MiB (.json dan .yaml/.yml pada YAML -> JSON).
+- Minifikasi satu baris (termasuk JSONC/JSON5), escape/hapus escape string JSON, serta bandingkan struktur dan teks per baris dengan kunci pencocokan id dan jalur yang diabaikan.
 
-Tampilan
-- Pilih Normal, Nyaman di mata, atau Gelap dari bilah samping, dengan pratinjau mini. Normal adalah pilihan default.
-- Pilihan tema disimpan secara lokal untuk semua alat dan tetap berlaku setelah dibuka kembali. Masukan dan hasil tidak disimpan.
-
-Privasi
-Semua pemrosesan berlangsung di browser Anda. Tidak ada pengumpulan atau pengunggahan data, permintaan jaringan, kode jarak jauh, iklan, maupun pelacakan. Riwayat masukan tidak disimpan. Saat Anda menyalin, ekstensi menulis teks yang dipilih, masukan, atau hasil ke papan klip sistem. Saat Anda menempelkan teks, ekstensi hanya memproses teks yang Anda tempelkan.
+Tampilan & Privasi
+- Pilih tema Normal, Nyaman di mata, atau Gelap (berlaku juga di penampil tertanam). Semua pemrosesan berjalan lokal di memori tanpa unggahan, permintaan jaringan, iklan, atau pelacakan.
 
 Masukan dan hasil berukuran besar tetap berada di memori; kinerja bergantung pada perangkat dan struktur data Anda. Tampilan virtual hanya merender sebagian konten pada satu waktu, sehingga fitur Cari bawaan browser hanya mencakup bagian yang dirender. Gunakan pencarian pohon atau salin hasil lengkap bila diperlukan. Untuk perbedaan teks yang luas, bagian yang tidak cocok dapat ditampilkan sebagai blok utuh.

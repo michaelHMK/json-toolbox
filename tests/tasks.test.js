@@ -57,7 +57,7 @@ test('large text-only formatting handles deep JSON without a recursive stack', (
   const formatted = run('format', ' '.repeat(2 * 1024 * 1024) + source, {
     indent: 'tab', retainSnapshot: false, retainSearch: false,
   }, handler);
-  assert.deepEqual(Object.keys(formatted), ['text']);
+  assert.deepEqual(Object.keys(formatted), ['text', 'lenient']);
   assert.equal(formatted.text.length, depth * depth + 4 * depth + 1);
   let value = JSON.parse(formatted.text);
   for (let i = 0; i < depth; i++) {
@@ -127,7 +127,7 @@ test('search cache belongs to each session and survives invalid input', () => {
   const other = createTaskHandler();
   assert.equal(other({ action: 'search', text: 'needle' }).ok, false);
   const formatted = run('format', '{"a/b":{"~":"Needle"}}', {}, handler);
-  assert.deepEqual(Object.keys(formatted), ['text']);
+  assert.deepEqual(Object.keys(formatted), ['text', 'lenient']);
   assert.equal(handler({ action: 'parse', text: '{' }).ok, false);
   assert.deepEqual(run('search', 'needle', {}, handler), {
     highlights: ['/a~1b/~0'], forceExpand: ['', '/a~1b'], matchCount: 1, truncated: false,
@@ -196,7 +196,7 @@ test('worker errors preserve request ids, locale-neutral codes and JSON location
     ['{"a":1,"b":}', 11, 1, 12],
     ['{"a":tru}', 8, 1, 9],
     ['{\n  "a":tru\n}', 11, 2, 10],
-    ['{\n  a:1}', 4, 2, 3],
+    ['{\n  1:1}', 4, 2, 3],
   ]) {
     const response = handler({ id: 42, action: 'parse', text });
     assert.equal(response.id, 42);
@@ -275,4 +275,65 @@ test('text diff forwards indentation and preserves numeric literals in its resul
   const counts = { same: 0, del: 0, add: 0 };
   for (const op of result.ops) counts[op.type] += op.count;
   assert.deepEqual(counts, { same: 2, del: 1, add: 1 });
+});
+
+test('lenient flag distinguishes strict JSON from JSONC/JSON5 and preserves strict-mode rejection', () => {
+  const handler = createTaskHandler();
+  assert.equal(run('format', '{"a":1}', {}, handler).lenient, false);
+  assert.equal(run('minify', '{"a": 1}', {}, handler).lenient, false);
+  assert.equal(run('parse', '{"a":1}', { retainSnapshot: true }, handler).lenient, false);
+
+  const jsonc = '// comment\n{a: 9007199254740993, b: [0xFF, .5,],}';
+  const formatted = run('format', jsonc, { retainSnapshot: true }, handler);
+  assert.equal(formatted.lenient, true);
+  assert.equal(formatted.text, '{\n  "a": 9007199254740993,\n  "b": [\n    255,\n    0.5\n  ]\n}');
+  assert.equal(treeRow(handler, formatted.snapshotId, '/a').literal, '9007199254740993');
+  assert.equal(run('search', '9007199254740993', {}, handler).matchCount, 1);
+
+  assert.equal(run('minify', jsonc, {}, handler).lenient, true);
+  assert.equal(run('minify', jsonc, {}, handler).text, '{"a":9007199254740993,"b":[255,0.5]}');
+
+  const diff = run('diff', '{a: 1,}', { text2: '{"a": 2}', retainSnapshot: true }, handler);
+  assert.equal(diff.lenient, true);
+  assert.equal(diff.leftLenient, true);
+  assert.equal(diff.rightLenient, false);
+  assert.equal(diff.total, 1);
+  assert.equal(run('textDiff', undefined, { snapshotId: diff.snapshotId }, handler).aText, '{\n  "a": 1\n}');
+
+  const nonFinite = handler({ action: 'format', text: '{"a": Infinity}' });
+  assert.equal(nonFinite.ok, false);
+  assert.equal(nonFinite.code, 'INVALID_JSON');
+  assert.deepEqual([nonFinite.position, nonFinite.line, nonFinite.column], [6, 1, 7]);
+
+  const strict = handler({ action: 'format', text: jsonc, strict: true });
+  assert.equal(strict.ok, false);
+  assert.equal(strict.code, 'INVALID_JSON');
+});
+
+test('toYaml and fromYaml preserve number literals, indent and error locations', () => {
+  const handler = createTaskHandler();
+  const source = '{"big":9007199254740993,"dec":1.10,"country":"NO"}';
+  const toYaml = run('toYaml', source, {}, handler);
+  assert.equal(toYaml.lenient, false);
+  assert.match(toYaml.text, /big: 9007199254740993/);
+  assert.match(toYaml.text, /dec: 1\.10/);
+  assert.match(toYaml.text, /country: 'NO'/);
+
+  const lenientToYaml = run('toYaml', '// comment\n{a: 1.10,}', {}, handler);
+  assert.equal(lenientToYaml.lenient, true);
+  assert.equal(lenientToYaml.text, 'a: 1.10\n');
+
+  const fromYaml = run('fromYaml', toYaml.text, { indent: '4' }, handler);
+  assert.equal(fromYaml.multiDocument, false);
+  assert.equal(fromYaml.documentCount, 1);
+  assert.equal(fromYaml.text, '{\n    "big": 9007199254740993,\n    "dec": 1.10,\n    "country": "NO"\n}');
+
+  const multi = run('fromYaml', 'a: 1\n---\nb: 2\n', { indent: '2' }, handler);
+  assert.equal(multi.multiDocument, true);
+  assert.equal(multi.documentCount, 2);
+
+  const badYaml = handler({ action: 'fromYaml', text: 'a: .inf\n' });
+  assert.equal(badYaml.ok, false);
+  assert.equal(badYaml.code, 'YAML_NON_FINITE');
+  assert.deepEqual([badYaml.line, badYaml.column], [1, 4]);
 });

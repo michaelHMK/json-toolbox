@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Formatare, Vizualizator, Diff & YAML"
   },
   "extDescription": {
-    "message": "Instrumente JSON rapide: formatare, minificare, escape și comparare locală. Fără reclame, urmărire sau colectare de date."
+    "message": "Formatare, vizualizare, diff JSON/JSON5 și conversie YAML locală. Suportă fișiere de 50 MiB și API offline, fără urmărire."
   },
   "actionTitle": {
     "message": "Deschide JSON Toolbox"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "Procesul de lucru s-a oprit neașteptat. Încearcă din nou."
+  },
+  "statusLenientParsed": {
+    "message": "Analizat ca JSONC/JSON5 (comentarii eliminate, ieșire JSON standard)"
+  },
+  "titleYaml": {
+    "message": "JSON în YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML în JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Convertește JSON sau JSONC/JSON5 în YAML 1.2 păstrând precizia numerelor."
+  },
+  "descFromYaml": {
+    "message": "Convertește documente YAML în JSON formatat păstrând precizia numerelor."
+  },
+  "btnToYaml": {
+    "message": "Convertește"
+  },
+  "btnToYamlTitle": {
+    "message": "Convertește JSON în YAML"
+  },
+  "btnFromYaml": {
+    "message": "Convertește"
+  },
+  "btnFromYamlTitle": {
+    "message": "Convertește YAML în JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Inversează direcția"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Schimbă direcția și preia rezultatul curent"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Lipește JSON sau trage un fișier .json aici… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Lipește YAML sau trage un fișier .yaml / .yml aici… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Alege un fișier local .yaml sau .yml ori trage-l în zona de intrare"
+  },
+  "fileDropYamlHint": {
+    "message": "Eliberează pentru a importa un fișier YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "Sunt acceptate doar fișiere .yaml sau .yml"
+  },
+  "errFileMultipleYaml": {
+    "message": "Importă un singur fișier YAML o dată"
+  },
+  "errNeedYamlInput": {
+    "message": "Introdu mai întâi conținut YAML"
+  },
+  "errYamlParseFailed": {
+    "message": "Eroare de analiză YAML: "
+  },
+  "errInvalidYaml": {
+    "message": "Sintaxă YAML invalidă."
+  },
+  "errYamlAliasLimit": {
+    "message": "Prea multe aliasuri YAML sau referință circulară."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Etichetă YAML neacceptată (precum !!binary sau personalizată)."
+  },
+  "errYamlComplexKey": {
+    "message": "Cheile YAML complexe (obiecte sau liste) nu sunt acceptate în JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity și NaN nu pot fi reprezentate în JSON standard."
+  },
+  "statusYamlGenerated": {
+    "message": "Convertit în YAML · $count$ car. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Convertit în JSON · $count$ car. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "$count$ documente YAML îmbinate într-o listă JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Deschide selecția în JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "Textul selectat depășește limita de transfer de 10 MB. Copiază și lipește sau importă un fișier."
+  },
+  "errImportExpired": {
+    "message": "Selecția importată a expirat sau nu mai este disponibilă."
+  },
+  "statusSelectionNormalized": {
+    "message": "Spațiile albe ar fi putut fi normalizate de browser"
+  },
+  "menuFormatPage": {
+    "message": "Formatează JSON pe această pagină"
+  },
+  "settingsLabel": {
+    "message": "SETĂRI"
+  },
+  "autoFormatPages": {
+    "message": "Formatează automat paginile JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Formatează automat răspunsurile JSON la navigare"
+  },
+  "autoFormatPlainText": {
+    "message": "Include și JSON text/plain"
+  },
+  "hintFileAccess": {
+    "message": "Pentru fișiere locale file://, activează „Permite accesul la adresele URL ale fișierelor” în detaliile extensiei."
+  },
+  "errPageNotJson": {
+    "message": "Această pagină nu este JSON valid."
+  },
+  "viewerTitle": {
+    "message": "Vizualizator JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Formatat"
+  },
+  "btnOpenToolbox": {
+    "message": "Deschide în JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "Această pagină a blocat formatarea încorporată."
+  },
+  "statusViewerReady": {
+    "message": "Formatat · $count$ car. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

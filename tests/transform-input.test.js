@@ -129,3 +129,40 @@ test('unescape selects the invalid character in the editable large input', async
   assert.equal(host.value.slice(host.selectionStart, host.selectionEnd), 'x');
   assert.equal(page.get('error').hidden, false);
 });
+
+test('YAML transform pages forward indent, show multi-doc notice, and swap direction cleanly', async () => {
+  const navigations = [];
+  const sessionStorageData = new Map();
+  const handler = createTaskHandler();
+  const fromYamlPage = loadPage('transform', {
+    bodyDataset: { action: 'fromYaml', swapHref: 'yaml.html' },
+    expose: '{ textInput, runTransform, getOutput: () => outputText }',
+    runTask: async (task, payload) => handler({ action: task, ...payload }),
+    sessionStorageData,
+    onNavigate: (url) => navigations.push(url),
+  });
+  fromYamlPage.get('indent').value = '4';
+  fromYamlPage.get('input').value = 'a: 1\n---\nb: 2\n';
+  await fromYamlPage.runTransform();
+  assert.match(fromYamlPage.get('status').textContent, /statusJsonFromYaml/);
+  assert.match(fromYamlPage.get('status').textContent, /statusYamlMultiDoc/);
+  assert.equal(fromYamlPage.getOutput(), '[\n    {\n        "a": 1\n    },\n    {\n        "b": 2\n    }\n]');
+
+  await fromYamlPage.get('btn-swap-direction').click();
+  await flush();
+  assert.equal(navigations.length, 1);
+  assert.match(navigations[0], /^yaml\.html\?transfer=/);
+  const query = navigations[0].slice('yaml.html'.length);
+
+  const toYamlPage = loadPage('transform', {
+    bodyDataset: { action: 'toYaml', swapHref: 'json-from-yaml.html' },
+    expose: '{ textInput, getOutput: () => outputText }',
+    runTask: async (task, payload) => handler({ action: task, ...payload }),
+    search: query,
+    pathname: '/yaml.html',
+    sessionStorageData,
+  });
+  await flush();
+  assert.equal(toYamlPage.getOutput(), '- a: 1\n- b: 2\n');
+  assert.equal(sessionStorageData.size, 0);
+});

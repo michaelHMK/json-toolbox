@@ -108,6 +108,6 @@
     <path d="M11 200h13" stroke="#55d6be" stroke-width="3" stroke-linecap="round"/>
   </g></g>
   <text x="30" y="208" fill="#fff" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" font-size="32" font-weight="700" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">JSON 工具箱</text>
-  <text x="30" y="239" fill="#eeedff" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" font-size="18" font-weight="400" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">匯入 · 格式化 · 比對</text>
+  <text x="30" y="239" fill="#eeedff" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" font-size="17" font-weight="400" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">格式化 · 比對 · YAML · 網頁美化</text>
   <text x="30" y="264" fill="#eeedff" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif" font-size="14" font-weight="600" direction="ltr" unicode-bidi="isolate" text-anchor="start" data-max-width="380" data-min-x="29" data-max-x="411">高效能 · 重視隱私 · 本機處理</text>
 </svg>

@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox — Форматирование, Просмотр, Сравнение и YAML"
   },
   "extDescription": {
-    "message": "Быстрые инструменты JSON: форматирование, сжатие, экранирование и сравнение локально. Без рекламы, слежки и сбора данных."
+    "message": "Локальный форматтер, просмотр, сравнение JSON/JSON5 и конвертер YAML. Файлы до 50 МиБ и страницы API офлайн, без слежки."
   },
   "actionTitle": {
     "message": "Открыть JSON Toolbox"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "Фоновый процесс неожиданно остановился. Повторите попытку."
+  },
+  "statusLenientParsed": {
+    "message": "Разобрано как JSONC/JSON5 (комментарии удалены, вывод в стандартном JSON)"
+  },
+  "titleYaml": {
+    "message": "JSON в YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML в JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Преобразуйте JSON или JSONC/JSON5 в YAML 1.2 с сохранением точности чисел."
+  },
+  "descFromYaml": {
+    "message": "Преобразуйте документы YAML в отформатированный JSON с сохранением точности чисел."
+  },
+  "btnToYaml": {
+    "message": "Конвертировать"
+  },
+  "btnToYamlTitle": {
+    "message": "Конвертировать JSON в YAML"
+  },
+  "btnFromYaml": {
+    "message": "Конвертировать"
+  },
+  "btnFromYamlTitle": {
+    "message": "Конвертировать YAML в JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Поменять"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Сменить направление и перенести текущий результат"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Вставьте JSON или перетащите файл .json… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Вставьте YAML или перетащите файл .yaml / .yml… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Выберите локальный файл .yaml или .yml или перетащите его в поле ввода"
+  },
+  "fileDropYamlHint": {
+    "message": "Отпустите, чтобы импортировать файл YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "Поддерживаются только файлы .yaml и .yml"
+  },
+  "errFileMultipleYaml": {
+    "message": "Импортируйте только один файл YAML за раз"
+  },
+  "errNeedYamlInput": {
+    "message": "Сначала введите содержимое YAML"
+  },
+  "errYamlParseFailed": {
+    "message": "Ошибка разбора YAML: "
+  },
+  "errInvalidYaml": {
+    "message": "Недопустимый синтаксис YAML."
+  },
+  "errYamlAliasLimit": {
+    "message": "Слишком много или циклические псевдонимы YAML."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Неподдерживаемый тег YAML (например, !!binary или пользовательский тег)."
+  },
+  "errYamlComplexKey": {
+    "message": "Сложные ключи YAML (объекты или массивы) не поддерживаются в JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity и NaN нельзя представить в стандартном JSON."
+  },
+  "statusYamlGenerated": {
+    "message": "Преобразовано в YAML · $count$ симв. · $time$ мс",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Преобразовано в JSON · $count$ симв. · $time$ мс",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "Объединено $count$ документов YAML в массив JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Открыть выделенный текст в JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "Выделенный текст превышает лимит передачи 10 МБ. Используйте копирование и вставку или импорт файла."
+  },
+  "errImportExpired": {
+    "message": "Импортированный текст устарел или больше недоступен."
+  },
+  "statusSelectionNormalized": {
+    "message": "Пробелы могли быть нормализованы браузером"
+  },
+  "menuFormatPage": {
+    "message": "Форматировать JSON на этой странице"
+  },
+  "settingsLabel": {
+    "message": "НАСТРОЙКИ"
+  },
+  "autoFormatPages": {
+    "message": "Автоформатирование JSON-страниц"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Автоматически форматировать JSON-ответы при открытии"
+  },
+  "autoFormatPlainText": {
+    "message": "Включая JSON с типом text/plain"
+  },
+  "hintFileAccess": {
+    "message": "Для локальных файлов file:// включите «Разрешить открывать локальные файлы по ссылкам» в настройках расширения."
+  },
+  "errPageNotJson": {
+    "message": "Эта страница не является корректным JSON."
+  },
+  "viewerTitle": {
+    "message": "Просмотр JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Форматированный"
+  },
+  "btnOpenToolbox": {
+    "message": "Открыть в JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "Эта страница заблокировала встроенное форматирование."
+  },
+  "statusViewerReady": {
+    "message": "Отформатировано · $count$ симв. · $time$ мс",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

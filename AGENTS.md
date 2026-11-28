@@ -6,10 +6,12 @@
 
 | 关注点 | 主要归属 | 上层测试保留的内容 |
 | --- | --- | --- |
-| 格式化、数字精度、搜索、结构/文本差异 | `format-buffered`、`number-literals`、`search`、`structural-diff`、`text-diff` | Worker 的参数传递与返回数据契约 |
+| 格式化、宽松解析、数字精度、搜索、YAML、结构/文本差异 | `format-buffered`、`lenient-json`、`number-literals`、`search`、`yaml`、`structural-diff`、`text-diff` | Worker 的参数传递与返回数据契约 |
 | Worker 缓存、快照、窗口消息 | `tasks`、`snapshots`、`worker-tree` | 页面是否正确发起操作并使用结果 |
 | 排队、取消、崩溃、传输与恢复 | `worker-client`、`worker-protocol`、`*-session` | 页面独有的视图选择、旧结果隔离、错误反馈 |
 | 虚拟窗口、树操作与文本选择 | `virtual-*`、`remote-tree`、`tree-paths` | 页面接线、焦点和用户可见结果 |
+| 右键菜单、权限与脚本注册 | `background`、`sidebar` | 权限开关触发与状态对齐 |
+| 网页 JSON 检测与嵌入式查看 | `content-detect` | `viewer.html` 页面加载、降级横幅与结果展示 |
 | 文件导入与输入焦点 | `file-import`、`text-input-focus` | 各入口的独特行为；大输入场景放回对应功能文件 |
 | 打包与资源依赖 | `test_release.py` | 实际构建产物与缺失依赖的失败行为 |
 

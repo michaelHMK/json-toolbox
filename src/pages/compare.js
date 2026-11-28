@@ -187,6 +187,12 @@ function updateStatus() {
   if (state.result.truncated) text += t('diffStatsTruncated', [String(state.result.diffs.length)]);
   if (state.result.keyFallback) text += t('diffKeyFallback');
   if (state.result.total === 0) text += t('diffIdenticalNote');
+  if (state.result.leftLenient || state.result.rightLenient) {
+    const sides = [];
+    if (state.result.leftLenient) sides.push(t('paneOld'));
+    if (state.result.rightLenient) sides.push(t('paneNew'));
+    text += ' · ' + sides.join(' / ') + ': ' + t('statusLenientParsed');
+  }
   setStatus(text);
 }
 

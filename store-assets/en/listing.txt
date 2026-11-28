@@ -1,40 +1,48 @@
 Name
-JSON Toolbox
+JSON Toolbox - Formatter, Viewer, Diff & YAML
 
 Short description
-High-performance JSON Toolbox: format, minify, escape and compare locally. No ads, tracking or data collection.
+Local JSON & JSON5 formatter, viewer, diff, and YAML converter. Handles 50 MiB files & API pages offline with zero tracking.
 
 Detailed description
-JSON Toolbox lets you format, browse and compare JSON in a dedicated browser tab. It works fully offline, with no account or extra permissions required.
+JSON Toolbox is a fast offline JSON formatter, JSON viewer, JSON diff, and JSON to YAML converter with JSONC and JSON5 support in a dedicated browser tab. No website access is requested on install, with zero permission warnings and no account required.
 
-Format and browse
-- Beautify JSON with 2-space, 4-space or Tab indentation.
-- See syntax errors with line/column details and navigation to the error, including a local fallback when the browser omits the location.
-- Explore a collapsible tree with virtual scrolling, expansion by level, key/value search and match navigation.
-- Copy the complete result with one click.
+Format, browse and JSONC / JSON5
+- Beautify JSON with 2-space, 4-space or Tab indentation, keeping large integers and decimal precision intact.
+- Automatically falls back from strict JSON to lenient JSONC / JSON5 parsing when input includes comments, trailing commas, single-quoted strings, unquoted keys or hex integers.
+- See syntax errors with line/column details and jump to the error location, including a local fallback when the browser omits the position.
+- Explore a collapsible virtual tree with level expansion, key/value search, match navigation and one-click copy.
+
+JSON <-> YAML conversion
+- Convert JSON to YAML 1.2 (clean quoting, multiline block scalars and preserved number precision) or YAML back to JSON in dedicated two-way views.
+- Parse multi-document YAML streams into a JSON array while protecting against circular or oversized aliases.
+- Swap conversion direction without leaving your workspace.
+
+Webpage JSON, auto-format and right-click menu
+- Select text on any webpage, right-click "Open selection in JSON Toolbox", and format snippets cleanly in one click (multiline JS/JSON selections fallback cleanly).
+- Use the page right-click menu "Format JSON on this page" on demand via activeTab without granting persistent site permissions.
+- Optional "Auto-format JSON pages" switch in the sidebar is OFF by default and requests optional host access only when turned on, with Raw / Formatted view toggle, Copy, "Open in JSON Toolbox" and an optional text/plain sub-option.
 
 Import local files
-- On any of the five tool pages, choose a file or drop it into an input pane.
-- Import one UTF-8 .json file at a time, up to 50 MiB each. The tool runs automatically after import. Compare runs when both inputs contain text.
-- Import a large file or paste or drop a large block of text to open it directly in the editor. You can edit and copy the entire input.
+- Across all seven tool pages, choose a file or drag and drop into an input pane.
+- Import UTF-8 files up to 50 MiB at a time (.json across JSON/Compare tools; .yaml / .yml on YAML -> JSON). Processing starts automatically after import.
+- Large files or pasted/dropped long text open directly in the editor where you can inspect, edit and copy the full content.
 
 Minify, escape and unescape
-- Switch between dedicated tools using the sidebar.
-- Remove unnecessary whitespace to produce single-line JSON. Invalid JSON is reported, with error locations when available.
-- Escape text for a JSON string or restore escaped string content to its original text, then copy the result.
+- Switch between dedicated tools from the sidebar.
+- Strip extra whitespace for compact single-line JSON output (also supporting lenient JSONC/JSON5 fallback).
+- Escape text for safe embedding inside a JSON string, or unescape a JSON-escaped string back to plain text.
 
 Compare JSON
-- See structural differences by path: additions, removals, value changes and type changes.
-- Compare arrays by index or match items by a key field such as id.
-- Ignore selected paths, such as timestamp fields.
-- Browse the full tree with highlighted differences or show only differences, with navigation between them.
-- Switch to a line-by-line text comparison of formatted JSON.
+- View structural differences by path: additions, removals, value changes and type changes.
+- Compare arrays by index or match elements by a key field such as id.
+- Ignore selected paths such as timestamp fields, filter diff-only nodes, jump between changes or switch to line-by-line text diff.
 
 Appearance
-- Choose Normal, Eye comfort or Dark from the sidebar, with thumbnail previews. Normal is the default.
-- Your theme choice is remembered locally across tools and after reopening. Input and results are not saved.
+- Choose Normal, Eye Comfort or Dark from the sidebar with miniature previews (Normal is default), shared across pages including the embedded page viewer.
+- Only theme preference and the optional text/plain auto-format toggle are saved locally; inputs and results are never persisted.
 
 Privacy
-All processing stays in your browser. No data collection or uploads, network requests, remote code, ads or tracking. Input history is not saved. When you copy, the extension writes the selected text, input or result to the system clipboard. When you paste, it processes only the text you provide.
+All processing happens locally in your browser with no data collection, uploads, network requests, remote code, ads or tracking. Zero website permissions are requested by default. Right-click actions run only on the active tab when clicked, and optional auto-format reads pages whose content is JSON only while enabled in memory without storing page content.
 
 Large inputs and results remain in memory; performance depends on your device and data structure. Virtual views render only part of the content at a time, so native browser Find covers only the rendered portion. Use tree search or copy the complete result when needed. For extensive text differences, unmatched sections may be shown as whole blocks.

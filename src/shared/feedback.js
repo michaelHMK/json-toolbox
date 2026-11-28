@@ -4,6 +4,11 @@ import { copyText } from './clipboard.js';
 const ERROR_KEYS = {
   INVALID_JSON: 'errInvalidJson',
   INVALID_ESCAPE: 'errInvalidEscape',
+  INVALID_YAML: 'errInvalidYaml',
+  YAML_ALIAS_LIMIT: 'errYamlAliasLimit',
+  YAML_UNSUPPORTED_TAG: 'errYamlUnsupportedTag',
+  YAML_COMPLEX_KEY: 'errYamlComplexKey',
+  YAML_NON_FINITE: 'errYamlNonFinite',
   SEARCH_NOT_READY: 'errNothingToParse',
   SNAPSHOT_UNAVAILABLE: 'errSnapshotUnavailable',
   UNKNOWN_ACTION: 'errTaskFailed',

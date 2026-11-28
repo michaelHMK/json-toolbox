@@ -70,7 +70,7 @@
 
 ### 任务
 
-- [ ] **T3.1 转换器 `core/lenient-json.js`**
+- [x] **T3.1 转换器 `core/lenient-json.js`**
   - 注释：`//`、`/* */`（去掉；块注释没有闭合时报错，并定位到注释开头）
   - 末尾逗号：对象和数组都支持
   - key：不加引号的 ES5 标识符（包括 Unicode 和 `\uXXXX` 转义）；单引号 key
@@ -83,16 +83,16 @@
   - 空白：允许 JSON5 规定的额外空白（`\v`、`\f`、NBSP、BOM、U+2028/2029）
   - 输出 `{ text, mapOffset(pos) }`，错误以 `SyntaxError` 抛出，并带原文的 `position`
   - 复杂度 O(n)，用数组分块拼接，避免反复拼接字符串
-- [ ] **T3.2 接入 Worker**（`worker/tasks.js`）
+- [x] **T3.2 接入 Worker**（`worker/tasks.js`）
   - `format`、`minify`、`compare` 先走严格解析；只有抛出 `SyntaxError` 时才调用转换器重试
   - 返回结果增加 `lenient: true | false`
   - 转换器也失败时，**返回转换器的错误位置**（它的语法覆盖面更大，错误信息更准确）
   - 快照和缓存的键仍然用原始输入文本
-- [ ] **T3.3 页面提示**
+- [x] **T3.3 页面提示**
   - `formatter.js`、`transform.js`（只处理 minify）、`compare.js`：`lenient` 为 true 时，在状态栏显示提示（新增 i18n 键 `statusLenientParsed`）
   - 对比页需要分别标明左右两侧的状态
-- [ ] **T3.4 i18n**：20 个 locale 都补上 `statusLenientParsed`，错误信息复用现有的 parse error 文案
-- [ ] **T3.5 测试**
+- [x] **T3.4 i18n**：20 个 locale 都补上 `statusLenientParsed`，错误信息复用现有的 parse error 文案
+- [x] **T3.5 测试**
   - `tests/lenient-json.test.js`（新文件，登记到 AGENTS 归属表的“格式化”一行）：
     - 用表驱动，覆盖 T3.1 每一项的“输入 → 标准 JSON 输出”
     - 错误位置：未闭合注释、`Infinity`、非法标识符
@@ -100,13 +100,13 @@
   - `tests/tasks.test.js`：增加 `lenient` 字段的契约用例（严格输入为 false，JSONC 输入为 true）
   - `tests/formatter-rendering.test.js`：只验证提示的接线是否正确，不重复测试 core 的各种边界
   - 严格 JSON 的路径不能有额外开销：`npm run bench:budget` 必须通过；`bench/format.mjs` 增加一个 JSONC 降级场景作为参考数据
-- [ ] **T3.6 文档**：README（中英文）、`STORE_LISTING.md` 和 20 个 `listing.txt` 的功能列表里加上 “JSONC / JSON5”
+- [x] **T3.6 文档**：README（中英文）、`STORE_LISTING.md` 和 20 个 `listing.txt` 的功能列表里加上 “JSONC / JSON5”
 
 **验收标准**
-- [ ] 粘贴 VS Code 的 `settings.json`（带注释和末尾逗号）后能正常格式化，并显示提示
-- [ ] 粘贴 `{a: 1, 'b': [0xFF, .5,],}` 后输出 `{"a":1,"b":[255,0.5]}`
-- [ ] 严格 JSON 的行为和性能都没有变化
-- [ ] 错误能定位到原文中的正确行列
+- [x] 粘贴 VS Code 的 `settings.json`（带注释和末尾逗号）后能正常格式化，并显示提示
+- [x] 粘贴 `{a: 1, 'b': [0xFF, .5,],}` 后输出 `{"a":1,"b":[255,0.5]}`
+- [x] 严格 JSON 的行为和性能都没有变化
+- [x] 错误能定位到原文中的正确行列
 
 ---
 
@@ -114,7 +114,7 @@
 
 ### 任务
 
-- [ ] **T4.1 YAML 生成器 `core/yaml-emit.js`（自己实现，不依赖第三方库）**
+- [x] **T4.1 YAML 生成器 `core/yaml-emit.js`（自己实现，不依赖第三方库）**
   - 基于数据和 `numberLiterals` 输出 YAML 1.2，缩进 2 格；`[]`、`{}` 写成 flow 形式
   - **以下字符串必须加引号**：
     - 会被识别成其他类型的值：`true`、`false`、`null`、`~`、YAML 1.1 的 `yes/no/on/off/y/n`（不区分大小写）
@@ -126,11 +126,11 @@
   - 控制字符、U+2028/2029 和单独的代理项，在双引号字符串里转义
   - 数字直接输出原文字面量（例如 `1.10`、`1e400`、大整数）
   - 大文档分块输出，避免产生一个巨型字符串
-- [ ] **T4.2 引入 YAML 解析器（按 D7 选定 `yaml`）**
+- [x] **T4.2 引入 YAML 解析器（按 D7 选定 `yaml`）**
   - 新建 `scripts/vendor-yaml/`，结构参照 `scripts/vendor-codemirror/`：`package.json`、lock 文件、构建脚本，产物为 `src/vendor/yaml.js` 和 `yaml.LICENSE.txt`
   - CI 的 `check.yml` 增加“vendor 构建结果可复现”这一步
   - `RUNTIME_FILES` 登记新文件；记录体积，目标是压缩后 ≤ 120 KB
-- [ ] **T4.3 YAML → JSON 的语义 `core/yaml-to-json.js`**
+- [x] **T4.3 YAML → JSON 的语义 `core/yaml-to-json.js`**
   - 使用 core schema，所以 timestamp 保持为字符串
   - anchor 和 alias 会展开，并设置 `maxAliasCount` 防御 billion-laughs 攻击
   - 多文档（`---`）输出为 JSON 数组，并提示
@@ -138,14 +138,14 @@
   - `.inf` / `.nan` 报错（与 D6 一致）；自定义 tag 和 `!!binary` 报错
   - **数字保真**：根据源 token 取原始文本，生成 JSON 时直接写原文（如 `9007199254740993`、`1.10`）
   - 错误转换成现有的 `{ line, column }` 结构，让输入框能定位到出错位置
-- [ ] **T4.4 Worker 动作**：新增 `toYaml` 和 `fromYaml`，复用取消和串行化逻辑；`fromYaml` 的输出使用当前页面选择的缩进
-- [ ] **T4.5 页面**
+- [x] **T4.4 Worker 动作**：新增 `toYaml` 和 `fromYaml`，复用取消和串行化逻辑；`fromYaml` 的输出使用当前页面选择的缩进
+- [x] **T4.5 页面**
   - 新增 `yaml.html`（JSON → YAML）和 `json-from-yaml.html`（YAML → JSON），按 D8 复用 `transform.js` 的 `data-action` 模式
   - 文件导入要接受 `.yaml` / `.yml`（`file-import.js` 当前只接受 `.json`，改成按页面配置）
   - `navigation.js` 增加两个导航项和图标
   - 两个页面都放一个“交换方向”入口，跳转到另一个页面并带上当前输出
-- [ ] **T4.6 i18n**：导航名、页面标题、placeholder、错误文案（多文档、alias 超限、不支持的 tag），20 个 locale 都要补齐
-- [ ] **T4.7 测试**
+- [x] **T4.6 i18n**：导航名、页面标题、placeholder、错误文案（多文档、alias 超限、不支持的 tag），20 个 locale 都要补齐
+- [x] **T4.7 测试**
   - `tests/yaml.test.js`（新文件，登记到 AGENTS 归属表的“格式化”一行）：
     - 生成器：用表驱动覆盖 T4.1 的引号规则和多行字符串
     - 解析语义：覆盖 T4.3 各项
@@ -154,13 +154,13 @@
   - `tests/transform-input.test.js` / `transform-copy.test.js`：新页面的接线，不重复测试 core 的边界
   - `tests/test_release.py`：vendor 文件缺失时检查失败
   - `bench/`：增加一个 25 MiB 的 JSON → YAML 基准，作为参考数据
-- [ ] **T4.8 文档**：README、STORE_LISTING、listing 里加上 “JSON to YAML / YAML to JSON”
+- [x] **T4.8 文档**：README、STORE_LISTING、listing 里加上 “JSON to YAML / YAML to JSON”
 
 **验收标准**
-- [ ] `{"country":"NO","v":"1.0","port":"0123"}` 转出的 YAML 用 PyYAML（1.1）和 `yaml`（1.2）读回都是字符串
-- [ ] 一个 K8s Deployment YAML 转成 JSON 再转回来，语义不变
-- [ ] 往返性质测试稳定通过
-- [ ] 错误能定位到原文中的正确行列
+- [x] `{"country":"NO","v":"1.0","port":"0123"}` 转出的 YAML 用 PyYAML（1.1）和 `yaml`（1.2）读回都是字符串
+- [x] 一个 K8s Deployment YAML 转成 JSON 再转回来，语义不变
+- [x] 往返性质测试稳定通过
+- [x] 错误能定位到原文中的正确行列
 
 ---
 
@@ -168,45 +168,45 @@
 
 ### 任务
 
-- [ ] **T2.0 发布门禁改成白名单**（`build_release.py`）
+- [x] **T2.0 发布门禁改成白名单**（`build_release.py`）
   - `permissions` 必须 ⊆ `{contextMenus, activeTab, scripting, storage}`
   - `optional_host_permissions` 必须 ⊆ D3 选定的集合；**`host_permissions` 和静态 `content_scripts` 继续禁止**
   - `web_accessible_resources` 在 PR4 才放开（只允许 viewer 入口，并且必须 `use_dynamic_url: true`）
   - `tests/test_release.py`：
     - 白名单内的权限可以通过
     - `tabs`、`<all_urls>` 出现在 `host_permissions`、静态 `content_scripts` 这几种情况仍然拒绝
-- [ ] **T2.1 注册菜单**（`background.js`）
+- [x] **T2.1 注册菜单**（`background.js`）
   - 在 `runtime.onInstalled` 中创建菜单：`contexts: ['selection']`，标题用 i18n 键 `menuOpenSelection`
   - 菜单的父级标题会显示扩展名，所以 manifest 增加 `short_name: "JSON Toolbox"`，避免 F5 改名后名称过长
-- [ ] **T2.2 获取选中文本**
+- [x] **T2.2 获取选中文本**
   - 优先用 `activeTab` 加 `scripting.executeScript` 取精确文本：
     - 普通页面用 `getSelection().toString()`
     - 焦点在 `textarea` / `input` 里时，用 `selectionStart` 和 `selectionEnd` 截取
   - 注入失败时（如 `chrome://` 页面、商店页面、PDF）回退到 `info.selectionText`，并提示“空白可能已被规范化”
   - Spike：验证 `selectionText` 的换行折叠和长度上限，把结论写进代码注释
-- [ ] **T2.3 把文本传给工具页**
+- [x] **T2.3 把文本传给工具页**
   - 后台生成一次性 token，把文本写入 `chrome.storage.session`（只在内存中，配额 10 MB）
   - 在当前标签页右侧打开 `formatter.html?import=<token>`（设置 `index` 和 `openerTabId`）
   - 工具页读取后**立即删除**这条记录，读不到时提示“内容已过期”
   - 超过 10 MB 时提示用户改用复制粘贴或文件导入
   - `formatter.js` 载入后自动执行格式化；如果内容按 JSON5 解析成功，同样显示 F3 的提示
-- [ ] **T2.4 i18n**：`menuOpenSelection`、`errSelectionTooLarge`、`errImportExpired` 等，20 个 locale 都要补齐
-- [ ] **T2.5 测试**
+- [x] **T2.4 i18n**：`menuOpenSelection`、`errSelectionTooLarge`、`errImportExpired` 等，20 个 locale 都要补齐
+- [x] **T2.5 测试**
   - 新建 `tests/background.test.js`，模拟 `chrome.*` API，验证：
     - 菜单只创建一次
     - 回退路径正确
     - 超过 10 MB 时报错
   - 页面的 token 读取并删除：放进 `formatter-rendering.test.js`
   - 浏览器端到端测试：扩展 `bench/release-smoke.mjs`，覆盖“选中文本 → 右键菜单 → 新标签页显示格式化结果”（Playwright 无法点击原生右键菜单，改为直接调用 `contextMenus.onClicked` 对应的处理函数）
-- [ ] **T2.6 隐私和商店信息**
+- [x] **T2.6 隐私和商店信息**
   - `PRIVACY.md`：说明只在用户点击菜单时读取选中文本，并且只保存在内存中
   - `STORE_LISTING.md` 的权限理由：为 `contextMenus`、`activeTab`、`scripting`、`storage` 各写一条
   - README 的“零权限”改成“**零网站访问权限、安装无权限警告**”
 
 **验收标准**
-- [ ] 选中网页上的 JSON（包括 textarea 里的内容）后用右键菜单打开，结果和直接粘贴完全一致
-- [ ] 安装和更新时都没有权限警告
-- [ ] `storage.session` 里没有残留数据
+- [x] 选中网页上的 JSON（包括 textarea 里的内容）后用右键菜单打开，结果和直接粘贴完全一致
+- [x] 安装和更新时都没有权限警告
+- [x] `storage.session` 里没有残留数据
 
 ---
 
@@ -214,7 +214,7 @@
 
 ### 任务
 
-- [ ] **T1.0 Spike（1–2 天，结论写进 PR 描述）**
+- [x] **T1.0 Spike（1–2 天，结论写进 PR 描述）**
   - 验证 D1-A 能否行得通：
     - 在 `application/json` 页面里插入 `chrome-extension://…/viewer.html` 的 iframe，会不会被页面 CSP 或 COEP 拦截
     - 扩展 CSP 的 `frame-ancestors 'none'` 必须放宽，评估能否只放宽到 `http: https: file:`，并同步修改 `REQUIRED_EXACT_CSP` 门禁
@@ -223,30 +223,30 @@
     - 记录这种情况下的 DOM 结构，确保只取原始的 `<pre>` 文本
   - 传输：用 `MessageChannel` 加可转移的 `ArrayBuffer`（UTF-8）传 50 MiB 文本，测量耗时
   - 如果 A 行不通，退回 D1-B，并对大文件设置上限（例如超过 5 MiB 时只显示“在工具页打开”按钮）
-- [ ] **T1.1 检测脚本 `content/detect.js`（经典脚本，体积尽量小）**
+- [x] **T1.1 检测脚本 `content/detect.js`（经典脚本，体积尽量小）**
   - 必须同时满足以下条件才接管页面：
     - `document.contentType` 是 `application/json`、`text/json`、`*+json`（D4 开启后也包括 `text/plain`）
     - `body` 里只有一个 `<pre>`（允许 Chrome 自带的 Pretty-print 容器）
     - 只在顶层框架运行
   - 内容能完整解析时才替换页面；解析失败就保持原样，不打扰
   - 保留原始文本和 URL；工具栏提供 **原文 / 格式化** 切换、复制、“在工具页打开”（复用 F2 的 token 通道）
-- [ ] **T1.2 Viewer 页面 `viewer.html`**
+- [x] **T1.2 Viewer 页面 `viewer.html`**
   - 复用 `virtual-tree`、`document-session` 和搜索，去掉侧边栏和输入框，只读
   - 跟随主题设置（`localStorage` 和工具页同源，可以共享）
   - 注册为 `web_accessible_resources`：`matches` 与 D3 一致，并设置 `use_dynamic_url: true` 防止被网站用来探测是否安装了扩展
-- [ ] **T1.3 按需模式（D2）**
+- [x] **T1.3 按需模式（D2）**
   - 页面右键菜单（`contexts: ['page']`）增加“格式化此页 JSON”：通过 `activeTab` 获得临时权限，然后注入 `detect.js`
   - 检测不通过时提示“此页面不是 JSON”
-- [ ] **T1.4 自动模式开关**
+- [x] **T1.4 自动模式开关**
   - 侧边栏 “Appearance” 下方新增 “Settings” 区域，放一个“自动格式化网页中的 JSON”开关（`role="switch"`）
   - 打开开关时，在用户手势内调用 `chrome.permissions.request(D3)`，获得授权后用 `chrome.scripting.registerContentScripts`（`runAt: 'document_start'` 避免页面闪烁，`allFrames: false`）注册脚本
   - **以权限状态作为开关状态**，不额外存储偏好
   - 关闭开关时 `permissions.remove` 并 `unregisterContentScripts`
   - 后台在 `permissions.onAdded` / `onRemoved` 和 `runtime.onStartup` 时对齐注册状态（用户可能在 chrome://extensions 里直接撤销权限）
   - 用户没有开启“允许访问文件网址”时，`file://` 页面要给出引导说明
-- [ ] **T1.5 门禁**：放开 `web_accessible_resources` 白名单（只允许 viewer 相关文件，且必须 `use_dynamic_url`），按 Spike 结论调整 CSP 的 `frame-ancestors`；`test_release.py` 同步更新
-- [ ] **T1.6 i18n**：开关文案、权限说明、菜单项、原文 / 格式化切换、不是 JSON 页面的提示，20 个 locale 都要补齐
-- [ ] **T1.7 测试**
+- [x] **T1.5 门禁**：放开 `web_accessible_resources` 白名单（只允许 viewer 相关文件，且必须 `use_dynamic_url`），按 Spike 结论调整 CSP 的 `frame-ancestors`；`test_release.py` 同步更新
+- [x] **T1.6 i18n**：开关文案、权限说明、菜单项、原文 / 格式化切换、不是 JSON 页面的提示，20 个 locale 都要补齐
+- [x] **T1.7 测试**
   - `tests/content-detect.test.js`：
     - 用表驱动覆盖 content-type、DOM 结构、解析失败时保持原样
     - 使用 `page-dom.js` 提供的最小 DOM
@@ -258,17 +258,17 @@
     - 带 CSP 的页面能降级处理
     - 主线程长任务时间在预算内
   - `bench/accessibility.mjs` 和 `theme.mjs` 覆盖 viewer 页面
-- [ ] **T1.8 隐私和商店信息**
+- [x] **T1.8 隐私和商店信息**
   - `PRIVACY.md`：只有在用户开启自动模式或点击菜单后，才读取**内容类型为 JSON 的页面**；内容只在本地内存中处理，不保存
   - 商店后台：可选网站访问权限的理由，以及更新“隐私权规范”表单
   - README：新增“自动格式化”章节，说明默认不开启
 
 **验收标准**
-- [ ] 默认安装后网页完全不受影响
-- [ ] 开启自动模式后，打开 `https://api.github.com/repos/michaelHMK/json-toolbox` 直接显示树视图，并能切换回原文
-- [ ] 撤销权限后，自动格式化立即失效
-- [ ] 50 MiB 的 JSON 响应不会让标签页卡死
-- [ ] 安装时没有权限警告
+- [x] 默认安装后网页完全不受影响
+- [x] 开启自动模式后，打开 `https://api.github.com/repos/michaelHMK/json-toolbox` 直接显示树视图，并能切换回原文
+- [x] 撤销权限后，自动格式化立即失效
+- [x] 50 MiB 的 JSON 响应不会让标签页卡死
+- [x] 安装时没有权限警告
 
 ---
 
@@ -277,15 +277,15 @@
 > [!WARNING]
 > Chrome Web Store 的政策禁止**关键词堆砌**和与功能无关的关键词。名称要读起来自然，只写已经上线的功能。功能上线前，不要在名称和描述里写它。
 
-- [ ] **T5.1 名称加关键词**（manifest 的 `extName`，门禁要求 ≤ 75 字符）
+- [x] **T5.1 名称加关键词**（manifest 的 `extName`，门禁要求 ≤ 75 字符）
   - 英文：`JSON Toolbox – Formatter, Viewer, Diff & YAML`（YAML 等 F4 上线后再加）
   - 中文：`JSON 工具箱 – 格式化、查看、对比与 YAML 转换`
   - 加上 `short_name: "JSON Toolbox"`（与 T2.1 共用），供菜单和启动器等空间较小的位置使用
-- [ ] **T5.2 简短描述**（`extDescription`，门禁要求 ≤ 132 字符）
+- [x] **T5.2 简短描述**（`extDescription`，门禁要求 ≤ 132 字符）
   - 开头直接写关键词，去掉重复的 “High-performance JSON Toolbox”
   - 英文示例：`Format, view & compare JSON, auto-format JSON pages, JSONC/JSON5 and YAML. 100% local: no ads, tracking or data collection.`
   - 中文示例：`JSON 格式化、查看与对比，网页 JSON 自动美化，支持 JSONC/JSON5 和 YAML 互转。数据全程本地处理，无广告、无追踪。`
-- [ ] **T5.3 按语言本地化关键词**
+- [x] **T5.3 按语言本地化关键词**
   - 新建 `store-assets/keywords.md`：为每个 locale 列出 3–5 个核心搜索词，以及它们在名称、简介、详细描述第一段中的位置
   - 调研方法：
     - 商店在该语言下的搜索联想
@@ -294,7 +294,7 @@
   - 同步修改 20 个 `_locales/*/messages.json` 的 `extName` / `extDescription`，以及 `store-assets/*/listing.txt`
   - 详细描述的前两行（商店折叠时只显示这部分）必须包含核心关键词
   - 小语种：机器翻译初稿 + 复核清单（标出未经母语者确认的 locale）
-- [ ] **T5.4 截图（1280×800，5 张）**
+- [x] **T5.4 截图（1280×800，5 张）**
   - 新的顺序，第一张最关键：
     1. 自动格式化 API 页面（地址栏可见真实 URL）
     2. 结构化对比 + 忽略路径
@@ -324,12 +324,11 @@
 
 ## 5. 完成定义（每个 PR）
 
-- [ ] 受影响的测试文件、`npm test` 和 `npm run check:release` 都通过；改动算法时 `npm run bench:budget` 也要通过
-- [ ] 浏览器行为有变化时，运行对应的 `bench/` 浏览器脚本
-- [ ] 20 个 locale 的翻译键完整，release-smoke 能正常加载
-- [ ] `PRIVACY.md` 的更新日期和版本号、`STORE_LISTING.md`、README 中英文都已同步
-- [ ] 新测试文件已登记到 `AGENTS.md` 的测试归属表
-- [ ] PR 标题使用英文；`chore: bump version to x.y.z` 单独提交
+- [x] 受影响的测试文件、`npm test` 和 `npm run check:release` 都通过；改动算法时 `npm run bench:budget` 也要通过
+- [x] 浏览器行为有变化时，运行对应的 `bench/` 浏览器脚本
+- [x] 20 个 locale 的翻译键完整，release-smoke 能正常加载
+- [x] `PRIVACY.md` 的更新日期和版本号、`STORE_LISTING.md`、README 中英文都已同步
+- [x] 新测试文件已登记到 `AGENTS.md` 的测试归属表
 
 ## 效果记录
 

@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON 工具箱"
+    "message": "JSON 工具箱 - 格式化、樹狀檢視、比較與 YAML 轉換"
   },
   "extDescription": {
-    "message": "高效 JSON 工具箱：格式化、壓縮、轉義及取消轉義、樹狀搜尋、結構與文字比較。數據只在本機處理，無廣告、無追蹤、不收集數據。"
+    "message": "本機 JSON/JSONC/JSON5 格式化、樹狀檢視、Diff 比較與 YAML 轉換，支援 50 MiB 大檔與網頁 JSON 檢視。無廣告無追蹤。"
   },
   "actionTitle": {
     "message": "開啟 JSON 工具箱"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "背景工作意外停止，請重試。"
+  },
+  "statusLenientParsed": {
+    "message": "已按 JSONC/JSON5 解析，註釋已移除，輸出為標準 JSON"
+  },
+  "titleYaml": {
+    "message": "JSON 轉 YAML - JSON 工具箱"
+  },
+  "titleFromYaml": {
+    "message": "YAML 轉 JSON - JSON 工具箱"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "將 JSON 或 JSONC/JSON5 轉換為標準 YAML 1.2，完整保留數字精度。"
+  },
+  "descFromYaml": {
+    "message": "將 YAML 文件轉換為格式化 JSON，完整保留數字精度。"
+  },
+  "btnToYaml": {
+    "message": "轉換為 YAML"
+  },
+  "btnToYamlTitle": {
+    "message": "將 JSON 轉換為 YAML"
+  },
+  "btnFromYaml": {
+    "message": "轉換為 JSON"
+  },
+  "btnFromYamlTitle": {
+    "message": "將 YAML 轉換為 JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ 交換方向"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "切換轉換方向並帶入目前輸出"
+  },
+  "inputYamlPlaceholder": {
+    "message": "在此貼上 JSON 或拖入 .json 檔案…（Cmd/Ctrl + Enter 轉換）"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "在此貼上 YAML 或拖入 .yaml / .yml 檔案…（Cmd/Ctrl + Enter 轉換）"
+  },
+  "btnImportYamlTitle": {
+    "message": "選擇本機 .yaml 或 .yml 檔案，也可拖放至輸入區"
+  },
+  "fileDropYamlHint": {
+    "message": "放開以匯入 YAML 檔案"
+  },
+  "errFileTypeYaml": {
+    "message": "僅支援 .yaml 或 .yml 檔案"
+  },
+  "errFileMultipleYaml": {
+    "message": "一次只能匯入一個 YAML 檔案"
+  },
+  "errNeedYamlInput": {
+    "message": "請先輸入 YAML 內容"
+  },
+  "errYamlParseFailed": {
+    "message": "YAML 解析失敗："
+  },
+  "errInvalidYaml": {
+    "message": "YAML 語法無效。"
+  },
+  "errYamlAliasLimit": {
+    "message": "YAML 別名參照過多或存在循環參照。"
+  },
+  "errYamlUnsupportedTag": {
+    "message": "不支援的 YAML 標籤（例如 !!binary 或自訂標籤）。"
+  },
+  "errYamlComplexKey": {
+    "message": "JSON 不支援以物件或陣列作為 YAML 鍵。"
+  },
+  "errYamlNonFinite": {
+    "message": "標準 JSON 無法表示 Infinity 或 NaN。"
+  },
+  "statusYamlGenerated": {
+    "message": "已轉為 YAML · $count$ 字元 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "已轉為 JSON · $count$ 字元 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "已將 $count$ 個 YAML 文件合併為 JSON 陣列",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "用 JSON 工具箱打開選取文字"
+  },
+  "errSelectionTooLarge": {
+    "message": "選取文字超過 10 MB 傳輸限制，請改用複製貼上或匯入檔案。"
+  },
+  "errImportExpired": {
+    "message": "匯入的內容已過期或已失效。"
+  },
+  "statusSelectionNormalized": {
+    "message": "空白可能已被瀏覽器規範化"
+  },
+  "menuFormatPage": {
+    "message": "格式化此頁 JSON"
+  },
+  "settingsLabel": {
+    "message": "設定"
+  },
+  "autoFormatPages": {
+    "message": "自動格式化網頁中的 JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "瀏覽 JSON 回應時自動顯示樹狀檢視"
+  },
+  "autoFormatPlainText": {
+    "message": "同時識別 text/plain 中的 JSON"
+  },
+  "hintFileAccess": {
+    "message": "如需格式化本機 file:// JSON，請在擴充功能詳情頁開啟「允許存取檔案網址」。"
+  },
+  "errPageNotJson": {
+    "message": "此頁面不是有效的 JSON。"
+  },
+  "viewerTitle": {
+    "message": "JSON 檢視器 - JSON 工具箱"
+  },
+  "viewFormatted": {
+    "message": "格式化"
+  },
+  "btnOpenToolbox": {
+    "message": "在工具頁打開"
+  },
+  "viewerFallbackNotice": {
+    "message": "此頁面封鎖了內嵌格式化檢視。"
+  },
+  "statusViewerReady": {
+    "message": "已格式化 · $count$ 字元 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

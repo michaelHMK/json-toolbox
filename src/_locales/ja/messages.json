@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - JSON 整形・ビューア・比較・YAML 変換"
   },
   "extDescription": {
-    "message": "高速な JSON ツール：整形、圧縮、エスケープ、比較をローカルで処理。広告・追跡・データ収集はありません。"
+    "message": "ローカル完結の JSON / JSON5 整形、ツリー表示、構造比較、YAML 双方向変換。50 MiB ファイルと API ページ表示に対応。広告・追跡なし。"
   },
   "actionTitle": {
     "message": "JSON Toolbox を開く"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "バックグラウンド処理が予期せず停止しました。再試行してください。"
+  },
+  "statusLenientParsed": {
+    "message": "JSONC/JSON5 として解析しました（コメントを除去し標準 JSON を出力）"
+  },
+  "titleYaml": {
+    "message": "JSON から YAML へ変換 - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML から JSON へ変換 - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "数値精度を保ったまま JSON / JSONC / JSON5 を YAML 1.2 に変換します。"
+  },
+  "descFromYaml": {
+    "message": "数値精度を保ったまま YAML ドキュメントを整形済み JSON に変換します。"
+  },
+  "btnToYaml": {
+    "message": "変換"
+  },
+  "btnToYamlTitle": {
+    "message": "JSON を YAML に変換"
+  },
+  "btnFromYaml": {
+    "message": "変換"
+  },
+  "btnFromYamlTitle": {
+    "message": "YAML を JSON に変換"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ 方向を切替"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "変換方向を切り替えて現在の出力を引き継ぐ"
+  },
+  "inputYamlPlaceholder": {
+    "message": "JSON を貼り付けるか .json ファイルをドロップ…（Cmd/Ctrl + Enter）"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "YAML を貼り付けるか .yaml / .yml ファイルをドロップ…（Cmd/Ctrl + Enter）"
+  },
+  "btnImportYamlTitle": {
+    "message": "ローカルの .yaml または .yml ファイルを選択またはドロップ"
+  },
+  "fileDropYamlHint": {
+    "message": "ドロップして YAML ファイルを読み込む"
+  },
+  "errFileTypeYaml": {
+    "message": ".yaml または .yml ファイルのみ対応しています"
+  },
+  "errFileMultipleYaml": {
+    "message": "YAML ファイルは一度に 1 つだけ読み込めます"
+  },
+  "errNeedYamlInput": {
+    "message": "先に YAML を入力してください"
+  },
+  "errYamlParseFailed": {
+    "message": "YAML 解析に失敗しました: "
+  },
+  "errInvalidYaml": {
+    "message": "YAML 構文が無効です。"
+  },
+  "errYamlAliasLimit": {
+    "message": "YAML エイリアスが多すぎるか循環参照しています。"
+  },
+  "errYamlUnsupportedTag": {
+    "message": "未対応の YAML タグです（!!binary やカスタムタグなど）。"
+  },
+  "errYamlComplexKey": {
+    "message": "JSON ではオブジェクトや配列の YAML キーを表現できません。"
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity と NaN は標準 JSON で表現できません。"
+  },
+  "statusYamlGenerated": {
+    "message": "YAML に変換 · $count$ 文字 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "JSON に変換 · $count$ 文字 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "$count$ 件の YAML ドキュメントを JSON 配列に統合しました",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "選択テキストを JSON Toolbox で開く"
+  },
+  "errSelectionTooLarge": {
+    "message": "選択テキストが 10 MB の転送上限を超えています。コピー＆ペーストまたはファイル読み込みをご利用ください。"
+  },
+  "errImportExpired": {
+    "message": "読み込んだ選択テキストは期限切れか既に使用されています。"
+  },
+  "statusSelectionNormalized": {
+    "message": "空白文字はブラウザにより正規化されている場合があります"
+  },
+  "menuFormatPage": {
+    "message": "このページの JSON を整形"
+  },
+  "settingsLabel": {
+    "message": "設定"
+  },
+  "autoFormatPages": {
+    "message": "JSON ページを自動整形"
+  },
+  "autoFormatPagesTitle": {
+    "message": "開いたページの JSON レスポンスを自動でツリー表示します"
+  },
+  "autoFormatPlainText": {
+    "message": "text/plain の JSON も対象にする"
+  },
+  "hintFileAccess": {
+    "message": "ローカルの file:// JSON を整形するには、Chrome 拡張設定で「ファイルの URL へのアクセスを許可する」を有効にしてください。"
+  },
+  "errPageNotJson": {
+    "message": "このページは有効な JSON ではありません。"
+  },
+  "viewerTitle": {
+    "message": "JSON ビューアー - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "整形済み"
+  },
+  "btnOpenToolbox": {
+    "message": "JSON Toolbox で開く"
+  },
+  "viewerFallbackNotice": {
+    "message": "このページは埋め込み整形ビューをブロックしました。"
+  },
+  "statusViewerReady": {
+    "message": "整形完了 · $count$ 文字 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

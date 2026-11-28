@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - Formatowanie, Podgląd, Diff i YAML"
   },
   "extDescription": {
-    "message": "Szybkie narzędzia JSON: formatowanie, minifikacja, escapowanie i porównywanie lokalnie. Bez reklam, śledzenia i zbierania danych."
+    "message": "Lokalny formater, podgląd, diff JSON/JSON5 i konwerter YAML. Obsługuje pliki 50 MiB oraz strony API offline bez śledzenia."
   },
   "actionTitle": {
     "message": "Otwórz JSON Toolbox"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "Proces roboczy nieoczekiwanie się zatrzymał. Spróbuj ponownie."
+  },
+  "statusLenientParsed": {
+    "message": "Przeanalizowano jako JSONC/JSON5 (komentarze usunięte, standardowy wynik JSON)"
+  },
+  "titleYaml": {
+    "message": "JSON na YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML na JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "Konwertuj JSON lub JSONC/JSON5 do YAML 1.2 z zachowaniem dokładności liczb."
+  },
+  "descFromYaml": {
+    "message": "Konwertuj dokumenty YAML do sformatowanego JSON z zachowaniem dokładności liczb."
+  },
+  "btnToYaml": {
+    "message": "Konwertuj"
+  },
+  "btnToYamlTitle": {
+    "message": "Konwertuj JSON na YAML"
+  },
+  "btnFromYaml": {
+    "message": "Konwertuj"
+  },
+  "btnFromYamlTitle": {
+    "message": "Konwertuj YAML na JSON"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ Zamień kierunek"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "Zmień kierunek i przenieś bieżący wynik"
+  },
+  "inputYamlPlaceholder": {
+    "message": "Wklej JSON lub upuść plik .json… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "Wklej YAML lub upuść plik .yaml / .yml… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "Wybierz lokalny plik .yaml lub .yml albo upuść go w polu wejściowym"
+  },
+  "fileDropYamlHint": {
+    "message": "Upuść, aby zaimportować plik YAML"
+  },
+  "errFileTypeYaml": {
+    "message": "Obsługiwane są tylko pliki .yaml i .yml"
+  },
+  "errFileMultipleYaml": {
+    "message": "Importuj tylko jeden plik YAML naraz"
+  },
+  "errNeedYamlInput": {
+    "message": "Najpierw wprowadź treść YAML"
+  },
+  "errYamlParseFailed": {
+    "message": "Błąd analizy YAML: "
+  },
+  "errInvalidYaml": {
+    "message": "Nieprawidłowa składnia YAML."
+  },
+  "errYamlAliasLimit": {
+    "message": "Zbyt wiele aliasów YAML lub odwołanie cykliczne."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "Nieobsługiwany znacznik YAML (np. !!binary lub własny)."
+  },
+  "errYamlComplexKey": {
+    "message": "Złożone klucze YAML (obiekty lub tablice) nie są obsługiwane w JSON."
+  },
+  "errYamlNonFinite": {
+    "message": "Wartości Infinity i NaN nie mogą być zapisane w standardowym JSON."
+  },
+  "statusYamlGenerated": {
+    "message": "Przekonwertowano na YAML · $count$ zn. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "Przekonwertowano na JSON · $count$ zn. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "Połączono $count$ dokumenty YAML w tablicę JSON",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "Otwórz zaznaczenie w JSON Toolbox"
+  },
+  "errSelectionTooLarge": {
+    "message": "Zaznaczony tekst przekracza limit przesyłu 10 MB. Użyj kopiuj/wklej lub zaimportuj plik."
+  },
+  "errImportExpired": {
+    "message": "Zaimportowane zaznaczenie wygasło lub nie jest już dostępne."
+  },
+  "statusSelectionNormalized": {
+    "message": "Białe znaki mogły zostać znormalizowane przez przeglądarkę"
+  },
+  "menuFormatPage": {
+    "message": "Formatuj JSON na tej stronie"
+  },
+  "settingsLabel": {
+    "message": "USTAWIENIA"
+  },
+  "autoFormatPages": {
+    "message": "Automatycznie formatuj strony JSON"
+  },
+  "autoFormatPagesTitle": {
+    "message": "Automatycznie formatuj odpowiedzi JSON podczas przeglądania"
+  },
+  "autoFormatPlainText": {
+    "message": "Uwzględniaj także JSON text/plain"
+  },
+  "hintFileAccess": {
+    "message": "Aby formatować lokalne pliki file://, włącz „Zezwalaj na dostęp do adresów URL plików” w ustawieniach rozszerzenia."
+  },
+  "errPageNotJson": {
+    "message": "Ta strona nie zawiera prawidłowego formatu JSON."
+  },
+  "viewerTitle": {
+    "message": "Przeglądarka JSON - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "Sformatowany"
+  },
+  "btnOpenToolbox": {
+    "message": "Otwórz w JSON Toolbox"
+  },
+  "viewerFallbackNotice": {
+    "message": "Ta strona zablokowała osadzone formatowanie."
+  },
+  "statusViewerReady": {
+    "message": "Sformatowano · $count$ zn. · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

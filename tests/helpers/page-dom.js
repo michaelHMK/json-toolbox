@@ -150,6 +150,11 @@ export function loadPage(name, {
   createTaskRunner,
   translate = (key) => key,
   copyText = async () => true,
+  search = '',
+  pathname = `/${name}.html`,
+  sessionStorageData = new Map(),
+  onNavigate = () => {},
+  chrome: chromeApi,
 }) {
   const elements = new Map();
   const get = (id) => {
@@ -162,6 +167,18 @@ export function loadPage(name, {
     addRange(range) { this.ranges.push(range); },
   };
   const createRunner = createTaskRunner || (() => Object.assign(runTask, { cancel: runTask.cancel || (() => false) }));
+  const locationObj = { search, pathname, assign: onNavigate };
+  const historyObj = {
+    replaceState(_state, _title, url) {
+      locationObj.search = '';
+      if (typeof url === 'string') locationObj.pathname = url;
+    },
+  };
+  const sessionStorageObj = {
+    getItem: (k) => (sessionStorageData.has(k) ? sessionStorageData.get(k) : null),
+    setItem: (k, v) => { sessionStorageData.set(k, String(v)); },
+    removeItem: (k) => { sessionStorageData.delete(k); },
+  };
   const context = vm.createContext({
     document: {
       ...createDocument(),
@@ -173,6 +190,12 @@ export function loadPage(name, {
         setEnd(node, offset) { this.endContainer = node; this.endOffset = offset; },
       }),
     },
+    location: locationObj,
+    history: historyObj,
+    sessionStorage: sessionStorageObj,
+    URLSearchParams,
+    URL,
+    ...(chromeApi ? { chrome: chromeApi } : {}),
     initializePage: () => {},
     createTaskRunner: createRunner,
     createSessionGuard,

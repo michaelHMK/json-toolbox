@@ -46,7 +46,7 @@ export function createDocumentSession({
     return true;
   }
 
-  function createDocument(source, result, searchReady) {
+  function createDocument(source, result, searchReady, strict = false) {
     let snapshotId = result.snapshotId ?? null;
     let ready = snapshotId !== null;
     let recovery = null;
@@ -68,7 +68,7 @@ export function createDocumentSession({
       if (recovery?.version === version) return recovery.promise;
       const request = { version, promise: null };
       request.promise = (async () => {
-        const response = await runTask('parse', { text: source, retainSnapshot: true });
+        const response = await runTask('parse', { text: source, retainSnapshot: true, ...(strict ? { strict: true } : {}) });
         if (!current(version)) return cancelledResponse();
         if (response.ok) {
           snapshotId = response.result.snapshotId ?? snapshotId;
@@ -155,8 +155,9 @@ export function createDocumentSession({
       if (onResult) apply(value, onResult);
       return value;
     },
-    async parse(text, onResult) {
+    async parse(text, onResult, options = {}) {
       if (formatting !== null) return cancelledResponse();
+      const strict = Boolean(options?.strict);
       if (displayed?.source === text) {
         const response = await displayed.handle.ensureSnapshot();
         if (onResult) apply(response, onResult);
@@ -166,10 +167,10 @@ export function createDocumentSession({
       if (!parsing || parsing.source !== text || parsing.version !== version) {
         const request = { source: text, version, promise: null, callbacks: [] };
         request.promise = (async () => {
-          const response = await runTask('parse', { text, retainSnapshot: true });
+          const response = await runTask('parse', { text, retainSnapshot: true, ...(strict ? { strict: true } : {}) });
           if (!guard.isCurrent(version) || formatting !== null || parsing !== request) return cancelledResponse();
           parsing = null;
-          if (response.ok) displayed = createDocument(text, response.result, true);
+          if (response.ok) displayed = createDocument(text, response.result, true, strict);
           const value = reply(response, version, displayed);
           for (const callback of request.callbacks) apply(value, callback);
           return value;

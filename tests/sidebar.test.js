@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { initAutoFormatSettings, AUTO_FORMAT_ORIGINS, PLAIN_TEXT_STORAGE_KEY } from '../src/shared/auto-format-settings.js';
+import { Element } from './helpers/page-dom.js';
 
 const source = readFileSync(new URL('../src/shared/sidebar.js', import.meta.url), 'utf8');
 const key = 'json-toolbox.sidebar';
@@ -215,4 +217,117 @@ test('extension i18n messages update toggle label and title on state changes', (
   page.clickToggle();
   assert.equal(page.label, messages.sidebarExpand);
   assert.equal(page.title, messages.sidebarExpandTitle);
+});
+
+function setupSettings({ granted = false, requestResult = true, plainText = false, fileAllowed = true } = {}) {
+  const autoToggle = new Element('button');
+  const plainToggle = new Element('button');
+  const subEl = new Element('div');
+  const fileHintEl = new Element('p');
+  autoToggle.setAttribute('aria-checked', 'false');
+  plainToggle.setAttribute('aria-checked', 'false');
+  subEl.hidden = true;
+  fileHintEl.hidden = true;
+
+  const elements = {
+    'auto-format-pages': autoToggle,
+    'auto-format-plain-text': plainToggle,
+    'auto-format-sub': subEl,
+    'file-access-hint': fileHintEl,
+  };
+  let hasPermissions = granted;
+  let storedPlain = plainText;
+  const unregistered = [];
+  const listeners = { permAdded: [], permRemoved: [], storageChanged: [] };
+
+  const prevDoc = globalThis.document;
+  const prevChrome = globalThis.chrome;
+  globalThis.document = { getElementById: (id) => elements[id] || null };
+  globalThis.chrome = {
+    permissions: {
+      async contains({ origins }) {
+        assert.deepEqual(origins, AUTO_FORMAT_ORIGINS);
+        return hasPermissions;
+      },
+      async request({ origins }) {
+        assert.deepEqual(origins, AUTO_FORMAT_ORIGINS);
+        if (requestResult) hasPermissions = true;
+        return requestResult;
+      },
+      async remove({ origins }) {
+        assert.deepEqual(origins, AUTO_FORMAT_ORIGINS);
+        hasPermissions = false;
+        return true;
+      },
+      onAdded: { addListener: (fn) => listeners.permAdded.push(fn) },
+      onRemoved: { addListener: (fn) => listeners.permRemoved.push(fn) },
+    },
+    storage: {
+      local: {
+        async get(key) { return { [key]: storedPlain }; },
+        async set(obj) { storedPlain = obj[PLAIN_TEXT_STORAGE_KEY]; },
+      },
+      onChanged: { addListener: (fn) => listeners.storageChanged.push(fn) },
+    },
+    scripting: {
+      async unregisterContentScripts({ ids }) { unregistered.push(...ids); },
+    },
+    extension: {
+      isAllowedFileSchemeAccess(cb) { cb(fileAllowed); },
+    },
+  };
+
+  const controller = initAutoFormatSettings();
+  return {
+    autoToggle,
+    plainToggle,
+    subEl,
+    fileHintEl,
+    unregistered,
+    setPermissions(val) { hasPermissions = val; },
+    listeners,
+    controller,
+    restore() {
+      globalThis.document = prevDoc;
+      globalThis.chrome = prevChrome;
+    },
+  };
+}
+
+test('auto-format settings reflect permissions, handle denied requests, and clean up on disable', async () => {
+  const denied = setupSettings({ granted: false, requestResult: false });
+  try {
+    await new Promise(setImmediate);
+    assert.equal(denied.autoToggle.getAttribute('aria-checked'), 'false');
+    assert.equal(denied.subEl.hidden, true);
+
+    denied.autoToggle.click();
+    await new Promise(setImmediate);
+    assert.equal(denied.autoToggle.getAttribute('aria-checked'), 'false');
+    assert.equal(denied.subEl.hidden, true);
+  } finally {
+    denied.restore();
+  }
+
+  const allowed = setupSettings({ granted: false, requestResult: true, fileAllowed: false });
+  try {
+    await new Promise(setImmediate);
+    allowed.autoToggle.click();
+    await new Promise(setImmediate);
+    assert.equal(allowed.autoToggle.getAttribute('aria-checked'), 'true');
+    assert.equal(allowed.subEl.hidden, false);
+    assert.equal(allowed.fileHintEl.hidden, false);
+
+    allowed.plainToggle.click();
+    await new Promise(setImmediate);
+    assert.equal(allowed.plainToggle.getAttribute('aria-checked'), 'true');
+
+    allowed.autoToggle.click();
+    await new Promise(setImmediate);
+    assert.equal(allowed.autoToggle.getAttribute('aria-checked'), 'false');
+    assert.equal(allowed.subEl.hidden, true);
+    assert.deepEqual(allowed.unregistered, ['json-toolbox-auto-format']);
+  } finally {
+    allowed.restore();
+  }
 });

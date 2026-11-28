@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "JSON Toolbox"
+    "message": "JSON Toolbox - JSON 포맷터, 뷰어, 비교 및 YAML 변환"
   },
   "extDescription": {
-    "message": "빠른 JSON 도구: 포맷, 압축, 이스케이프, 비교를 기기에서 처리합니다. 광고, 추적, 데이터 수집이 없습니다."
+    "message": "로컬 전용 JSON / JSON5 포맷터, 트리 뷰어, 구조 비교 및 YAML 변환기. 50 MiB 대용량 파일과 API 페이지 포맷을 지원하며 추적이 없습니다."
   },
   "actionTitle": {
     "message": "JSON Toolbox 열기"
@@ -517,5 +517,169 @@
   },
   "errWorkerFailed": {
     "message": "백그라운드 작업이 예기치 않게 중단되었습니다. 다시 시도하세요."
+  },
+  "statusLenientParsed": {
+    "message": "JSONC/JSON5로 구문 분석됨 (주석 제거, 표준 JSON 출력)"
+  },
+  "titleYaml": {
+    "message": "JSON → YAML - JSON Toolbox"
+  },
+  "titleFromYaml": {
+    "message": "YAML → JSON - JSON Toolbox"
+  },
+  "navYaml": {
+    "message": "JSON → YAML"
+  },
+  "navFromYaml": {
+    "message": "YAML → JSON"
+  },
+  "descYaml": {
+    "message": "숫자 정밀도를 유지하며 JSON 또는 JSONC/JSON5를 YAML 1.2로 변환합니다."
+  },
+  "descFromYaml": {
+    "message": "숫자 정밀도를 유지하며 YAML 문서를 서식화된 JSON으로 변환합니다."
+  },
+  "btnToYaml": {
+    "message": "변환"
+  },
+  "btnToYamlTitle": {
+    "message": "JSON을 YAML로 변환"
+  },
+  "btnFromYaml": {
+    "message": "변환"
+  },
+  "btnFromYamlTitle": {
+    "message": "YAML을 JSON으로 변환"
+  },
+  "btnSwapDirection": {
+    "message": "⇄ 방향 전환"
+  },
+  "btnSwapDirectionTitle": {
+    "message": "변환 방향을 바꾸고 현재 출력을 전달합니다"
+  },
+  "inputYamlPlaceholder": {
+    "message": "JSON을 붙여넣거나 .json 파일을 끌어다 놓으세요… (Cmd/Ctrl + Enter)"
+  },
+  "inputFromYamlPlaceholder": {
+    "message": "YAML을 붙여넣거나 .yaml / .yml 파일을 끌어다 놓으세요… (Cmd/Ctrl + Enter)"
+  },
+  "btnImportYamlTitle": {
+    "message": "로컬 .yaml 또는 .yml 파일을 선택하거나 입력 창으로 끌어다 놓으세요"
+  },
+  "fileDropYamlHint": {
+    "message": "놓아서 YAML 파일 가져오기"
+  },
+  "errFileTypeYaml": {
+    "message": ".yaml 또는 .yml 파일만 지원됩니다"
+  },
+  "errFileMultipleYaml": {
+    "message": "한 번에 하나의 YAML 파일만 가져올 수 있습니다"
+  },
+  "errNeedYamlInput": {
+    "message": "먼저 YAML 내용을 입력하세요"
+  },
+  "errYamlParseFailed": {
+    "message": "YAML 구문 분석 실패: "
+  },
+  "errInvalidYaml": {
+    "message": "잘못된 YAML 구문입니다."
+  },
+  "errYamlAliasLimit": {
+    "message": "YAML 별칭이 너무 많거나 순환 참조가 있습니다."
+  },
+  "errYamlUnsupportedTag": {
+    "message": "지원되지 않는 YAML 태그입니다(예: !!binary 또는 사용자 지정 태그)."
+  },
+  "errYamlComplexKey": {
+    "message": "JSON에서는 객체나 배열 형태의 YAML 키를 지원하지 않습니다."
+  },
+  "errYamlNonFinite": {
+    "message": "Infinity 및 NaN은 표준 JSON으로 표현할 수 없습니다."
+  },
+  "statusYamlGenerated": {
+    "message": "YAML로 변환됨 · $count$자 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusJsonFromYaml": {
+    "message": "JSON으로 변환됨 · $count$자 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
+  },
+  "statusYamlMultiDoc": {
+    "message": "YAML 문서 $count$개를 JSON 배열로 병합했습니다",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "menuOpenSelection": {
+    "message": "선택한 텍스트를 JSON Toolbox에서 열기"
+  },
+  "errSelectionTooLarge": {
+    "message": "선택한 텍스트가 10 MB 전송 제한을 초과합니다. 복사하여 붙여넣거나 파일을 가져오세요."
+  },
+  "errImportExpired": {
+    "message": "가져온 선택 내용이 만료되었거나 더 이상 사용할 수 없습니다."
+  },
+  "statusSelectionNormalized": {
+    "message": "브라우저에서 공백이 정규화되었을 수 있습니다"
+  },
+  "menuFormatPage": {
+    "message": "이 페이지의 JSON 서식 지정"
+  },
+  "settingsLabel": {
+    "message": "설정"
+  },
+  "autoFormatPages": {
+    "message": "JSON 페이지 자동 서식"
+  },
+  "autoFormatPagesTitle": {
+    "message": "방문한 페이지의 JSON 응답을 자동으로 트리 보기로 표시합니다"
+  },
+  "autoFormatPlainText": {
+    "message": "text/plain JSON도 포함"
+  },
+  "hintFileAccess": {
+    "message": "로컬 file:// JSON을 서식화하려면 확장 프로그램 설정에서 \"파일 URL에 대한 액세스 허용\"을 켜세요."
+  },
+  "errPageNotJson": {
+    "message": "이 페이지는 유효한 JSON이 아닙니다."
+  },
+  "viewerTitle": {
+    "message": "JSON 뷰어 - JSON Toolbox"
+  },
+  "viewFormatted": {
+    "message": "서식화됨"
+  },
+  "btnOpenToolbox": {
+    "message": "JSON Toolbox에서 열기"
+  },
+  "viewerFallbackNotice": {
+    "message": "이 페이지가 내장 서식 보기를 차단했습니다."
+  },
+  "statusViewerReady": {
+    "message": "서식 지정됨 · $count$자 · $time$ ms",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "time": {
+        "content": "$2"
+      }
+    }
   }
 }

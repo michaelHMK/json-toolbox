@@ -1,40 +1,35 @@
 Name
-JSON Toolbox
+JSON Toolbox - Formatter, Viewer, Diff & YAML
 
 Kurzbeschreibung
-JSON lokal formatieren, minifizieren, maskieren und vergleichen. Schnell, ohne Werbung, Tracking oder Datenerfassung.
+Lokaler JSON- & JSON5-Formatter, Viewer, Diff und YAML-Konverter. Verarbeitet 50 MiB Dateien & API-Seiten offline ohne Tracking.
 
 Ausführliche Beschreibung
-Mit JSON Toolbox können Sie JSON in einem eigenen Browser-Tab formatieren, durchsuchen und vergleichen. Die Erweiterung funktioniert vollständig offline, ohne Konto oder zusätzliche Berechtigungen.
+JSON Toolbox ist ein schneller lokaler JSON-Formatter, JSON Viewer, JSON Diff und JSON-zu-YAML-Konverter mit Unterstützung für JSONC und JSON5 in einem eigenen Browser-Tab. Bei der Installation werden keine Website-Berechtigungen angefordert und keine Warnmeldungen angezeigt.
 
-Formatieren und durchsuchen
-- Formatieren Sie JSON mit 2 Leerzeichen, 4 Leerzeichen oder Tabulatoren als Einzug.
-- Sehen Sie Syntaxfehler mit Zeilen- und Spaltenangabe sowie Navigation zur Fehlerstelle; eine lokale Prüfung ergänzt fehlende Positionsangaben des Browsers.
-- Nutzen Sie eine einklappbare Baumansicht mit virtuellem Scrollen, Aufklappen nach Ebene, Suche nach Schlüsseln oder Werten und Navigation zwischen Treffern.
-- Kopieren Sie das vollständige Ergebnis mit einem Klick.
+Formatieren, durchsuchen & JSONC / JSON5
+- Formatieren Sie JSON mit 2 Leerzeichen, 4 Leerzeichen oder Tabulatoren und behalten Sie die genaue Präzision großer Ganzzahlen und Dezimalwerte bei.
+- Bei strikten JSON-Fehlern greift automatisch ein fehlertoleranter JSONC-/JSON5-Parser (Kommentare, abschließende Kommas, einfache Anführungszeichen, unquotierte Schlüssel, Hex-Zahlen).
+- Sehen Sie Syntaxfehler mit Zeile, Spalte und direkter Navigation zur Fehlerstelle sowie lokalem Positions-Fallback.
+- Erkunden Sie einen klappbaren virtuellen Baum mit Ebenensteuerung, Schlüssel-/Wertsuche, Treffernavigation und 1-Klick-Kopie.
+
+JSON <-> YAML Konvertierung
+- Konvertieren Sie JSON in YAML 1.2 und YAML zurück in JSON unter Beibehaltung der Zahlenpräzision, inklusive Multi-Dokument-YAML-Streams und Alias-Schutz.
+- Wechseln Sie die Konvertierungsrichtung direkt im Arbeitsbereich.
+
+Webseiten-JSON automatisch formatieren & Kontextmenü
+- Markieren Sie Text auf einer Webseite und wählen Sie im Rechtsklickmenü „Auswahl in JSON Toolbox öffnen“.
+- Nutzen Sie bei Bedarf „JSON auf dieser Seite formatieren“ über activeTab, ohne dauerhafte Seitenberechtigungen zu erteilen.
+- Der optionale Seitenleisten-Schalter „JSON-Seiten automatisch formatieren“ ist standardmäßig AUS; nur beim Aktivieren werden optionale Host-Rechte angefordert (inkl. Roh/Formatiert-Umschalter, Kopie, In Werkzeug öffnen und optionalem text/plain-Modus).
 
 Lokale Dateien importieren
-- Wählen Sie auf jeder der fünf Werkzeugseiten eine Datei aus oder ziehen Sie sie in ein Eingabefeld.
-- Importieren Sie jeweils eine UTF-8-kodierte .json-Datei mit bis zu 50 MiB. Das Werkzeug startet automatisch nach dem Import. Der Vergleich startet, sobald beide Eingabefelder Text enthalten.
-- Wenn Sie eine große Datei importieren oder einen langen Text einfügen oder in das Eingabefeld ziehen, öffnet sich der Inhalt direkt im Editor. Sie können den gesamten Text bearbeiten und kopieren.
+- Auf allen sieben Werkzeugseiten können Sie per Auswahl oder Drag-and-Drop jeweils eine UTF-8-Datei bis 50 MiB importieren (.json bzw. .yaml/.yml bei YAML -> JSON).
+- Große Dateien oder lange Texte öffnen sich direkt im Editor zur vollständigen Bearbeitung und Kopie.
 
-Minifizieren, maskieren und demaskieren
-- Wechseln Sie über die Seitenleiste zwischen den Werkzeugen.
-- Entfernen Sie überflüssige Leerzeichen, um JSON auf eine Zeile zu reduzieren. Ungültiges JSON wird gemeldet, bei verfügbaren Angaben auch mit Fehlerposition.
-- Maskieren Sie Text für eine JSON-Zeichenfolge oder stellen Sie den ursprünglichen Text einer maskierten Zeichenfolge wieder her und kopieren Sie das Ergebnis.
+Minifizieren, maskieren & JSON vergleichen
+- Einzeiliges Minifizieren (inkl. JSONC/JSON5), JSON-String-Escaping/Unescaping und detaillierter Strukturvergleich (Index oder Schlüsselfeld wie id, Pfade ignorieren, nur Unterschiede, zeilenweiser Textvergleich).
 
-JSON vergleichen
-- Sehen Sie Strukturunterschiede nach Pfad: Ergänzungen, Entfernungen, Wert- und Typänderungen.
-- Vergleichen Sie Arrays nach Index oder ordnen Sie Einträge über ein Schlüsselfeld wie id zu.
-- Ignorieren Sie ausgewählte Pfade, beispielsweise Zeitstempelfelder.
-- Zeigen Sie den vollständigen Baum mit markierten Unterschieden oder nur Unterschiede an und navigieren Sie zwischen ihnen.
-- Wechseln Sie zum zeilenweisen Textvergleich des formatierten JSON.
-
-Darstellung
-- Wählen Sie Normal, Schonend oder Dunkel in der Seitenleiste anhand von Miniaturvorschauen. Normal ist die Standardeinstellung.
-- Nur die Designauswahl wird lokal gespeichert und beim Werkzeugwechsel sowie nach erneutem Öffnen wiederhergestellt. Eingaben und Ergebnisse werden nicht gespeichert.
-
-Datenschutz
-Die gesamte Verarbeitung erfolgt lokal im Browser. Keine Datenerfassung oder Uploads, Netzwerkanfragen, extern nachgeladener Code, Werbung oder Tracking. Eingaben werden nicht als Verlauf gespeichert. Beim Kopieren schreibt die Erweiterung den ausgewählten Text, die Eingabe oder das Ergebnis in die Zwischenablage. Beim Einfügen verarbeitet sie nur den von Ihnen eingefügten Text.
+Darstellung & Datenschutz
+- Wählen Sie Normal, Schonend oder Dunkel in der Seitenleiste (auch für den eingebetteten Viewer). Alle Daten werden ausschließlich lokal im Arbeitsspeicher verarbeitet – ohne Uploads, Netzwerkanfragen, Werbung oder Tracking.
 
 Vollständige Eingaben und Ergebnisse bleiben im Arbeitsspeicher; die Leistung hängt vom Gerät und der Datenstruktur ab. Virtuelle Ansichten rendern jeweils nur einen Teil des Inhalts. Die Browsersuche erfasst deshalb nur diesen Teil. Nutzen Sie bei Bedarf die Baumsuche oder kopieren Sie das vollständige Ergebnis. Bei umfangreichen Textunterschieden können nicht übereinstimmende Abschnitte als ganze Blöcke dargestellt werden.

@@ -88,7 +88,7 @@ try {
       return item;
     }
 
-    for (const name of ['formatter', 'minify', 'escape', 'unescape', 'compare']) {
+    for (const name of ['formatter', 'minify', 'escape', 'unescape', 'yaml', 'json-from-yaml', 'compare', 'viewer']) {
       await page.goto(`${base}/${name}.html`);
       await page.waitForFunction((expected) => document.documentElement.lang === expected, locale);
       const semantics = await page.evaluate(() => {
@@ -111,10 +111,25 @@ try {
         assert.equal(code.dir, 'ltr', `${name}/${code.id} explicit LTR`);
         assert.equal(code.computed, 'ltr', `${name}/${code.id} computed LTR`);
       }
-      for (const name of semantics.names) assert.equal(name.label, catalog[name.key].message);
+      for (const item of semantics.names) assert.equal(item.label, catalog[item.key].message);
       assert.equal(semantics.alertReady, true);
       assert.equal(semantics.busyReady, true);
       assert.equal(semantics.statusReady, true);
+
+      if (name === 'viewer') {
+        await page.evaluate(() => {
+          const ch = new MessageChannel();
+          const buf = new TextEncoder().encode('{"viewer":true,"items":[1,2]}').buffer;
+          window.postMessage({ type: 'INIT', buffer: buf, url: 'https://api.example.com/test.json' }, '*', [ch.port2, buf]);
+        });
+        await page.waitForFunction(() => document.querySelector('#tree .entry') && document.querySelector('#status').textContent.length > 0);
+        const status = await axNode('#status');
+        assert.equal(status.role.value, 'status');
+        await page.locator('#view-text').click();
+        assert.equal((await axNode('#output-text')).role.value, 'region');
+        results.push(`${locale}/viewer: direction, labels, live regions, viewer tree/raw`);
+        continue;
+      }
 
       const run = name === 'formatter' ? '#btn-format' : name === 'compare' ? '#btn-compare' : '#btn-run';
       await page.locator(run).click();

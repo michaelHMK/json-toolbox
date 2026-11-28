@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="viewerTitle">JSON Viewer - JSON Toolbox</title>
+  <script src="shared/theme.js"></script>
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body data-page="viewer">
+  <div class="viewer-shell">
+    <header class="viewer-toolbar">
+      <div class="viewer-identity">
+        <span class="viewer-brand" aria-hidden="true">{ }</span>
+        <div class="viewer-meta">
+          <span id="viewer-url" class="viewer-url" dir="ltr"></span>
+          <span class="viewer-status-line">
+            <span id="status" class="status" role="status" aria-atomic="true"></span>
+            <span role="status" aria-atomic="true"><span id="busy" hidden data-i18n="busyText">Working…</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="viewer-controls">
+        <button id="btn-cancel" hidden data-i18n="btnCancel">Cancel</button>
+        <span class="view-toggle" role="group" data-i18n-aria-label="paneResult" aria-label="Result">
+          <button id="view-tree" class="active" data-i18n="viewFormatted" aria-pressed="true">Formatted</button>
+          <button id="view-text" data-i18n="viewRaw" aria-pressed="false">Raw</button>
+        </span>
+        <button id="btn-copy" class="button-compact" data-i18n="btnCopy">Copy result</button>
+        <button id="btn-open-toolbox" class="button-compact primary" data-i18n="btnOpenToolbox">Open in JSON Toolbox</button>
+      </div>
+    </header>
+
+    <div class="error-announcement" role="alert" aria-atomic="true">
+      <div id="error" class="notice" hidden></div>
+    </div>
+
+    <main class="pane viewer-pane">
+      <div id="tree-tools" class="pane-subheader">
+        <span id="level-box">
+          <select id="level-select" data-i18n-aria-label="levelTitle" aria-label="Expand the tree to a chosen level" data-i18n-title="levelTitle" title="Expand the tree to a chosen level">
+            <option value="" disabled selected data-i18n="levelPlaceholder">Expand levels…</option>
+            <option value="1" data-i18n="level1">Level 1</option>
+            <option value="2" data-i18n="level2">Level 2</option>
+            <option value="3" data-i18n="level3">Level 3</option>
+            <option value="4" data-i18n="level4">Level 4</option>
+            <option value="5" data-i18n="level5">Level 5</option>
+            <option value="8" data-i18n="level8">Level 8</option>
+            <option value="all" data-i18n="levelAll">All</option>
+          </select>
+        </span>
+        <span id="search-box">
+          <input id="search" data-i18n-aria-label="searchPlaceholder" aria-label="Search key or value…" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Search key or value…" autocomplete="off">
+          <span id="match-info" dir="ltr" role="status" aria-atomic="true"></span>
+          <button id="match-prev" data-i18n-aria-label="matchPrevTitle" aria-label="Previous (Shift+Enter)" class="icon-button" data-i18n-title="matchPrevTitle" title="Previous (Shift+Enter)">↑</button>
+          <button id="match-next" data-i18n-aria-label="matchNextTitle" aria-label="Next (Enter)" class="icon-button" data-i18n-title="matchNextTitle" title="Next (Enter)">↓</button>
+        </span>
+      </div>
+      <div id="tree" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result"></div>
+      <pre role="region" tabindex="0" id="output-text" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result" hidden></pre>
+    </main>
+  </div>
+
+  <script type="module" src="pages/viewer.js"></script>
+</body>
+</html>

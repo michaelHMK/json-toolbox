@@ -26,7 +26,7 @@ test('Worker responses never transfer parsed object graphs and pass directly thr
 
   const parsed = send(handler, { id: 2, action: 'parse', text: source, retainSnapshot: true }).response;
   assert.equal(parsed.ok, true);
-  assert.deepEqual(Object.keys(parsed.result), ['snapshotId']);
+  assert.deepEqual(Object.keys(parsed.result), ['snapshotId', 'lenient']);
 
   const diffed = send(handler, {
     id: 3, action: 'diff', text: source, text2: source.replace('3.00', '5.00'), retainSnapshot: true,

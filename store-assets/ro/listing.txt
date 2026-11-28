@@ -1,40 +1,31 @@
 Nume
-JSON Toolbox
+JSON Toolbox - Formatare, Vizualizator, Diff & YAML
 
 Descriere scurtă
-Instrumente JSON rapide: formatare, minificare, escape și comparare locală. Fără reclame, urmărire sau colectare de date.
+Formatare, vizualizare, diff JSON/JSON5 și conversie YAML locală. Suportă fișiere de 50 MiB și API offline, fără urmărire.
 
 Descriere detaliată
-JSON Toolbox permite formatarea, explorarea și compararea documentelor JSON într-o filă dedicată a browserului. Funcționează complet offline, fără cont sau permisiuni suplimentare.
+JSON Toolbox este un instrument rapid offline pentru formatare JSON, vizualizator JSON, comparare JSON și conversie JSON în YAML, cu suport JSONC și JSON5 într-o filă dedicată. Nu solicită acces la site-uri la instalare, fără avertismente de permisiuni și fără cont.
 
-Formatare și explorare
-- Formatează JSON cu indentare de 2 spații, 4 spații sau tabulatori.
-- Vezi erorile de sintaxă cu linie, coloană și navigare la poziția erorii; o verificare locală identifică poziția când browserul nu o furnizează.
-- Explorează un arbore pliabil cu derulare virtuală, extindere pe niveluri, căutare de chei sau valori și navigare între potriviri.
-- Copiază rezultatul complet cu un clic.
+Formatare, explorare și JSONC / JSON5
+- Formatează JSON cu indentare de 2 spații, 4 spații sau tabulatori păstrând precizia numerelor mari și a zecimalelor.
+- Comută automat de la JSON strict la JSONC / JSON5 pentru comentarii, virgule finale, ghilimele simple, chei fără ghilimele și numere hexazecimale.
+- Afișează erorile de sintaxă cu linie, coloană și navigare la poziție și explorează arborele virtual cu căutare și copiere rapidă.
 
-Importul fișierelor locale
-- În oricare dintre cele cinci instrumente, alege un fișier sau trage-l în câmpul de intrare.
-- Importă câte un fișier .json UTF-8, de cel mult 50 MiB. Instrumentul pornește automat după import. Compararea începe când ambele câmpuri conțin text.
-- Când imporți un fișier mare, lipești un text lung sau îl tragi în câmpul de introducere, conținutul se deschide direct în editor. Poți edita și copia întregul text.
+Conversie bidirecțională JSON <-> YAML
+- Convertește JSON în YAML 1.2 și YAML în JSON păstrând precizia numerică, cu suport YAML multi-document și protecție împotriva aliasurilor excesive.
+- Inversează direcția de conversie direct din interfață.
 
-Minificare, adăugare și eliminare de secvențe escape
-- Comută între instrumente folosind bara laterală.
-- Elimină spațiile inutile pentru a obține JSON pe o singură linie. Erorile JSON sunt semnalate, cu poziția lor atunci când este disponibilă.
-- Adaugă secvențe escape pentru a include textul într-un șir JSON sau restabilește textul original al unui șir cu secvențe escape, apoi copiază rezultatul.
+Formatare automată pentru pagini JSON și meniu contextual
+- Selectează text pe orice pagină și alege din meniul contextual „Deschide selecția în JSON Toolbox”.
+- Folosește la cerere „Formatează JSON de pe această pagină” prin activeTab fără permisiuni permanente.
+- Comutatorul opțional „Formatează automat paginile JSON” din bara laterală este dezactivat implicit și cere acces opțional doar la activare, cu vizualizare Original / Formatat, copiere, deschidere în instrument și opțiune text/plain.
 
-Comparare JSON
-- Vezi diferențele structurale pe căi: adăugări, eliminări, schimbări de valoare și de tip.
-- Compară tablourile după index sau asociază elementele după un câmp cheie, precum id.
-- Ignoră căile selectate, cum ar fi câmpurile de dată și oră.
-- Explorează întregul arbore cu diferențele evidențiate sau afișează doar diferențele și navighează între ele.
-- Comută la compararea linie cu linie a textului JSON formatat.
+Import fișiere locale, minificare, escape și comparare
+- În toate cele șapte instrumente importă fișiere UTF-8 de până la 50 MiB (.json și .yaml/.yml în YAML -> JSON).
+- Minifică pe o singură linie (inclusiv JSONC/JSON5), adaugă/elimină secvențe escape și compară structuri după index sau câmp cheie (id) cu ignorarea căilor selectate și diff de text.
 
-Aspect
-- Alege Normal, Confort vizual sau Întunecat din bara laterală, cu previzualizări în miniatură. Normal este opțiunea implicită.
-- Tema aleasă este reținută local între instrumente și după redeschidere. Intrările și rezultatele nu sunt salvate.
-
-Confidențialitate
-Toată procesarea are loc în browser. Fără colectare sau încărcare de date, solicitări de rețea, cod la distanță, reclame sau urmărire. Istoricul intrărilor nu este salvat. Când copiezi, extensia scrie în clipboardul sistemului textul selectat, datele de intrare sau rezultatul. Când lipești, procesează doar textul pe care îl furnizezi.
+Aspect și confidențialitate
+- Alege Normal, Confort vizual sau Întunecat (sincronizat și cu vizualizatorul încorporat). Totul se procesează local în memorie: fără încărcări, cereri de rețea, reclame sau urmărire.
 
 Intrările și rezultatele complete rămân în memorie; performanța depinde de dispozitiv și de structura datelor. Vizualizările virtuale afișează doar o parte a conținutului odată, astfel încât funcția de căutare a browserului acoperă doar partea afișată. Folosește căutarea în arbore sau copiază rezultatul complet când este necesar. În cazul diferențelor textuale ample, secțiunile care nu corespund pot fi afișate ca blocuri întregi.

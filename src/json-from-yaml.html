@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="titleFromYaml">YAML to JSON - JSON Toolbox</title>
+  <script src="shared/theme.js"></script>
+  <script src="shared/sidebar.js"></script>
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body data-page="from-yaml" data-action="fromYaml" data-swap-href="yaml.html">
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="page-shell">
+      <header class="page-header">
+        <div class="page-heading">
+          <h1 data-i18n="navFromYaml">YAML → JSON</h1>
+          <p data-i18n="descFromYaml">Convert YAML documents to formatted JSON while preserving number precision.</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-cancel" hidden data-i18n="btnCancel">Cancel</button>
+          <button id="btn-swap-direction" type="button" data-i18n="btnSwapDirection" data-i18n-title="btnSwapDirectionTitle" title="Switch direction and carry over current output">⇄ Swap direction</button>
+          <button id="btn-sample" data-i18n="btnSample">Sample</button>
+          <button id="btn-clear" data-i18n="btnClear">Clear</button>
+          <button id="btn-run" class="primary" data-i18n="btnFromYaml" data-i18n-title="btnFromYamlTitle" title="Convert YAML to JSON">Convert</button>
+        </div>
+      </header>
+
+      <section class="options-bar">
+        <label class="field"><span data-i18n="labelIndent">Indent</span>
+          <select id="indent">
+            <option value="2" selected data-i18n="optSpaces2">2 spaces</option>
+            <option value="4" data-i18n="optSpaces4">4 spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+        </label>
+        <span class="options-spacer"></span>
+        <span class="shortcut">Cmd/Ctrl + Enter</span>
+      </section>
+
+      <div class="error-announcement" role="alert" aria-atomic="true">
+        <div id="error" class="notice" hidden></div>
+      </div>
+
+      <main class="workspace">
+        <section id="input-pane" class="pane input-pane">
+          <div class="pane-title">
+            <div class="pane-label">
+              <span data-i18n="paneInput">Input</span>
+              <span id="file-name" class="file-name" aria-live="polite" hidden></span>
+            </div>
+            <button id="btn-import" type="button" class="button-compact"
+              data-i18n="btnImportFile" data-i18n-title="btnImportYamlTitle"
+              title="Choose a local .yaml or .yml file, or drop one into the input pane">Import file</button>
+            <input id="file-input" type="file" accept=".yaml,.yml" hidden>
+          </div>
+          <textarea id="input" dir="ltr" data-i18n-aria-label="paneInput" aria-label="Input" spellcheck="false" wrap="off"
+            data-i18n-placeholder="inputFromYamlPlaceholder"
+            placeholder="Paste YAML or drop a .yaml / .yml file here… (Cmd/Ctrl + Enter)"></textarea>
+          <div id="input-editor" class="large-input-editor" dir="ltr" hidden></div>
+          <div id="file-drop-hint" class="file-drop-hint" data-i18n="fileDropYamlHint" hidden>Release to import a YAML file</div>
+        </section>
+        <section class="pane">
+          <div class="pane-title">
+            <div class="pane-label">
+              <span data-i18n="paneResult">Result</span>
+              <span id="status" class="status" role="status" aria-atomic="true"></span>
+              <span role="status" aria-atomic="true"><span id="busy" hidden data-i18n="busyText">Working…</span></span>
+            </div>
+            <button id="btn-copy" class="button-compact" data-i18n="btnCopy">Copy result</button>
+          </div>
+          <pre role="region" tabindex="0" id="output-text" dir="ltr" data-i18n-aria-label="paneResult" aria-label="Result"></pre>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="pages/transform.js"></script>
+</body>
+</html>
